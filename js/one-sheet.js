@@ -5,7 +5,6 @@ const OneSheet = {
     { key: 'musicStyle', label: 'Music Style' },
     { key: 'songwriter', label: 'Songwriter' },
     { key: 'featuredArtist', label: 'Featured Artist' },
-    { key: 'bandMembers', label: 'Band Members' },
     { key: 'recordLabel', label: 'Record Label' },
     { key: 'contactEmail', label: 'Contact' },
     { key: 'website', label: 'Website' },
@@ -22,6 +21,31 @@ const OneSheet = {
     return Utils.escapeHtml(str || '');
   },
 
+  formatInstrumentLine(value) {
+    const text = this.decodeText(value);
+    if (!text) return '';
+    const match = text.match(/^(.+?)\s*-\s*(.+)$/);
+    if (match) return `${match[1].trim()}: ${match[2].trim()}`;
+    return text;
+  },
+
+  buildBandMemberLines(song) {
+    if (Array.isArray(song.bandMemberLines) && song.bandMemberLines.length) {
+      return song.bandMemberLines
+        .map((line) => this.decodeText(line))
+        .filter(Boolean);
+    }
+
+    const text = this.decodeText(song.bandMembers);
+    if (!text) return [];
+
+    return text
+      .split(';')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => this.formatInstrumentLine(line));
+  },
+
   formatFieldValue(key, value) {
     const text = this.decodeText(value);
     if (!text) return '';
@@ -32,6 +56,21 @@ const OneSheet = {
       return `<a href="${this.escapeHtml(text)}" target="_blank" rel="noopener">${this.escapeHtml(text)}</a>`;
     }
     return this.escapeHtml(text);
+  },
+
+  renderBandMembersSection(song) {
+    const lines = this.buildBandMemberLines(song);
+    if (!lines.length) return '';
+
+    const lineHtml = lines
+      .map((line) => `<div class="band-line">${this.escapeHtml(line)}</div>`)
+      .join('');
+
+    return `
+    <section class="band-members">
+      <h4>Band Members</h4>
+      <div class="band-lines">${lineHtml}</div>
+    </section>`;
   },
 
   generateHtml(song, options = {}) {
@@ -55,6 +94,8 @@ const OneSheet = {
       })
       .filter(Boolean)
       .join('');
+
+    const bandMembersSection = this.renderBandMembersSection(song);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -153,12 +194,14 @@ const OneSheet = {
       color: #222;
     }
     .detail dd a { color: #8b6914; word-break: break-word; }
-    .description {
+    .description,
+    .band-members {
       border-top: 1px solid #ddd;
       padding-top: 0.85rem;
-      margin-top: 0.5rem;
+      margin-top: 0.85rem;
     }
-    .description h4 {
+    .description h4,
+    .band-members h4 {
       margin: 0 0 0.45rem;
       font-family: Arial, Helvetica, sans-serif;
       font-size: 0.72rem;
@@ -171,6 +214,15 @@ const OneSheet = {
       font-size: 0.92rem;
       color: #333;
       white-space: pre-wrap;
+    }
+    .band-lines {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.88rem;
+      color: #333;
+      line-height: 1.55;
+    }
+    .band-line {
+      margin: 0;
     }
     .footer {
       margin-top: 1rem;
@@ -209,6 +261,7 @@ const OneSheet = {
       <h4>Description</h4>
       <p>${this.escapeHtml(description)}</p>
     </section>` : ''}
+    ${bandMembersSection}
     <div class="footer">Radio Now DJ One-Sheet — For radio programmer use only</div>
   </div>
 </body>

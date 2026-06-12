@@ -71,25 +71,62 @@ function toDriveDownload_(url) {
   return id ? 'https://drive.google.com/uc?export=download&id=' + id : String(url || '');
 }
 
-function buildBandMembers_(row, headerMap) {
-  const parts = [];
-  const lead = pickValue_(row, headerMap, ['Lead Vocals']);
-  if (lead) parts.push('Lead Vocals: ' + lead);
+function formatInstrumentLine_(value) {
+  var text = String(value || '').trim();
+  if (!text) return '';
+  var match = text.match(/^(.+?)\s*-\s*(.+)$/);
+  return match ? match[1].trim() + ': ' + match[2].trim() : text;
+}
+
+function buildBandMemberLines_(row, headerMap) {
+  var lines = [];
+  var lead = pickValue_(row, headerMap, ['Lead Vocals']);
+  if (lead) lines.push('Lead Vocals: ' + lead);
 
   for (var h = 1; h <= 4; h++) {
     var harmony = pickValue_(row, headerMap, ['Harmony Vocals ' + h]);
-    if (harmony) parts.push('Harmony Vocals: ' + harmony);
+    if (harmony) lines.push('Harmony Vocals: ' + harmony);
   }
 
   for (var p = 1; p <= 8; p++) {
     var player = pickValue_(row, headerMap, ['Instrument  Player ' + p, 'Instrument Player ' + p]);
-    if (player) parts.push(player);
+    if (player) lines.push(formatInstrumentLine_(player));
   }
 
   var legacy = pickValue_(row, headerMap, ['Band Members', 'Musicians']);
-  if (legacy) parts.push(legacy);
+  if (legacy) {
+    legacy.split(/\r?\n/).forEach(function (line) {
+      line = String(line || '').trim();
+      if (line) lines.push(line);
+    });
+  }
 
-  return parts.join('; ');
+  return lines;
+}
+
+function bandMemberLinesFromSong_(song) {
+  if (song.bandMemberLines && song.bandMemberLines.length) {
+    return song.bandMemberLines;
+  }
+
+  var text = stripHtml_(song.bandMembers);
+  if (!text) return [];
+
+  return text.split(';').map(function (line) {
+    return formatInstrumentLine_(String(line || '').trim());
+  }).filter(function (line) { return !!line; });
+}
+
+function bandMembersSectionHtml_(song) {
+  var lines = bandMemberLinesFromSong_(song);
+  if (!lines.length) return '';
+
+  var lineHtml = lines.map(function (line) {
+    return '<div class="band-line">' + escapeHtml_(line) + '</div>';
+  }).join('');
+
+  return '<section class="band-members"><h4>Band Members</h4><div class="band-lines">'
+    + lineHtml + '</div></section>';
 }
 
 function rowToSong_(row, headerMap, rowIndex) {
@@ -103,7 +140,8 @@ function rowToSong_(row, headerMap, rowIndex) {
   if (song.mp3) song.mp3 = toDriveDownload_(song.mp3);
   if (song.wav) song.wav = toDriveDownload_(song.wav);
 
-  song.bandMembers = buildBandMembers_(row, headerMap) || song.bandMembers;
+  song.bandMemberLines = buildBandMemberLines_(row, headerMap);
+  song.bandMembers = song.bandMemberLines.join('; ') || song.bandMembers;
   song.previewLink = mp3Raw || '';
   song.previewDriveId = extractDriveId_(mp3Raw) || '';
 
@@ -185,7 +223,6 @@ function generateOneSheetHtml_(song, coverFile, hasCover) {
     oneSheetField_('Music Style', song.musicStyle),
     oneSheetField_('Songwriter', song.songwriter),
     oneSheetField_('Featured Artist', song.featuredArtist),
-    oneSheetField_('Band Members', song.bandMembers),
     oneSheetField_('Record Label', song.recordLabel),
     oneSheetField_('Contact', song.contactEmail, 'email'),
     oneSheetField_('Website', song.website, 'url'),
@@ -193,12 +230,13 @@ function generateOneSheetHtml_(song, coverFile, hasCover) {
 
   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>'
     + escapeHtml_(artist) + ' - ' + escapeHtml_(title)
-    + '</title><style>*{box-sizing:border-box}body{margin:0;font-family:Georgia,serif;color:#111;background:#fff;line-height:1.5}.sheet{max-width:8.5in;margin:0 auto;padding:.55in}.brand{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f4c430;padding-bottom:.35rem;margin-bottom:1rem}.brand h1{margin:0;font-family:Arial,sans-serif;font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase;color:#b8860b}.brand p{margin:0;font-family:Arial,sans-serif;font-size:.75rem;color:#666;text-transform:uppercase;letter-spacing:.08em}.hero{display:grid;grid-template-columns:2.2in 1fr;gap:1rem;margin-bottom:1rem}.cover{width:2.2in;height:2.2in;object-fit:cover;border:1px solid #ddd;border-radius:6px;background:#f5f5f5}.cover-placeholder{display:grid;place-items:center;font-family:Arial,sans-serif;font-size:.8rem;color:#999}.title-block h2{margin:0 0 .25rem;font-size:1.65rem;line-height:1.15}.title-block h3{margin:0 0 .75rem;font-size:1.1rem;font-weight:normal;color:#444}.details{display:grid;grid-template-columns:1fr 1fr;gap:.45rem 1rem;font-family:Arial,sans-serif;font-size:.82rem}.detail dt{margin:0;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.68rem;color:#888}.detail dd{margin:.1rem 0 0;color:#222}.detail dd a{color:#8b6914;word-break:break-word}.description{border-top:1px solid #ddd;padding-top:.85rem;margin-top:.5rem}.description h4{margin:0 0 .45rem;font-family:Arial,sans-serif;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:#888}.description p{margin:0;font-size:.92rem;color:#333;white-space:pre-wrap}.footer{margin-top:1rem;padding-top:.65rem;border-top:1px solid #eee;font-family:Arial,sans-serif;font-size:.72rem;color:#777;text-align:center}</style></head><body><div class="sheet"><div class="brand"><h1>Radio Now</h1><p>(615) Hideaway Entertainment</p></div><div class="hero">'
+    + '</title><style>*{box-sizing:border-box}body{margin:0;font-family:Georgia,serif;color:#111;background:#fff;line-height:1.5}.sheet{max-width:8.5in;margin:0 auto;padding:.55in}.brand{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f4c430;padding-bottom:.35rem;margin-bottom:1rem}.brand h1{margin:0;font-family:Arial,sans-serif;font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase;color:#b8860b}.brand p{margin:0;font-family:Arial,sans-serif;font-size:.75rem;color:#666;text-transform:uppercase;letter-spacing:.08em}.hero{display:grid;grid-template-columns:2.2in 1fr;gap:1rem;margin-bottom:1rem}.cover{width:2.2in;height:2.2in;object-fit:cover;border:1px solid #ddd;border-radius:6px;background:#f5f5f5}.cover-placeholder{display:grid;place-items:center;font-family:Arial,sans-serif;font-size:.8rem;color:#999}.title-block h2{margin:0 0 .25rem;font-size:1.65rem;line-height:1.15}.title-block h3{margin:0 0 .75rem;font-size:1.1rem;font-weight:normal;color:#444}.details{display:grid;grid-template-columns:1fr 1fr;gap:.45rem 1rem;font-family:Arial,sans-serif;font-size:.82rem}.detail dt{margin:0;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.68rem;color:#888}.detail dd{margin:.1rem 0 0;color:#222}.detail dd a{color:#8b6914;word-break:break-word}.description,.band-members{border-top:1px solid #ddd;padding-top:.85rem;margin-top:.85rem}.description h4,.band-members h4{margin:0 0 .45rem;font-family:Arial,sans-serif;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:#888}.description p{margin:0;font-size:.92rem;color:#333;white-space:pre-wrap}.band-lines{font-family:Arial,sans-serif;font-size:.88rem;color:#333;line-height:1.55}.band-line{margin:0}.footer{margin-top:1rem;padding-top:.65rem;border-top:1px solid #eee;font-family:Arial,sans-serif;font-size:.72rem;color:#777;text-align:center}</style></head><body><div class="sheet"><div class="brand"><h1>Radio Now</h1><p>(615) Hideaway Entertainment</p></div><div class="hero">'
     + coverHtml
     + '<div class="title-block"><h2>' + escapeHtml_(title) + '</h2><h3>' + escapeHtml_(artist) + '</h3><dl class="details">'
     + details
     + '</dl></div></div>'
     + (description ? '<section class="description"><h4>Description</h4><p>' + escapeHtml_(description) + '</p></section>' : '')
+    + bandMembersSectionHtml_(song)
     + '<div class="footer">Radio Now DJ One-Sheet — For radio programmer use only</div></div></body></html>';
 }
 

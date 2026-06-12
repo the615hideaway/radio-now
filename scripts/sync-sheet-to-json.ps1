@@ -43,25 +43,38 @@ function Strip-Html([string]$Html) {
   return ($Html -replace '<[^>]+>', ' ' -replace '\s+', ' ').Trim()
 }
 
-function Build-BandMembers([hashtable]$Record) {
-  $parts = New-Object System.Collections.Generic.List[string]
+function Format-InstrumentLine([string]$Value) {
+  $text = $Value.Trim()
+  if ($text -match '^(.+?)\s*-\s*(.+)$') {
+    return "$($matches[1].Trim()): $($matches[2].Trim())"
+  }
+  return $text
+}
 
-  if ($Record['Lead Vocals']) { $parts.Add("Lead Vocals: $($Record['Lead Vocals'])") }
+function Build-BandMemberLines([hashtable]$Record) {
+  $lines = New-Object System.Collections.Generic.List[string]
+
+  if ($Record['Lead Vocals']) { $lines.Add("Lead Vocals: $($Record['Lead Vocals'].Trim())") }
 
   foreach ($n in 1..4) {
     $value = $Record["Harmony Vocals $n"]
-    if ($value) { $parts.Add("Harmony Vocals: $value") }
+    if ($value) { $lines.Add("Harmony Vocals: $($value.Trim())") }
   }
 
   foreach ($n in 1..8) {
     $value = $Record["Instrument  Player $n"]
     if (-not $value) { $value = $Record["Instrument Player $n"] }
-    if ($value) { $parts.Add($value.Trim()) }
+    if ($value) { $lines.Add((Format-InstrumentLine $value)) }
   }
 
-  if ($Record['Band Members']) { $parts.Add($Record['Band Members']) }
+  if ($Record['Band Members']) {
+    foreach ($legacyLine in ($Record['Band Members'] -split '\r?\n')) {
+      $legacyLine = $legacyLine.Trim()
+      if ($legacyLine) { $lines.Add($legacyLine) }
+    }
+  }
 
-  return ($parts -join '; ').Trim()
+  return ,$lines.ToArray()
 }
 
 $gvizUrl = "https://docs.google.com/spreadsheets/d/$SheetId/gviz/tq?tqx=out:json&sheet=$([uri]::EscapeDataString($SheetName))"
@@ -107,6 +120,8 @@ foreach ($row in $rows) {
     $previewStreamUrl = $mp3
   }
 
+  $bandMemberLines = Build-BandMemberLines $record
+
   $songs.Add([ordered]@{
     id                 = "song-$index"
     artistName         = $artist
@@ -122,7 +137,8 @@ foreach ($row in $rows) {
     songTime           = $record['Song Time']
     description        = Strip-Html $record['Description']
     musicStyle         = $record['Music Style']
-    bandMembers        = Build-BandMembers $record
+    bandMemberLines    = $bandMemberLines
+    bandMembers        = ($bandMemberLines -join '; ')
     songwriter         = $record['Songwriter']
     featuredArtist     = $record['Featured Artist']
     website            = $record['Website']
