@@ -14,7 +14,7 @@ const CONFIG = {
   googleApiKey: '',
 
   // Used only by scripts/sync-sheet-to-json.ps1 (not loaded live by the site).
-  googleSheetId: '10rum4RKKF5-CgLcoSwe55EcxzyEzBSDqfxVrnbAuikk',
+  googleSheetId: '1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU',
   sheetName: 'Sheet1',
 
   queueKey: 'radio_now_queue',

@@ -11,19 +11,22 @@ const RadioDB = {
   },
 
   normalizeSong(raw, index) {
-    const previewLink = String(raw.previewLink || raw['Preview Link'] || '').trim();
+    const mp3Source = String(raw.mp3 || raw.MP3 || raw.MP3s || '').trim();
+    const mp3 = mp3Source
+      ? (String(raw.mp3 || '').includes('uc?export=download') ? raw.mp3 : Utils.toDriveDownload(mp3Source))
+      : '';
 
     return {
       id: raw.id || `song-${index + 1}`,
       artistName: raw.artistName || '',
       songTitle: raw.songTitle || '',
-      year: String(raw.year || ''),
-      mp3: raw.mp3 || Utils.toDriveDownload(raw.MP3 || raw.MP3s || ''),
-      previewLink,
-      previewStreamUrl: raw.previewStreamUrl || Utils.toPreviewStreamUrl(previewLink),
-      previewDriveId: raw.previewDriveId || Utils.extractDriveId(previewLink) || '',
+      year: String(raw.year || '').replace(/\.0$/, ''),
+      mp3,
+      previewLink: mp3Source,
+      previewStreamUrl: raw.previewStreamUrl || Utils.toPreviewStreamUrl(mp3Source),
+      previewDriveId: raw.previewDriveId || Utils.extractDriveId(mp3Source) || '',
       wav: raw.wav || Utils.toDriveDownload(raw.WAV || ''),
-      cover: raw.cover || raw.Cover || '',
+      cover: raw.cover || raw.Cover || raw['Cover Art'] || '',
       coverThumbnailUrl: raw.coverThumbnailUrl || Utils.resolveCoverUrl({ cover: raw.cover || raw.Cover }),
       songTime: raw.songTime || '',
       description: raw.description || Utils.stripHtml(raw.Description || ''),

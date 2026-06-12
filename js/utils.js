@@ -46,7 +46,8 @@ const Utils = {
 
   resolvePreviewUrl(song) {
     if (song.previewStreamUrl) return song.previewStreamUrl;
-    return this.toPreviewStreamUrl(song.previewLink);
+    const mp3Source = song.mp3 || song.previewLink || '';
+    return this.toPreviewStreamUrl(mp3Source);
   },
 
   resolveCoverUrl(song) {
@@ -135,6 +136,7 @@ const Utils = {
       this.extractDriveId(primary)
       || this.extractDriveId(fallback)
       || song.previewDriveId
+      || this.extractDriveId(song.mp3)
       || this.extractDriveId(song.previewLink)
       || ''
     );

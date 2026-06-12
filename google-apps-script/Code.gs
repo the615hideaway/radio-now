@@ -13,9 +13,8 @@ const COLUMN_MAP = {
   songTitle: ['Song Title'],
   year: ['Year'],
   mp3: ['MP3', 'MP3s'],
-  previewLink: ['Preview Link', 'Audio', 'Preview'],
   wav: ['WAV'],
-  cover: ['Cover', 'Cover Art'],
+  cover: ['Cover Art', 'Cover'],
   songTime: ['Song Time', 'Duration'],
   description: ['Description'],
   musicStyle: ['Music Style', 'Style'],
@@ -72,6 +71,27 @@ function toDriveDownload_(url) {
   return id ? 'https://drive.google.com/uc?export=download&id=' + id : String(url || '');
 }
 
+function buildBandMembers_(row, headerMap) {
+  const parts = [];
+  const lead = pickValue_(row, headerMap, ['Lead Vocals']);
+  if (lead) parts.push('Lead Vocals: ' + lead);
+
+  for (var h = 1; h <= 4; h++) {
+    var harmony = pickValue_(row, headerMap, ['Harmony Vocals ' + h]);
+    if (harmony) parts.push('Harmony Vocals: ' + harmony);
+  }
+
+  for (var p = 1; p <= 8; p++) {
+    var player = pickValue_(row, headerMap, ['Instrument  Player ' + p, 'Instrument Player ' + p]);
+    if (player) parts.push(player);
+  }
+
+  var legacy = pickValue_(row, headerMap, ['Band Members', 'Musicians']);
+  if (legacy) parts.push(legacy);
+
+  return parts.join('; ');
+}
+
 function rowToSong_(row, headerMap, rowIndex) {
   const song = { id: 'row-' + rowIndex, rowIndex: rowIndex };
 
@@ -79,16 +99,13 @@ function rowToSong_(row, headerMap, rowIndex) {
     song[field] = pickValue_(row, headerMap, COLUMN_MAP[field]);
   });
 
+  const mp3Raw = song.mp3;
   if (song.mp3) song.mp3 = toDriveDownload_(song.mp3);
   if (song.wav) song.wav = toDriveDownload_(song.wav);
 
-  if (!song.previewLink || String(song.previewLink).indexOf('wix:') === 0) {
-    song.previewLink = song.mp3 || song.previewLink;
-  } else if (extractDriveId_(song.previewLink)) {
-    song.previewLink = toDriveDownload_(song.previewLink);
-  }
-
-  song.previewDriveId = extractDriveId_(song.previewLink) || extractDriveId_(song.mp3) || '';
+  song.bandMembers = buildBandMembers_(row, headerMap) || song.bandMembers;
+  song.previewLink = mp3Raw || '';
+  song.previewDriveId = extractDriveId_(mp3Raw) || '';
 
   return song;
 }

@@ -1,6 +1,6 @@
 # Syncs the Radio Now Google Sheet into data/songs.json
 param(
-  [string]$SheetId = '10rum4RKKF5-CgLcoSwe55EcxzyEzBSDqfxVrnbAuikk',
+  [string]$SheetId = '1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU',
   [string]$SheetName = 'Sheet1',
   [string]$OutPath = "$PSScriptRoot\..\data\songs.json"
 )
@@ -43,6 +43,27 @@ function Strip-Html([string]$Html) {
   return ($Html -replace '<[^>]+>', ' ' -replace '\s+', ' ').Trim()
 }
 
+function Build-BandMembers([hashtable]$Record) {
+  $parts = New-Object System.Collections.Generic.List[string]
+
+  if ($Record['Lead Vocals']) { $parts.Add("Lead Vocals: $($Record['Lead Vocals'])") }
+
+  foreach ($n in 1..4) {
+    $value = $Record["Harmony Vocals $n"]
+    if ($value) { $parts.Add("Harmony Vocals: $value") }
+  }
+
+  foreach ($n in 1..8) {
+    $value = $Record["Instrument  Player $n"]
+    if (-not $value) { $value = $Record["Instrument Player $n"] }
+    if ($value) { $parts.Add($value.Trim()) }
+  }
+
+  if ($Record['Band Members']) { $parts.Add($Record['Band Members']) }
+
+  return ($parts -join '; ').Trim()
+}
+
 $gvizUrl = "https://docs.google.com/spreadsheets/d/$SheetId/gviz/tq?tqx=out:json&sheet=$([uri]::EscapeDataString($SheetName))"
 $text = (Invoke-WebRequest -Uri $gvizUrl -UseBasicParsing).Content
 
@@ -72,18 +93,18 @@ foreach ($row in $rows) {
   if (-not $artist -and -not $title) { continue }
 
   $index++
-  $preview = $record['Preview Link']
   $mp3 = $record['MP3']
   if (-not $mp3) { $mp3 = $record['MP3s'] }
-  $cover = $record['Cover']
+  $cover = $record['Cover Art']
+  if (-not $cover) { $cover = $record['Cover'] }
   $wav = $record['WAV']
 
-  $previewDriveId = Get-DriveId $preview
+  $previewDriveId = Get-DriveId $mp3
   $previewStreamUrl = ''
   if ($previewDriveId) {
-    $previewStreamUrl = Get-DriveStream $preview
-  } elseif ($preview -and $preview -match '^https?://') {
-    $previewStreamUrl = $preview
+    $previewStreamUrl = Get-DriveStream $mp3
+  } elseif ($mp3 -and $mp3 -match '^https?://') {
+    $previewStreamUrl = $mp3
   }
 
   $songs.Add([ordered]@{
@@ -92,7 +113,7 @@ foreach ($row in $rows) {
     songTitle          = $title
     year               = $record['Year']
     mp3                = Get-DriveDownload $mp3
-    previewLink        = $preview
+    previewLink        = $mp3
     previewStreamUrl   = $previewStreamUrl
     previewDriveId     = $previewDriveId
     wav                = Get-DriveDownload $wav
@@ -101,7 +122,7 @@ foreach ($row in $rows) {
     songTime           = $record['Song Time']
     description        = Strip-Html $record['Description']
     musicStyle         = $record['Music Style']
-    bandMembers        = $record['Band Members']
+    bandMembers        = Build-BandMembers $record
     songwriter         = $record['Songwriter']
     featuredArtist     = $record['Featured Artist']
     website            = $record['Website']

@@ -1,6 +1,6 @@
 const AudioPlayer = {
   getDriveId(song) {
-    return song.previewDriveId || Utils.extractDriveId(song.previewLink) || '';
+    return song.previewDriveId || Utils.extractDriveId(song.mp3) || Utils.extractDriveId(song.previewLink) || '';
   },
 
   getEmbedUrl(driveId) {

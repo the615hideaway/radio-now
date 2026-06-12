@@ -10,14 +10,15 @@ Google Sheets directly in the browser.
 
 YOUR GOOGLE SHEET
 -----------------
-https://docs.google.com/spreadsheets/d/10rum4RKKF5-CgLcoSwe55EcxzyEzBSDqfxVrnbAuikk/edit
+https://docs.google.com/spreadsheets/d/1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU/edit
 
-Required columns (row 1):
-  Artist Name, Song Title, Year, MP3, Preview Link, WAV, Cover,
-  Song Time, Description, Music Style, Band Members, Songwriter,
-  Featured Artist, Website, Record Label, Contact E-Mail
+Required columns (row 1) from the Google Form sheet:
+  Artist Name, Song Title, Year, Song Time, Music Style, Description,
+  Songwriter, Lead Vocals, Featured Artist, Harmony Vocals 1–4,
+  Instrument Player 1–8, MP3, WAV, Cover Art, Website, Record Label,
+  Contact E-Mail
 
-Audio previews use the Preview Link column only.
+Audio previews and downloads use the MP3 column.
 
 
 SYNC SHEET → JSON (after every sheet update)
@@ -49,5 +50,5 @@ js/config.js as googleScriptUrl. See AUDIO-FIX-STEPS.txt.
 
 DRIVE FILE SHARING
 ------------------
-Preview Link, MP3, and WAV Drive files must be shared as:
+MP3, WAV, and Cover Art Drive files must be shared as:
   "Anyone with the link" → Viewer

@@ -3,7 +3,7 @@
 DJ music catalog for **(615) Hideaway Entertainment**.
 
 - Password-protected catalog loaded from `data/songs.json`
-- Audio previews use the **Preview Link** column
+- Audio previews use the **MP3** column
 - DJ queue and MP3/WAV ZIP downloads
 - Live site: https://the615hideaway.github.io/radio-now/
 

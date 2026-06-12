@@ -8,7 +8,7 @@ The same one-time setup fixes ZIP bundles (audio + cover + one-sheet per song)
 and reliable audio access for your catalog.
 
 Your sheet:
-https://docs.google.com/spreadsheets/d/10rum4RKKF5-CgLcoSwe55EcxzyEzBSDqfxVrnbAuikk/edit
+https://docs.google.com/spreadsheets/d/1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU/edit
 
 
 STEP 1 — OPEN APPS SCRIPT
