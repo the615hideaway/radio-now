@@ -453,7 +453,14 @@ select { min-width: 130px; width: auto; }
 
 .song-card-top-actions {
   display: flex;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.top-queue-btn {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.78rem;
+  min-height: 34px;
 }
 
 .song-card.is-previewing {
@@ -723,7 +730,7 @@ select { min-width: 130px; width: auto; }
 
 .song-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
   margin-top: auto;
 }
@@ -943,6 +950,25 @@ select { min-width: 130px; width: auto; }
   flex-shrink: 0;
 }
 
+.detail-queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.detail-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.detail-close-btn--bottom {
+  font-size: 0.95rem;
+}
+
 .detail-hero {
   display: grid;
   grid-template-columns: 180px 1fr;
@@ -1086,6 +1112,14 @@ select { min-width: 130px; width: auto; }
 
   .song-actions {
     grid-template-columns: 1fr;
+  }
+
+  .detail-queue-actions {
+    flex-direction: column;
+  }
+
+  .detail-queue-actions .btn {
+    width: 100%;
   }
 
   .preview-iframe--now-playing {

@@ -207,6 +207,14 @@
         <div class="detail-preview">
           ${renderPlayButton(song)}
         </div>
+        <div class="detail-queue-actions">
+          <button class="btn btn-secondary add-download-detail-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+            <i class="fa-solid fa-download"></i> ${inDownload ? 'In Download Queue' : 'Add to Download Queue'}
+          </button>
+          <button class="btn btn-primary add-queue-detail-btn" data-id="${Utils.escapeHtml(song.id)}">
+            <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'In DJ Queue' : 'Add to DJ Queue'}
+          </button>
+        </div>
         <div class="detail-description">
           <label>Description</label>
           <p>${Utils.escapeHtml(song.description || '—')}</p>
@@ -222,16 +230,17 @@
         <div class="detail-downloads">
           ${song.mp3 ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.mp3)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> MP3</a>` : ''}
           ${song.wav ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.wav)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> WAV</a>` : ''}
-          <button class="btn btn-secondary add-download-detail-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
-            <i class="fa-solid fa-download"></i> ${inDownload ? 'In Download Queue' : 'Add to Download Queue'}
-          </button>
-          <button class="btn btn-primary add-queue-detail-btn" data-id="${Utils.escapeHtml(song.id)}">
-            <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'In DJ Queue' : 'Add to DJ Queue'}
+        </div>
+        <div class="detail-panel-footer">
+          <button class="btn btn-ghost detail-close-btn detail-close-btn--bottom" aria-label="Close details">
+            <i class="fa-solid fa-xmark"></i> Close
           </button>
         </div>
       </div>`;
 
-    detailPanel.querySelector('#detail-close-btn').addEventListener('click', closeDetail);
+    detailPanel.querySelectorAll('.detail-close-btn').forEach((btn) => {
+      btn.addEventListener('click', closeDetail);
+    });
     detailPanel.querySelector('.add-queue-detail-btn').addEventListener('click', () => {
       toggleQueue(song.id);
       renderDetailPanel(allSongs.find((s) => s.id === song.id));
@@ -293,8 +302,8 @@
               <button class="btn-icon download-toggle ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inDownload ? 'Remove from download queue' : 'Add to download queue'}">
                 <i class="fa-solid ${inDownload ? 'fa-check' : 'fa-download'}"></i>
               </button>
-              <button class="btn-icon queue-toggle ${inQueue ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inQueue ? 'Remove from queue' : 'Add to queue'}">
-                <i class="fa-solid ${inQueue ? 'fa-check' : 'fa-plus'}"></i>
+              <button class="btn btn-primary btn-sm add-queue-btn top-queue-btn" data-id="${Utils.escapeHtml(song.id)}">
+                <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'Queued' : 'Queue'}
               </button>
             </div>
           </div>
@@ -316,9 +325,6 @@
             <button class="btn btn-secondary btn-sm add-download-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
               <i class="fa-solid fa-download"></i> ${inDownload ? 'Queued' : 'Download'}
             </button>
-            <button class="btn btn-primary btn-sm add-queue-btn" data-id="${Utils.escapeHtml(song.id)}">
-              <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'Queued' : 'Queue'}
-            </button>
           </div>
         </article>`;
     }).join('');
@@ -332,7 +338,7 @@
 
     bindPreviewButtons(catalogGrid);
 
-    catalogGrid.querySelectorAll('.add-queue-btn, .queue-toggle').forEach((btn) => {
+    catalogGrid.querySelectorAll('.add-queue-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleQueue(btn.dataset.id);
