@@ -66,27 +66,39 @@ const RadioDB = {
     return songs;
   },
 
-  async downloadZip(songs, format = 'mp3') {
+  async downloadZip(songs, format = 'mp3', onProgress) {
+    if (!songs.length) throw new Error('Download queue is empty.');
+
     if (this.isScriptConfigured()) {
-      return this.downloadZipViaScript(songs, format);
+      return this.downloadZipViaScript(songs, format, onProgress);
     }
-    return this.downloadZipClient(songs, format);
+    return this.downloadZipClient(songs, format, onProgress);
   },
 
-  async downloadZipViaScript(songs, format) {
+  songPayloadForZip(song, format) {
+    return {
+      id: song.id,
+      artistName: song.artistName,
+      songTitle: song.songTitle,
+      mp3: song.mp3,
+      wav: song.wav,
+      previewDriveId: song.previewDriveId || Utils.extractDriveId(song.previewLink) || '',
+      mp3DriveId: Utils.extractDriveId(song.mp3) || '',
+      wavDriveId: Utils.extractDriveId(song.wav) || '',
+      formatDriveId: Utils.getSongDriveId(song, format),
+    };
+  },
+
+  async downloadZipViaScript(songs, format, onProgress) {
+    onProgress?.({ current: 0, total: songs.length, added: 0, status: 'requesting' });
+
     const response = await fetch(CONFIG.googleScriptUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'zip',
         format,
-        songs: songs.map((s) => ({
-          id: s.id,
-          artistName: s.artistName,
-          songTitle: s.songTitle,
-          mp3: s.mp3,
-          wav: s.wav,
-        })),
+        songs: songs.map((s) => this.songPayloadForZip(s, format)),
       }),
     });
 
@@ -98,19 +110,63 @@ const RadioDB = {
     for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i);
 
     const blob = new Blob([buffer], { type: 'application/zip' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = data.filename || 'radio-now-selection.zip';
-    link.click();
-    URL.revokeObjectURL(link.href);
+    this.triggerBlobDownload(blob, data.filename || 'radio-now-selection.zip');
+
+    onProgress?.({ current: songs.length, total: songs.length, added: data.added || songs.length, status: 'done' });
+
+    if (data.skipped?.length) {
+      throw new Error(`ZIP created with ${data.added || '?'} of ${songs.length} songs. Skipped: ${data.skipped.join('; ')}`);
+    }
   },
 
   async fetchAudioBlob(url) {
-    const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
+    const response = await fetch(url, { mode: 'cors', redirect: 'follow', credentials: 'omit' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const blob = await response.blob();
+
+    let blob = await response.blob();
+    if (blob.type === 'text/html' || (blob.size < 8000 && blob.type !== 'audio/mpeg')) {
+      const html = await blob.text();
+      const confirmMatch = html.match(/confirm=([0-9A-Za-z_]+)/);
+      const idMatch = url.match(/[?&]id=([^&]+)/);
+      if (confirmMatch && idMatch) {
+        const confirmUrl = `https://drive.usercontent.google.com/download?id=${idMatch[1]}&export=download&confirm=${confirmMatch[1]}`;
+        const retry = await fetch(confirmUrl, { mode: 'cors', redirect: 'follow', credentials: 'omit' });
+        if (!retry.ok) throw new Error(`Confirm fetch HTTP ${retry.status}`);
+        blob = await retry.blob();
+      }
+    }
+
     if (!blob.size) throw new Error('Empty file');
+    if (blob.type === 'text/html') throw new Error('Drive returned HTML instead of audio');
     return blob;
+  },
+
+  async fetchSongBlob(song, format) {
+    const candidates = Utils.getSongDownloadCandidates(song, format);
+    if (!candidates.length) throw new Error(`No ${format.toUpperCase()} link`);
+
+    const errors = [];
+    for (const url of candidates) {
+      try {
+        const blob = await this.fetchAudioBlob(url);
+        if (await Utils.isAudioBlob(blob)) return blob;
+        errors.push(`${url}: not audio (${blob.type || 'unknown'})`);
+      } catch (err) {
+        errors.push(`${url}: ${err.message}`);
+      }
+    }
+
+    throw new Error(errors[errors.length - 1] || 'All download sources failed');
+  },
+
+  triggerBlobDownload(blob, filename) {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
   },
 
   triggerFileDownload(url, filename) {
@@ -129,7 +185,8 @@ const RadioDB = {
     let started = 0;
 
     for (const song of songs) {
-      const url = format === 'wav' && song.wav ? song.wav : song.mp3;
+      const candidates = Utils.getSongDownloadCandidates(song, format);
+      const url = candidates[0];
       if (!url) continue;
       const filename = Utils.safeFilename(song.artistName, song.songTitle, ext);
       this.triggerFileDownload(url, filename);
@@ -138,46 +195,49 @@ const RadioDB = {
     }
 
     if (!started) {
-      throw new Error(`No ${format.toUpperCase()} download links found for selected songs.`);
+      throw new Error(`No ${format.toUpperCase()} download links found for queued songs.`);
     }
   },
 
-  async downloadZipClient(songs, format) {
+  async downloadZipClient(songs, format, onProgress) {
     if (!window.JSZip) throw new Error('JSZip is not loaded');
 
     const zip = new JSZip();
-    let added = 0;
+    const usedNames = new Set();
     const errors = [];
     const ext = format === 'wav' ? 'wav' : 'mp3';
+    let added = 0;
 
-    for (const song of songs) {
-      const url = format === 'wav' && song.wav ? song.wav : song.mp3;
-      if (!url) {
-        errors.push(`${song.songTitle}: no ${format.toUpperCase()} link`);
-        continue;
-      }
+    for (let i = 0; i < songs.length; i++) {
+      const song = songs[i];
+      onProgress?.({ current: i + 1, total: songs.length, added, status: 'fetching', songTitle: song.songTitle });
 
       try {
-        const blob = await this.fetchAudioBlob(url);
-        zip.file(Utils.safeFilename(song.artistName, song.songTitle, ext), blob);
+        const blob = await this.fetchSongBlob(song, format);
+        const filename = Utils.uniqueZipFilename(usedNames, song.artistName, song.songTitle, ext);
+        zip.file(filename, blob);
         added++;
       } catch (err) {
         errors.push(`${song.songTitle}: ${err.message}`);
       }
     }
 
-    if (added) {
-      const content = await zip.generateAsync({ type: 'blob' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = `radio-now-${format}-${new Date().toISOString().slice(0, 10)}.zip`;
-      link.click();
-      URL.revokeObjectURL(link.href);
-
-      if (errors.length) console.warn('Some files were skipped from ZIP:', errors);
-      return;
+    if (!added) {
+      await this.downloadFilesIndividually(songs, format);
+      throw new Error(
+        `Could not build a ZIP in the browser (${errors.length} failed). `
+        + 'Opened individual downloads instead. For reliable ZIPs, deploy the Google Apps Script URL in config.js.'
+      );
     }
 
-    await this.downloadFilesIndividually(songs, format);
+    onProgress?.({ current: songs.length, total: songs.length, added, status: 'zipping' });
+    const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    this.triggerBlobDownload(content, `radio-now-${format}-${new Date().toISOString().slice(0, 10)}.zip`);
+
+    onProgress?.({ current: songs.length, total: songs.length, added, status: 'done' });
+
+    if (errors.length) {
+      throw new Error(`ZIP created with ${added} of ${songs.length} songs. Could not include: ${errors.join('; ')}`);
+    }
   },
 };

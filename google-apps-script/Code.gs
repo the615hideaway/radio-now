@@ -137,6 +137,28 @@ function fetchFileBlob_(url) {
   return response.getBlob();
 }
 
+function fetchDriveBlobById_(driveId) {
+  if (!driveId) throw new Error('Missing Drive file id');
+  return DriveApp.getFileById(driveId).getBlob();
+}
+
+function fetchSongBlob_(song, format) {
+  const driveId = song.formatDriveId
+    || (format === 'wav' ? (song.wavDriveId || song.mp3DriveId || song.previewDriveId) : (song.mp3DriveId || song.previewDriveId || song.wavDriveId));
+
+  if (driveId) {
+    try {
+      return fetchDriveBlobById_(driveId);
+    } catch (err) {
+      // Fall through to URL fetch.
+    }
+  }
+
+  const url = format === 'wav' && song.wav ? song.wav : song.mp3;
+  if (!url) throw new Error('No ' + format.toUpperCase() + ' link');
+  return fetchFileBlob_(url);
+}
+
 function streamDriveFile_(driveId) {
   if (!driveId) throw new Error('Missing Drive file id');
 
@@ -155,10 +177,7 @@ function createZip_(songs, format) {
 
   songs.forEach((song) => {
     try {
-      const url = format === 'wav' && song.wav ? song.wav : song.mp3;
-      if (!url) throw new Error('No ' + format.toUpperCase() + ' link');
-
-      const blob = fetchFileBlob_(url);
+      const blob = fetchSongBlob_(song, format);
       const ext = format === 'wav' ? 'wav' : 'mp3';
       blob.setName(safeName_(song.artistName, song.songTitle, ext));
       blobs.push(blob);
@@ -178,6 +197,7 @@ function createZip_(songs, format) {
   return {
     zipBlob: zipBlob,
     skipped: skipped,
+    added: blobs.length,
   };
 }
 
@@ -213,6 +233,7 @@ function doPost(e) {
         success: true,
         filename: result.zipBlob.getName(),
         zipBase64: Utilities.base64Encode(result.zipBlob.getBytes()),
+        added: result.added,
         skipped: result.skipped,
       });
     }

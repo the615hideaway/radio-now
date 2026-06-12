@@ -150,12 +150,17 @@
       return `
         <article class="song-card ${inDownload ? 'in-download' : ''}" data-id="${Utils.escapeHtml(song.id)}">
           <div class="song-card-top">
-            <button class="btn-icon download-toggle ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inDownload ? 'Remove from download queue' : 'Add to download queue'}">
-              <i class="fa-solid ${inDownload ? 'fa-check' : 'fa-download'}"></i>
+            <button class="btn-icon details-btn" data-id="${Utils.escapeHtml(song.id)}" title="Song details">
+              <i class="fa-solid fa-circle-info"></i>
             </button>
-            <button class="btn-icon queue-toggle ${inQueue ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inQueue ? 'Remove from queue' : 'Add to queue'}">
-              <i class="fa-solid ${inQueue ? 'fa-check' : 'fa-plus'}"></i>
-            </button>
+            <div class="song-card-top-actions">
+              <button class="btn-icon download-toggle ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inDownload ? 'Remove from download queue' : 'Add to download queue'}">
+                <i class="fa-solid ${inDownload ? 'fa-check' : 'fa-download'}"></i>
+              </button>
+              <button class="btn-icon queue-toggle ${inQueue ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inQueue ? 'Remove from queue' : 'Add to queue'}">
+                <i class="fa-solid ${inQueue ? 'fa-check' : 'fa-plus'}"></i>
+              </button>
+            </div>
           </div>
           <button class="song-cover-btn" data-id="${Utils.escapeHtml(song.id)}">
             <div class="song-cover">${renderCover(song)}</div>
@@ -171,9 +176,6 @@
           </div>
           <div class="song-preview">${renderPreview(song)}</div>
           <div class="song-actions">
-            <button class="btn btn-secondary btn-sm details-btn" data-id="${Utils.escapeHtml(song.id)}">
-              <i class="fa-solid fa-circle-info"></i> Details
-            </button>
             <button class="btn btn-secondary btn-sm add-download-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
               <i class="fa-solid fa-download"></i> ${inDownload ? 'Queued' : 'Download'}
             </button>
@@ -478,11 +480,22 @@
   downloadZipBtn.addEventListener('click', async () => {
     if (!downloadQueue.length) return;
 
+    const total = downloadQueue.length;
     downloadZipBtn.disabled = true;
-    downloadZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Building ZIP…';
+    downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing 0/${total}…`;
 
     try {
-      await RadioDB.downloadZip(downloadQueue, downloadFormat.value);
+      await RadioDB.downloadZip(downloadQueue, downloadFormat.value, (progress) => {
+        if (progress.status === 'zipping') {
+          downloadZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating ZIP…';
+          return;
+        }
+        if (progress.status === 'done') {
+          downloadZipBtn.innerHTML = '<i class="fa-solid fa-check"></i> ZIP ready';
+          return;
+        }
+        downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing ${progress.current}/${progress.total}…`;
+      });
     } catch (err) {
       alert(err.message);
     } finally {

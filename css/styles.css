@@ -443,6 +443,13 @@ select { min-width: 130px; width: auto; }
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+}
+
+.song-card-top-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
 }
 
 .song-select {
@@ -700,12 +707,17 @@ select { min-width: 130px; width: auto; }
 }
 
 .song-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.45rem;
   margin-top: auto;
 }
 
-.song-actions .btn { flex: 1; min-width: 0; }
+.song-actions .btn {
+  min-width: 0;
+  padding-left: 0.55rem;
+  padding-right: 0.55rem;
+}
 
 .song-actions .btn.active,
 .add-download-btn.active {
