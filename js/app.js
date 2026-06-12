@@ -11,14 +11,16 @@
   const catalogGrid = document.getElementById('catalog-grid');
   const statTotal = document.getElementById('stat-total');
   const statQueue = document.getElementById('stat-queue');
-  const statSelected = document.getElementById('stat-selected');
+  const statDownload = document.getElementById('stat-download');
   const connectionBanner = document.getElementById('connection-banner');
   const queueList = document.getElementById('queue-list');
   const queueEmpty = document.getElementById('queue-empty');
   const clearQueueBtn = document.getElementById('clear-queue-btn');
+  const downloadList = document.getElementById('download-list');
+  const downloadEmpty = document.getElementById('download-empty');
+  const clearDownloadBtn = document.getElementById('clear-download-btn');
   const downloadZipBtn = document.getElementById('download-zip-btn');
   const downloadFormat = document.getElementById('download-format');
-  const selectAllBtn = document.getElementById('select-all-btn');
   const detailModal = document.getElementById('detail-modal');
   const modalClose = document.getElementById('modal-close');
   const modalBody = document.getElementById('modal-body');
@@ -32,7 +34,7 @@
   let allSongs = [];
   let filteredSongs = [];
   let queue = [];
-  const selectedIds = new Set();
+  let downloadQueue = [];
   let queuePlayIndex = -1;
 
   function isAuthenticated() {
@@ -42,7 +44,7 @@
   function showApp() {
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
-    loadQueueFromStorage();
+    loadQueuesFromStorage();
     checkConnection();
     loadSongs();
   }
@@ -56,12 +58,23 @@
     localStorage.setItem(CONFIG.queueKey, JSON.stringify(queue.map((s) => s.id)));
   }
 
-  function loadQueueFromStorage() {
+  function saveDownloadQueue() {
+    localStorage.setItem(CONFIG.downloadQueueKey, JSON.stringify(downloadQueue.map((s) => s.id)));
+  }
+
+  function loadQueuesFromStorage() {
     try {
       const ids = JSON.parse(localStorage.getItem(CONFIG.queueKey) || '[]');
       queue = ids.map((id) => allSongs.find((s) => s.id === id)).filter(Boolean);
     } catch {
       queue = [];
+    }
+
+    try {
+      const ids = JSON.parse(localStorage.getItem(CONFIG.downloadQueueKey) || '[]');
+      downloadQueue = ids.map((id) => allSongs.find((s) => s.id === id)).filter(Boolean);
+    } catch {
+      downloadQueue = [];
     }
   }
 
@@ -80,11 +93,8 @@
   function updateStats() {
     statTotal.textContent = filteredSongs.length;
     statQueue.textContent = queue.length;
-    statSelected.textContent = selectedIds.size;
-    downloadZipBtn.disabled = selectedIds.size === 0;
-    selectAllBtn.textContent = selectedIds.size === filteredSongs.length && filteredSongs.length
-      ? 'Deselect All'
-      : 'Select All Visible';
+    statDownload.textContent = downloadQueue.length;
+    downloadZipBtn.disabled = downloadQueue.length === 0;
   }
 
   function populateFilters() {
@@ -136,14 +146,13 @@
 
     catalogGrid.innerHTML = filteredSongs.map((song) => {
       const inQueue = queue.some((q) => q.id === song.id);
-      const selected = selectedIds.has(song.id);
+      const inDownload = downloadQueue.some((d) => d.id === song.id);
       return `
-        <article class="song-card ${selected ? 'selected' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+        <article class="song-card ${inDownload ? 'in-download' : ''}" data-id="${Utils.escapeHtml(song.id)}">
           <div class="song-card-top">
-            <label class="song-select">
-              <input type="checkbox" class="row-checkbox" data-id="${Utils.escapeHtml(song.id)}" ${selected ? 'checked' : ''}>
-              <span class="checkmark"></span>
-            </label>
+            <button class="btn-icon download-toggle ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inDownload ? 'Remove from download queue' : 'Add to download queue'}">
+              <i class="fa-solid ${inDownload ? 'fa-check' : 'fa-download'}"></i>
+            </button>
             <button class="btn-icon queue-toggle ${inQueue ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inQueue ? 'Remove from queue' : 'Add to queue'}">
               <i class="fa-solid ${inQueue ? 'fa-check' : 'fa-plus'}"></i>
             </button>
@@ -165,21 +174,15 @@
             <button class="btn btn-secondary btn-sm details-btn" data-id="${Utils.escapeHtml(song.id)}">
               <i class="fa-solid fa-circle-info"></i> Details
             </button>
+            <button class="btn btn-secondary btn-sm add-download-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+              <i class="fa-solid fa-download"></i> ${inDownload ? 'Queued' : 'Download'}
+            </button>
             <button class="btn btn-primary btn-sm add-queue-btn" data-id="${Utils.escapeHtml(song.id)}">
               <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'Queued' : 'Queue'}
             </button>
           </div>
         </article>`;
     }).join('');
-
-    catalogGrid.querySelectorAll('.row-checkbox').forEach((cb) => {
-      cb.addEventListener('change', () => {
-        if (cb.checked) selectedIds.add(cb.dataset.id);
-        else selectedIds.delete(cb.dataset.id);
-        cb.closest('.song-card').classList.toggle('selected', cb.checked);
-        updateStats();
-      });
-    });
 
     catalogGrid.querySelectorAll('.details-btn, .song-cover-btn').forEach((btn) => {
       btn.addEventListener('click', () => openDetail(btn.dataset.id));
@@ -189,6 +192,13 @@
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleQueue(btn.dataset.id);
+      });
+    });
+
+    catalogGrid.querySelectorAll('.add-download-btn, .download-toggle').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleDownloadQueue(btn.dataset.id);
       });
     });
 
@@ -205,6 +215,20 @@
 
     saveQueue();
     renderQueue();
+    renderCatalog();
+    updateStats();
+  }
+
+  function toggleDownloadQueue(id) {
+    const song = allSongs.find((s) => s.id === id);
+    if (!song) return;
+
+    const index = downloadQueue.findIndex((d) => d.id === id);
+    if (index >= 0) downloadQueue.splice(index, 1);
+    else downloadQueue.push(song);
+
+    saveDownloadQueue();
+    renderDownloadQueue();
     renderCatalog();
     updateStats();
   }
@@ -251,6 +275,36 @@
     });
   }
 
+  function renderDownloadQueue() {
+    if (!downloadQueue.length) {
+      downloadList.innerHTML = '';
+      downloadEmpty.classList.remove('hidden');
+      return;
+    }
+
+    downloadEmpty.classList.add('hidden');
+
+    downloadList.innerHTML = downloadQueue.map((song, index) => `
+      <div class="queue-item download-item" data-id="${Utils.escapeHtml(song.id)}">
+        <span class="queue-index">${index + 1}</span>
+        <div class="queue-cover">${renderCover(song)}</div>
+        <div class="queue-meta">
+          <strong>${Utils.escapeHtml(song.songTitle)}</strong>
+          <span>${Utils.escapeHtml(song.artistName)}</span>
+        </div>
+        <div class="queue-item-actions">
+          <button class="btn-icon remove-download-btn" data-id="${Utils.escapeHtml(song.id)}" title="Remove">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    downloadList.querySelectorAll('.remove-download-btn').forEach((btn) => {
+      btn.addEventListener('click', () => toggleDownloadQueue(btn.dataset.id));
+    });
+  }
+
   async function playCurrentQueueTrack() {
     if (queuePlayIndex < 0 || queuePlayIndex >= queue.length) {
       nowPlaying.classList.add('hidden');
@@ -258,7 +312,7 @@
     }
 
     const song = queue[queuePlayIndex];
-    if (!song.previewLink && !song.previewStreamUrl) return;
+    if (!song.previewLink && !song.previewStreamUrl && !song.previewDriveId) return;
 
     nowPlayingTitle.textContent = song.songTitle;
     nowPlayingArtist.textContent = song.artistName;
@@ -274,6 +328,8 @@
   function openDetail(id) {
     const song = allSongs.find((s) => s.id === id);
     if (!song) return;
+
+    const inDownload = downloadQueue.some((d) => d.id === song.id);
 
     modalBody.innerHTML = `
       <div class="detail-hero">
@@ -304,6 +360,9 @@
       <div class="detail-downloads">
         ${song.mp3 ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.mp3)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> MP3</a>` : ''}
         ${song.wav ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.wav)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> WAV</a>` : ''}
+        <button class="btn btn-secondary add-download-modal-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+          <i class="fa-solid fa-download"></i> ${inDownload ? 'In Download Queue' : 'Add to Download Queue'}
+        </button>
         <button class="btn btn-primary add-queue-modal-btn" data-id="${Utils.escapeHtml(song.id)}">
           <i class="fa-solid fa-list-ul"></i> Add to Queue
         </button>
@@ -311,6 +370,11 @@
 
     modalBody.querySelector('.add-queue-modal-btn').addEventListener('click', () => {
       toggleQueue(song.id);
+      detailModal.classList.remove('open');
+    });
+
+    modalBody.querySelector('.add-download-modal-btn').addEventListener('click', () => {
+      toggleDownloadQueue(song.id);
       detailModal.classList.remove('open');
     });
 
@@ -344,7 +408,7 @@
     try {
       allSongs = await RadioDB.getAllSongs();
       populateFilters();
-      syncQueueWithStorage();
+      syncQueuesWithStorage();
       filterSongs();
     } catch (err) {
       catalogGrid.innerHTML = `
@@ -355,10 +419,14 @@
     }
   }
 
-  function syncQueueWithStorage() {
-    const storedIds = JSON.parse(localStorage.getItem(CONFIG.queueKey) || '[]');
-    queue = storedIds.map((id) => allSongs.find((s) => s.id === id)).filter(Boolean);
+  function syncQueuesWithStorage() {
+    const storedQueueIds = JSON.parse(localStorage.getItem(CONFIG.queueKey) || '[]');
+    queue = storedQueueIds.map((id) => allSongs.find((s) => s.id === id)).filter(Boolean);
     renderQueue();
+
+    const storedDownloadIds = JSON.parse(localStorage.getItem(CONFIG.downloadQueueKey) || '[]');
+    downloadQueue = storedDownloadIds.map((id) => allSongs.find((s) => s.id === id)).filter(Boolean);
+    renderDownloadQueue();
   }
 
   loginForm.addEventListener('submit', (e) => {
@@ -389,16 +457,6 @@
     filterSongs();
   });
 
-  selectAllBtn.addEventListener('click', () => {
-    const allSelected = filteredSongs.every((s) => selectedIds.has(s.id));
-    filteredSongs.forEach((s) => {
-      if (allSelected) selectedIds.delete(s.id);
-      else selectedIds.add(s.id);
-    });
-    renderCatalog();
-    updateStats();
-  });
-
   clearQueueBtn.addEventListener('click', () => {
     queue = [];
     queuePlayIndex = -1;
@@ -409,19 +467,26 @@
     nowPlaying.classList.add('hidden');
   });
 
+  clearDownloadBtn.addEventListener('click', () => {
+    downloadQueue = [];
+    saveDownloadQueue();
+    renderDownloadQueue();
+    renderCatalog();
+    updateStats();
+  });
+
   downloadZipBtn.addEventListener('click', async () => {
-    const selected = allSongs.filter((s) => selectedIds.has(s.id));
-    if (!selected.length) return;
+    if (!downloadQueue.length) return;
 
     downloadZipBtn.disabled = true;
     downloadZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Building ZIP…';
 
     try {
-      await RadioDB.downloadZip(selected, downloadFormat.value);
+      await RadioDB.downloadZip(downloadQueue, downloadFormat.value);
     } catch (err) {
       alert(err.message);
     } finally {
-      downloadZipBtn.disabled = selectedIds.size === 0;
+      downloadZipBtn.disabled = downloadQueue.length === 0;
       downloadZipBtn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Download ZIP';
     }
   });

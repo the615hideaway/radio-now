@@ -62,8 +62,8 @@
         <section class="toolbar">
           <div class="stats-row">
             <div class="stat"><span id="stat-total">0</span><label>Songs</label></div>
-            <div class="stat"><span id="stat-selected">0</span><label>Selected</label></div>
-            <div class="stat"><span id="stat-queue">0</span><label>In Queue</label></div>
+            <div class="stat"><span id="stat-queue">0</span><label>DJ Queue</label></div>
+            <div class="stat"><span id="stat-download">0</span><label>Downloads</label></div>
           </div>
           <div class="filter-row">
             <div class="search-wrap">
@@ -78,19 +78,7 @@
             </select>
             <button class="btn btn-secondary" id="clear-filters-btn">Clear</button>
           </div>
-          <div class="action-row">
-            <button class="btn btn-secondary" id="select-all-btn">Select All Visible</button>
-            <div class="download-group">
-              <select id="download-format" aria-label="Download format">
-                <option value="mp3">MP3</option>
-                <option value="wav">WAV</option>
-              </select>
-              <button class="btn btn-primary" id="download-zip-btn" disabled>
-                <i class="fa-solid fa-file-zipper"></i>
-                Download ZIP
-              </button>
-            </div>
-          </div>
+
         </section>
 
         <section id="catalog-grid" class="catalog-grid" aria-live="polite"></section>
@@ -101,7 +89,7 @@
           <h2><i class="fa-solid fa-list-ul"></i> DJ Queue</h2>
           <button class="btn btn-ghost btn-sm" id="clear-queue-btn">Clear</button>
         </div>
-        <p class="queue-help">Add songs to your queue for show prep. Play through previews or download selected tracks as a ZIP.</p>
+        <p class="queue-help">Add songs for show prep and play through previews.</p>
         <div id="queue-empty" class="queue-empty">
           <i class="fa-solid fa-headphones"></i>
           <p>No songs in queue yet. Click <strong>Queue</strong> on any track to add it.</p>
@@ -112,6 +100,31 @@
             <i class="fa-solid fa-play"></i>
             Play Queue
           </button>
+        </div>
+
+        <div class="download-queue-section">
+          <div class="queue-header">
+            <h2><i class="fa-solid fa-download"></i> Download Queue</h2>
+            <button class="btn btn-ghost btn-sm" id="clear-download-btn">Clear</button>
+          </div>
+          <p class="queue-help">Queue tracks to bundle into a single ZIP file.</p>
+          <div id="download-empty" class="queue-empty">
+            <i class="fa-solid fa-file-zipper"></i>
+            <p>No downloads queued. Click <strong>+ Download</strong> on any track.</p>
+          </div>
+          <div id="download-list" class="queue-list download-list"></div>
+          <div class="download-footer">
+            <div class="download-group">
+              <select id="download-format" aria-label="Download format">
+                <option value="mp3">MP3</option>
+                <option value="wav">WAV</option>
+              </select>
+              <button class="btn btn-primary btn-full" id="download-zip-btn" disabled>
+                <i class="fa-solid fa-file-zipper"></i>
+                Download ZIP
+              </button>
+            </div>
+          </div>
         </div>
       </aside>
     </div>

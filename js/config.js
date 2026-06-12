@@ -14,4 +14,5 @@ const CONFIG = {
   sheetName: 'Sheet1',
 
   queueKey: 'radio_now_queue',
+  downloadQueueKey: 'radio_now_download_queue',
 };

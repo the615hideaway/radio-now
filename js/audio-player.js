@@ -1,6 +1,6 @@
 const AudioPlayer = {
   cache: new Map(),
-  activeAudio: null,
+  activePlayer: null,
 
   getDriveId(song) {
     return song.previewDriveId || Utils.extractDriveId(song.previewLink) || '';
@@ -95,11 +95,9 @@ const AudioPlayer = {
     return null;
   },
 
-  pauseOthers(currentAudio) {
-    document.querySelectorAll('.preview-audio').forEach((audio) => {
-      if (audio !== currentAudio) {
-        audio.pause();
-      }
+  pauseOthers(currentWrap) {
+    document.querySelectorAll('.preview-player.is-playing').forEach((wrap) => {
+      if (wrap !== currentWrap) this.resetPlayer(wrap);
     });
   },
 
@@ -108,6 +106,32 @@ const AudioPlayer = {
     if (!status) return;
     status.textContent = message || '';
     status.classList.toggle('error', !!isError);
+    status.classList.toggle('visible', !!message);
+  },
+
+  resetPlayer(wrap) {
+    if (!wrap) return;
+    wrap.classList.remove('is-playing', 'is-loading');
+
+    const host = wrap.querySelector('.preview-embed-host');
+    if (host) host.innerHTML = '';
+
+    const audio = wrap.querySelector('.preview-audio');
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.classList.remove('is-active');
+      audio.load();
+    }
+
+    const playBtn = wrap.querySelector('.preview-play-btn');
+    if (playBtn) {
+      playBtn.disabled = false;
+      playBtn.classList.remove('is-hidden');
+    }
+
+    this.setStatus(wrap, '');
+    if (this.activePlayer === wrap) this.activePlayer = null;
   },
 
   render(song) {
@@ -119,29 +143,26 @@ const AudioPlayer = {
       return '<span class="muted">No Preview Link</span>';
     }
 
-    if (driveId) {
-      const embedUrl = this.getEmbedUrl(driveId);
-      return `
-        <div class="preview-player preview-player--embed"
-          data-song-id="${Utils.escapeHtml(song.id || '')}"
-          data-preview-drive-id="${Utils.escapeHtml(driveId)}">
-          <iframe class="preview-iframe"
-            src="${Utils.escapeHtml(embedUrl)}"
-            title="Preview: ${Utils.escapeHtml(song.songTitle)}"
-            allow="autoplay"
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>`;
-    }
+    const title = Utils.escapeHtml(song.songTitle || 'Preview');
 
     return `
-      <div class="preview-player preview-player--audio"
+      <div class="preview-player preview-player--lazy"
         data-song-id="${Utils.escapeHtml(song.id || '')}"
+        data-song-title="${title}"
         data-preview-link="${Utils.escapeHtml(previewLink)}"
         data-preview-stream="${Utils.escapeHtml(song.previewStreamUrl || '')}"
-        data-preview-drive-id="">
-        <audio class="preview-audio is-active" controls preload="none"
-          src="${Utils.escapeHtml(directUrl)}"></audio>
+        data-preview-drive-id="${Utils.escapeHtml(driveId)}"
+        data-direct-url="${Utils.escapeHtml(directUrl)}">
+        <div class="preview-shell">
+          <button type="button" class="preview-play-btn" aria-label="Play ${title}">
+            <span class="preview-play-icon"><i class="fa-solid fa-play"></i></span>
+            <span class="preview-play-label">Play Preview</span>
+          </button>
+          <div class="preview-waveform" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="preview-embed-host"></div>
         <div class="preview-status muted" aria-live="polite"></div>
       </div>`;
   },
@@ -149,16 +170,84 @@ const AudioPlayer = {
   songFromElement(el) {
     return {
       id: el.dataset.songId || '',
+      songTitle: el.dataset.songTitle || '',
       previewLink: el.dataset.previewLink || '',
       previewStreamUrl: el.dataset.previewStream || '',
       previewDriveId: el.dataset.previewDriveId || '',
     };
   },
 
+  async loadEmbed(wrap, song) {
+    const driveId = this.getDriveId(song);
+    const host = wrap.querySelector('.preview-embed-host');
+    if (!host || !driveId) return false;
+
+    host.innerHTML = `
+      <iframe class="preview-iframe"
+        src="${Utils.escapeHtml(this.getEmbedUrl(driveId))}"
+        title="Preview: ${Utils.escapeHtml(song.songTitle || 'track')}"
+        allow="autoplay"
+        referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+    return true;
+  },
+
+  async loadAudio(wrap, song) {
+    const host = wrap.querySelector('.preview-embed-host');
+    if (!host) return false;
+
+    host.innerHTML = `<audio class="preview-audio" controls preload="none"></audio>`;
+    const audio = host.querySelector('.preview-audio');
+    return this.playInAudio(song, audio, wrap);
+  },
+
+  async activatePlayer(wrap) {
+    const song = this.songFromElement(wrap);
+    const driveId = this.getDriveId(song);
+    const directUrl = wrap.dataset.directUrl || '';
+
+    this.pauseOthers(wrap);
+    this.activePlayer = wrap;
+    wrap.classList.add('is-loading');
+
+    const playBtn = wrap.querySelector('.preview-play-btn');
+    if (playBtn) playBtn.disabled = true;
+    this.setStatus(wrap, 'Loading preview…');
+
+    try {
+      let ok = false;
+
+      if (driveId) {
+        ok = await this.loadEmbed(wrap, song);
+      } else if (directUrl) {
+        ok = await this.loadAudio(wrap, { ...song, previewLink: directUrl });
+      } else {
+        ok = await this.loadAudio(wrap, song);
+      }
+
+      if (!ok) {
+        this.setStatus(wrap, 'Could not play preview', true);
+        wrap.classList.remove('is-loading');
+        if (playBtn) playBtn.disabled = false;
+        return false;
+      }
+
+      wrap.classList.remove('is-loading');
+      wrap.classList.add('is-playing');
+      if (playBtn) playBtn.classList.add('is-hidden');
+      this.setStatus(wrap, '');
+      return true;
+    } catch (err) {
+      console.warn('Preview load failed:', err);
+      this.setStatus(wrap, 'Could not play preview', true);
+      wrap.classList.remove('is-loading');
+      if (playBtn) playBtn.disabled = false;
+      return false;
+    }
+  },
+
   async playInAudio(song, audioEl, wrap) {
     if (!audioEl) return false;
 
-    this.pauseOthers(audioEl);
     this.setStatus(wrap, 'Loading preview…');
 
     const candidates = this.getStreamCandidates(song);
@@ -173,7 +262,6 @@ const AudioPlayer = {
         this.setStatus(wrap, '');
         try {
           await audioEl.play();
-          this.activeAudio = audioEl;
           return true;
         } catch (err) {
           console.warn('Direct play failed:', err);
@@ -189,7 +277,6 @@ const AudioPlayer = {
         this.setStatus(wrap, '');
         try {
           await audioEl.play();
-          this.activeAudio = audioEl;
           return true;
         } catch (err) {
           console.warn('Blob play failed:', err);
@@ -202,30 +289,44 @@ const AudioPlayer = {
   },
 
   renderNowPlaying(song) {
-    const driveId = this.getDriveId(song);
     const container = document.getElementById('now-playing-player');
     if (!container) return;
 
-    if (driveId) {
-      container.innerHTML = `
-        <iframe class="preview-iframe preview-iframe--queue"
-          src="${Utils.escapeHtml(this.getEmbedUrl(driveId))}"
-          title="Now playing: ${Utils.escapeHtml(song.songTitle)}"
-          allow="autoplay"
-          loading="lazy"></iframe>`;
-      return;
-    }
+    const driveId = this.getDriveId(song);
+    const title = Utils.escapeHtml(song.songTitle || 'track');
 
-    container.innerHTML = `<audio class="preview-audio is-active" controls preload="none" id="now-playing-audio-el"></audio>`;
-    const audio = document.getElementById('now-playing-audio-el');
-    if (audio) this.playInAudio(song, audio, container);
+    container.innerHTML = `
+      <div class="preview-player preview-player--lazy preview-player--now-playing is-loading"
+        data-song-id="${Utils.escapeHtml(song.id || '')}"
+        data-song-title="${title}"
+        data-preview-link="${Utils.escapeHtml(song.previewLink || '')}"
+        data-preview-stream="${Utils.escapeHtml(song.previewStreamUrl || '')}"
+        data-preview-drive-id="${Utils.escapeHtml(driveId)}"
+        data-direct-url="">
+        <div class="preview-embed-host"></div>
+        <div class="preview-status visible muted" aria-live="polite">Loading preview…</div>
+      </div>`;
+
+    const wrap = container.querySelector('.preview-player');
+    if (wrap) this.activatePlayer(wrap);
   },
 
   hydrate(root = document) {
-    root.querySelectorAll('.preview-player--audio .preview-audio').forEach((audio) => {
+    root.querySelectorAll('.preview-player--lazy .preview-play-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const wrap = btn.closest('.preview-player');
+        if (!wrap || wrap.classList.contains('is-playing')) return;
+        this.activatePlayer(wrap);
+      });
+    });
+
+    root.querySelectorAll('.preview-player .preview-audio').forEach((audio) => {
       audio.addEventListener('play', () => {
-        this.pauseOthers(audio);
-        this.activeAudio = audio;
+        const wrap = audio.closest('.preview-player');
+        if (wrap) {
+          this.pauseOthers(wrap);
+          this.activePlayer = wrap;
+        }
       });
     });
   },
