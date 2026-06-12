@@ -58,11 +58,21 @@ const Utils = {
   },
 
   safeFilename(artist, title, ext) {
-    const base = `${artist || 'Unknown'} - ${title || 'Track'}`
+    const base = this.zipFolderName(artist, title);
+    return `${base}.${ext}`;
+  },
+
+  zipFolderName(artist, title) {
+    return `${artist || 'Unknown'} - ${title || 'Track'}`
       .replace(/[<>:"/\\|?*]/g, '')
       .replace(/\s+/g, ' ')
-      .trim();
-    return `${base}.${ext}`;
+      .trim() || 'Track';
+  },
+
+  coverDownloadUrl(song) {
+    const driveId = this.extractDriveId(song.cover || '');
+    if (driveId) return `https://drive.google.com/thumbnail?id=${driveId}&sz=w800`;
+    return this.resolveCoverUrl(song) || '';
   },
 
   uniqueZipFilename(usedNames, artist, title, ext) {

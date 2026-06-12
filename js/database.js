@@ -80,13 +80,65 @@ const RadioDB = {
       id: song.id,
       artistName: song.artistName,
       songTitle: song.songTitle,
+      year: song.year,
+      songTime: song.songTime,
+      musicStyle: song.musicStyle,
+      description: song.description,
+      bandMembers: song.bandMembers,
+      songwriter: song.songwriter,
+      featuredArtist: song.featuredArtist,
+      website: song.website,
+      recordLabel: song.recordLabel,
+      contactEmail: song.contactEmail,
+      cover: song.cover,
       mp3: song.mp3,
       wav: song.wav,
       previewDriveId: song.previewDriveId || Utils.extractDriveId(song.previewLink) || '',
       mp3DriveId: Utils.extractDriveId(song.mp3) || '',
       wavDriveId: Utils.extractDriveId(song.wav) || '',
+      coverDriveId: Utils.extractDriveId(song.cover) || '',
       formatDriveId: Utils.getSongDriveId(song, format),
     };
+  },
+
+  async fetchCoverBlob(song) {
+    const url = Utils.coverDownloadUrl(song);
+    if (!url) return null;
+
+    try {
+      const response = await fetch(url, { mode: 'cors', redirect: 'follow', credentials: 'omit' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      if (!blob.size || blob.type === 'text/html') return null;
+      return blob;
+    } catch (err) {
+      console.warn('Cover fetch failed:', song.songTitle, err.message);
+      return null;
+    }
+  },
+
+  coverExtension(blob) {
+    const type = blob?.type || '';
+    if (type.includes('png')) return 'png';
+    if (type.includes('webp')) return 'webp';
+    return 'jpg';
+  },
+
+  async addSongPackageToZip(folder, song, format, audioBlob) {
+    const ext = format === 'wav' ? 'wav' : 'mp3';
+    const baseName = Utils.zipFolderName(song.artistName, song.songTitle);
+
+    folder.file(`${baseName}.${ext}`, audioBlob);
+
+    const coverBlob = await this.fetchCoverBlob(song);
+    if (coverBlob) {
+      const coverName = `cover.${this.coverExtension(coverBlob)}`;
+      folder.file(coverName, coverBlob);
+      folder.file('one-sheet.html', OneSheet.generateHtml(song, { hasCover: true, coverFile: coverName }));
+      return;
+    }
+
+    folder.file('one-sheet.html', OneSheet.generateHtml(song, { hasCover: false }));
   },
 
   async downloadZipViaScript(songs, format, onProgress) {
@@ -213,9 +265,17 @@ const RadioDB = {
       onProgress?.({ current: i + 1, total: songs.length, added, status: 'fetching', songTitle: song.songTitle });
 
       try {
-        const blob = await this.fetchSongBlob(song, format);
-        const filename = Utils.uniqueZipFilename(usedNames, song.artistName, song.songTitle, ext);
-        zip.file(filename, blob);
+        const audioBlob = await this.fetchSongBlob(song, format);
+        let folderName = Utils.zipFolderName(song.artistName, song.songTitle);
+        let suffix = 2;
+        while (usedNames.has(folderName.toLowerCase())) {
+          folderName = `${Utils.zipFolderName(song.artistName, song.songTitle)} (${suffix})`;
+          suffix += 1;
+        }
+        usedNames.add(folderName.toLowerCase());
+
+        const folder = zip.folder(folderName);
+        await this.addSongPackageToZip(folder, song, format, audioBlob);
         added++;
       } catch (err) {
         errors.push(`${song.songTitle}: ${err.message}`);
