@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Radio Now — DJ catalog for browsing, previewing, and downloading music.">
+  <title>Radio Now — (615) Hideaway Entertainment</title>
+  <link rel="icon" href="assets/logo.jpg" type="image/jpeg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div id="login-gate" class="login-gate">
+    <div class="login-card">
+      <div class="brand-lockup brand-lockup--centered">
+        <img src="assets/logo.jpg" alt="(615) Hideaway Entertainment" class="brand-logo brand-logo--large">
+        <div class="brand-text">
+          <h1>Radio Now</h1>
+          <p>(615) Hideaway Entertainment</p>
+        </div>
+      </div>
+      <p class="login-copy">Authorized radio programmers only. Enter the access password to browse the catalog, preview tracks, and build download playlists.</p>
+      <form id="login-form">
+        <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
+        <label for="password">Access Password</label>
+        <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" required>
+        <button type="submit" class="btn btn-primary btn-full">
+          <i class="fa-solid fa-right-to-bracket"></i>
+          Enter Catalog
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-shell" class="app-shell hidden">
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="#" class="brand">
+          <img src="assets/logo.jpg" alt="(615) Hideaway Entertainment" class="brand-logo">
+          <div class="brand-text">
+            <span class="brand-name">Radio Now</span>
+            <span class="brand-tag">(615) Hideaway Entertainment</span>
+          </div>
+        </a>
+        <div class="header-actions">
+          <button class="btn btn-ghost" id="logout-btn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            Log Out
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="connection-banner" class="connection-banner hidden"></div>
+
+    <div class="layout">
+      <main class="catalog-panel">
+        <section class="toolbar">
+          <div class="stats-row">
+            <div class="stat"><span id="stat-total">0</span><label>Songs</label></div>
+            <div class="stat"><span id="stat-selected">0</span><label>Selected</label></div>
+            <div class="stat"><span id="stat-queue">0</span><label>In Queue</label></div>
+          </div>
+          <div class="filter-row">
+            <div class="search-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="search" id="search-input" placeholder="Search artist, song, style, label…" autocomplete="off">
+            </div>
+            <select id="style-filter" aria-label="Filter by music style">
+              <option value="">All styles</option>
+            </select>
+            <select id="year-filter" aria-label="Filter by year">
+              <option value="">All years</option>
+            </select>
+            <button class="btn btn-secondary" id="clear-filters-btn">Clear</button>
+          </div>
+          <div class="action-row">
+            <button class="btn btn-secondary" id="select-all-btn">Select All Visible</button>
+            <div class="download-group">
+              <select id="download-format" aria-label="Download format">
+                <option value="mp3">MP3</option>
+                <option value="wav">WAV</option>
+              </select>
+              <button class="btn btn-primary" id="download-zip-btn" disabled>
+                <i class="fa-solid fa-file-zipper"></i>
+                Download ZIP
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section id="catalog-grid" class="catalog-grid" aria-live="polite"></section>
+      </main>
+
+      <aside class="queue-panel">
+        <div class="queue-header">
+          <h2><i class="fa-solid fa-list-ul"></i> DJ Queue</h2>
+          <button class="btn btn-ghost btn-sm" id="clear-queue-btn">Clear</button>
+        </div>
+        <p class="queue-help">Add songs to your queue for show prep. Play through previews or download selected tracks as a ZIP.</p>
+        <div id="queue-empty" class="queue-empty">
+          <i class="fa-solid fa-headphones"></i>
+          <p>No songs in queue yet. Click <strong>Queue</strong> on any track to add it.</p>
+        </div>
+        <div id="queue-list" class="queue-list"></div>
+        <div class="queue-footer">
+          <button class="btn btn-primary btn-full" id="play-queue-btn" disabled>
+            <i class="fa-solid fa-play"></i>
+            Play Queue
+          </button>
+        </div>
+      </aside>
+    </div>
+
+    <div id="now-playing" class="now-playing hidden">
+      <div class="now-playing-meta">
+        <span class="now-label">Now Playing</span>
+        <strong id="now-playing-title"></strong>
+        <span id="now-playing-artist"></span>
+      </div>
+      <audio id="now-playing-audio" controls preload="none"></audio>
+      <button class="btn btn-secondary btn-sm" id="skip-queue-btn">
+        <i class="fa-solid fa-forward-step"></i>
+        Skip
+      </button>
+    </div>
+  </div>
+
+  <div id="detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

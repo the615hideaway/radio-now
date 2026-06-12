@@ -1,0 +1,111 @@
+RADIO NOW — GOOGLE SHEETS SETUP
+================================
+
+Radio Now pulls song data from a Google Sheet with these exact column headers
+(row 1):
+
+  Artist Name
+  Song Title
+  Year
+  MP3
+  Preview Link
+  WAV
+  Cover
+  Song Time
+  Description
+  Music Style
+  Band Members
+  Songwriter
+  Featured Artist
+  Website
+  Record Label
+  Contact E-Mail
+
+The site also accepts common aliases from Wix exports (MP3s, Audio, etc.).
+
+
+STEP 1 — CREATE OR PREPARE YOUR GOOGLE SHEET
+--------------------------------------------
+
+1. Go to https://sheets.google.com
+2. Create a spreadsheet named "Radio Now"
+3. Add the column headers listed above in row 1
+4. Paste your song data starting in row 2
+
+
+STEP 2 — CONNECT WITH GOOGLE APPS SCRIPT (RECOMMENDED)
+------------------------------------------------------
+
+This enables live sheet sync and reliable ZIP downloads.
+
+1. In your spreadsheet: Extensions → Apps Script
+2. Delete any starter code
+3. Paste the contents of google-apps-script/Code.gs from this project
+4. Save the project (name it "Radio Now API")
+5. Deploy → New deployment
+   - Type: Web app
+   - Execute as: Me
+   - Who has access: Anyone
+6. Copy the Web App URL
+7. Open js/config.js and paste the URL into googleScriptUrl:
+
+   googleScriptUrl: 'https://script.google.com/macros/s/YOUR_ID/exec',
+
+
+STEP 3 — GOOGLE SHEET (ALREADY CONNECTED)
+-----------------------------------------
+
+Your sheet is configured in js/config.js:
+
+   googleSheetId: '10rum4RKKF5-CgLcoSwe55EcxzyEzBSDqfxVrnbAuikk'
+
+Sheet URL:
+https://docs.google.com/spreadsheets/d/10rum4RKKF5-CgLcoSwe55EcxzyEzBSDqfxVrnbAuikk/edit
+
+The site reads this sheet live via Google's published data API.
+For reliable ZIP downloads, still complete Step 2 (Apps Script).
+
+
+STEP 4 — LOCAL DEMO DATA (NO SHEET YET)
+---------------------------------------
+
+Until Google Sheets is connected, the site loads data/songs.json.
+
+To refresh from a Radio+Now.csv export:
+
+   powershell -ExecutionPolicy Bypass -File scripts\sync-from-csv.ps1
+
+
+STEP 5 — OPEN THE SITE
+----------------------
+
+Open index.html in a browser, or serve the folder locally:
+
+   npx serve .
+
+DJ password: 615bluegrass
+
+
+TIPS FOR DJS
+------------
+
+- Use search and style/year filters to narrow the catalog quickly
+- Click Queue on any song to build a show playlist
+- Select multiple songs with checkboxes, then Download ZIP (MP3 or WAV)
+- Play Queue runs through preview links in order
+- For Google Drive MP3/WAV links, files must be shared as "Anyone with the link"
+
+
+TROUBLESHOOTING
+---------------
+
+Preview won't play:
+  - Ensure Preview Link is a direct URL or a shared Google Drive MP3
+  - The app falls back to the MP3 column when Preview Link is empty
+
+ZIP download fails in browser-only mode:
+  - Connect Google Apps Script (Step 2) — it fetches files server-side
+
+Sheet returns no songs:
+  - Confirm row 1 headers match the list above
+  - Ensure Artist Name or Song Title is filled in for each row
