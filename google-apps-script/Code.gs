@@ -117,18 +117,6 @@ function bandMemberLinesFromSong_(song) {
   }).filter(function (line) { return !!line; });
 }
 
-function bandMembersSectionHtml_(song) {
-  var lines = bandMemberLinesFromSong_(song);
-  if (!lines.length) return '';
-
-  var lineHtml = lines.map(function (line) {
-    return '<div class="band-line">' + escapeHtml_(line) + '</div>';
-  }).join('');
-
-  return '<section class="band-members"><h4>Band Members</h4><div class="band-lines">'
-    + lineHtml + '</div></section>';
-}
-
 function rowToSong_(row, headerMap, rowIndex) {
   const song = { id: 'row-' + rowIndex, rowIndex: rowIndex };
 
