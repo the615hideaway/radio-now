@@ -322,6 +322,45 @@ const OneSheet = {
     return 'JPEG';
   },
 
+  getJsPDFClass() {
+    return window.jspdf?.jsPDF || window.jsPDF || null;
+  },
+
+  loadJsPDFScript() {
+    return new Promise((resolve, reject) => {
+      if (this.getJsPDFClass()) {
+        resolve();
+        return;
+      }
+
+      const existing = document.querySelector('script[data-jspdf-loader]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Could not load PDF library.')), { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'js/vendor/jspdf.umd.min.js';
+      script.dataset.jspdfLoader = 'true';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Could not load PDF library.'));
+      document.head.appendChild(script);
+    });
+  },
+
+  async ensureJsPDF() {
+    let JsPDF = this.getJsPDFClass();
+    if (JsPDF) return JsPDF;
+
+    await this.loadJsPDFScript();
+    JsPDF = this.getJsPDFClass();
+    if (!JsPDF) {
+      throw new Error('PDF library failed to initialize. Refresh the page and try again.');
+    }
+    return JsPDF;
+  },
+
   async loadCoverDataUrl(song) {
     if (typeof RadioDB !== 'undefined' && RadioDB.fetchCoverBlob) {
       try {
@@ -374,12 +413,8 @@ const OneSheet = {
   },
 
   async downloadOneSheet(song) {
-    if (!window.jspdf?.jsPDF) {
-      throw new Error('PDF library not loaded. Refresh the page and try again.');
-    }
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
+    const JsPDF = await this.ensureJsPDF();
+    const doc = new JsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
 
     const pageWidth = 8.5;
     const margin = 0.55;
