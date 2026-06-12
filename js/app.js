@@ -23,7 +23,7 @@
   const modalClose = document.getElementById('modal-close');
   const modalBody = document.getElementById('modal-body');
   const nowPlaying = document.getElementById('now-playing');
-  const nowPlayingAudio = document.getElementById('now-playing-audio');
+
   const nowPlayingTitle = document.getElementById('now-playing-title');
   const nowPlayingArtist = document.getElementById('now-playing-artist');
   const playQueueBtn = document.getElementById('play-queue-btn');
@@ -254,7 +254,6 @@
   async function playCurrentQueueTrack() {
     if (queuePlayIndex < 0 || queuePlayIndex >= queue.length) {
       nowPlaying.classList.add('hidden');
-      nowPlayingAudio.pause();
       return;
     }
 
@@ -265,7 +264,7 @@
     nowPlayingArtist.textContent = song.artistName;
 
     try {
-      await AudioPlayer.playSong(song, nowPlayingAudio);
+      await AudioPlayer.playSong(song);
       nowPlaying.classList.remove('hidden');
     } catch (err) {
       console.warn('Queue preview failed:', err);
@@ -408,7 +407,6 @@
     renderCatalog();
     updateStats();
     nowPlaying.classList.add('hidden');
-    nowPlayingAudio.pause();
   });
 
   downloadZipBtn.addEventListener('click', async () => {
@@ -441,16 +439,6 @@
       queuePlayIndex = -1;
       nowPlaying.classList.add('hidden');
       nowPlayingAudio.pause();
-      return;
-    }
-    playCurrentQueueTrack();
-  });
-
-  nowPlayingAudio.addEventListener('ended', () => {
-    queuePlayIndex += 1;
-    if (queuePlayIndex >= queue.length) {
-      queuePlayIndex = -1;
-      nowPlaying.classList.add('hidden');
       return;
     }
     playCurrentQueueTrack();

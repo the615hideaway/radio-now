@@ -2,9 +2,17 @@ const AudioPlayer = {
   cache: new Map(),
   activeAudio: null,
 
-  getPreviewCandidates(song) {
+  getDriveId(song) {
+    return song.previewDriveId || Utils.extractDriveId(song.previewLink) || '';
+  },
+
+  getEmbedUrl(driveId) {
+    return `https://drive.google.com/file/d/${driveId}/preview`;
+  },
+
+  getStreamCandidates(song) {
     const candidates = [];
-    const driveId = song.previewDriveId || Utils.extractDriveId(song.previewLink);
+    const driveId = this.getDriveId(song);
 
     if (CONFIG.googleScriptUrl && driveId) {
       const base = CONFIG.googleScriptUrl.replace(/\/$/, '');
@@ -12,9 +20,6 @@ const AudioPlayer = {
     }
 
     if (song.previewStreamUrl) candidates.push(song.previewStreamUrl);
-    if (song.previewLink && /^https?:\/\//i.test(song.previewLink)) {
-      candidates.push(song.previewLink);
-    }
 
     const resolved = Utils.resolvePreviewUrl(song);
     if (resolved) candidates.push(resolved);
@@ -22,13 +27,8 @@ const AudioPlayer = {
     return [...new Set(candidates.filter(Boolean))];
   },
 
-  songFromElement(el) {
-    return {
-      id: el.dataset.songId || '',
-      previewLink: el.dataset.previewLink || '',
-      previewStreamUrl: el.dataset.previewStream || '',
-      previewDriveId: el.dataset.previewDriveId || '',
-    };
+  isDirectAudioUrl(url) {
+    return /^https?:\/\//i.test(url) && !url.includes('drive.google.com/file/') && !url.includes('drive.google.com/open');
   },
 
   async isPlayableBlob(blob) {
@@ -41,6 +41,30 @@ const AudioPlayer = {
     return isId3 || isMp3Frame;
   },
 
+  async tryDirectAudio(audio, url) {
+    return new Promise((resolve) => {
+      const onReady = () => {
+        cleanup();
+        resolve(true);
+      };
+      const onError = () => {
+        cleanup();
+        resolve(false);
+      };
+      const cleanup = () => {
+        audio.removeEventListener('loadedmetadata', onReady);
+        audio.removeEventListener('canplay', onReady);
+        audio.removeEventListener('error', onError);
+      };
+
+      audio.addEventListener('loadedmetadata', onReady, { once: true });
+      audio.addEventListener('canplay', onReady, { once: true });
+      audio.addEventListener('error', onError, { once: true });
+      audio.src = url;
+      audio.load();
+    });
+  },
+
   async fetchBlobUrl(url) {
     const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -49,14 +73,11 @@ const AudioPlayer = {
     return URL.createObjectURL(blob);
   },
 
-  async resolvePlaybackUrl(song) {
+  async resolveAudioSrc(song) {
     const cacheKey = song.id || song.previewStreamUrl || song.previewLink;
     if (this.cache.has(cacheKey)) return this.cache.get(cacheKey);
 
-    const candidates = this.getPreviewCandidates(song);
-    if (!candidates.length) throw new Error('No Preview Link');
-
-    for (const url of candidates) {
+    for (const url of this.getStreamCandidates(song)) {
       if (url.includes('script.google.com')) {
         this.cache.set(cacheKey, url);
         return url;
@@ -67,18 +88,17 @@ const AudioPlayer = {
         this.cache.set(cacheKey, blobUrl);
         return blobUrl;
       } catch (err) {
-        console.warn('Preview fetch failed:', url, err.message);
+        console.warn('Blob fetch failed:', url, err.message);
       }
     }
 
-    throw new Error('Could not load preview audio');
+    return null;
   },
 
   pauseOthers(currentAudio) {
     document.querySelectorAll('.preview-audio').forEach((audio) => {
       if (audio !== currentAudio) {
         audio.pause();
-        audio.currentTime = 0;
       }
     });
   },
@@ -92,102 +112,126 @@ const AudioPlayer = {
 
   render(song) {
     const previewLink = song.previewLink || '';
-    const streamUrl = song.previewStreamUrl || Utils.resolvePreviewUrl(song);
-    const driveId = song.previewDriveId || Utils.extractDriveId(previewLink) || '';
-    const openUrl = previewLink || streamUrl;
+    const driveId = this.getDriveId(song);
+    const directUrl = this.isDirectAudioUrl(previewLink) ? previewLink : '';
 
-    if (!openUrl) {
+    if (!driveId && !directUrl) {
       return '<span class="muted">No Preview Link</span>';
     }
 
+    if (driveId) {
+      const embedUrl = this.getEmbedUrl(driveId);
+      return `
+        <div class="preview-player preview-player--embed"
+          data-song-id="${Utils.escapeHtml(song.id || '')}"
+          data-preview-drive-id="${Utils.escapeHtml(driveId)}">
+          <iframe class="preview-iframe"
+            src="${Utils.escapeHtml(embedUrl)}"
+            title="Preview: ${Utils.escapeHtml(song.songTitle)}"
+            allow="autoplay"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>`;
+    }
+
     return `
-      <div class="preview-player"
+      <div class="preview-player preview-player--audio"
         data-song-id="${Utils.escapeHtml(song.id || '')}"
         data-preview-link="${Utils.escapeHtml(previewLink)}"
-        data-preview-stream="${Utils.escapeHtml(streamUrl || '')}"
-        data-preview-drive-id="${Utils.escapeHtml(driveId)}">
-        <div class="preview-controls">
-          <button type="button" class="btn btn-secondary btn-sm preview-play-btn">
-            <i class="fa-solid fa-play"></i> Play Preview
-          </button>
-          <a class="preview-open-link" href="${Utils.escapeHtml(openUrl)}" target="_blank" rel="noopener">
-            <i class="fa-solid fa-arrow-up-right-from-square"></i>
-          </a>
-        </div>
-        <audio class="preview-audio" controls preload="none"></audio>
+        data-preview-stream="${Utils.escapeHtml(song.previewStreamUrl || '')}"
+        data-preview-drive-id="">
+        <audio class="preview-audio is-active" controls preload="none"
+          src="${Utils.escapeHtml(directUrl)}"></audio>
         <div class="preview-status muted" aria-live="polite"></div>
       </div>`;
   },
 
-  async play(song, audioEl, statusWrap) {
-    const wrap = statusWrap || audioEl?.closest('.preview-player');
-    if (!song.previewLink && !song.previewStreamUrl) {
-      this.setStatus(wrap, 'No Preview Link', true);
-      return false;
-    }
-
-    const audio = audioEl || wrap?.querySelector('.preview-audio');
-    if (!audio) return false;
-
-    const btn = wrap?.querySelector('.preview-play-btn');
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading…';
-    }
-    this.setStatus(wrap, 'Loading preview…');
-
-    try {
-      this.pauseOthers(audio);
-      const src = await this.resolvePlaybackUrl(song);
-      audio.src = src;
-      audio.classList.add('is-active');
-      audio.load();
-      this.activeAudio = audio;
-      await audio.play();
-      this.setStatus(wrap, '');
-      return true;
-    } catch (err) {
-      console.warn('Playback failed:', err);
-      this.setStatus(wrap, 'In-page preview blocked — use the open link', true);
-      if (song.previewLink) window.open(song.previewLink, '_blank', 'noopener');
-      return false;
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-play"></i> Play Preview';
-      }
-    }
+  songFromElement(el) {
+    return {
+      id: el.dataset.songId || '',
+      previewLink: el.dataset.previewLink || '',
+      previewStreamUrl: el.dataset.previewStream || '',
+      previewDriveId: el.dataset.previewDriveId || '',
+    };
   },
 
-  bindPlayer(player) {
-    if (!player || player.dataset.bound === 'true') return;
-    player.dataset.bound = 'true';
+  async playInAudio(song, audioEl, wrap) {
+    if (!audioEl) return false;
 
-    const btn = player.querySelector('.preview-play-btn');
-    const audio = player.querySelector('.preview-audio');
+    this.pauseOthers(audioEl);
+    this.setStatus(wrap, 'Loading preview…');
 
-    if (btn) {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        this.play(this.songFromElement(player), audio, player);
-      });
+    const candidates = this.getStreamCandidates(song);
+    if (song.previewLink && this.isDirectAudioUrl(song.previewLink)) {
+      candidates.unshift(song.previewLink);
     }
 
-    if (audio) {
+    for (const url of candidates) {
+      const ok = await this.tryDirectAudio(audioEl, url);
+      if (ok) {
+        audioEl.classList.add('is-active');
+        this.setStatus(wrap, '');
+        try {
+          await audioEl.play();
+          this.activeAudio = audioEl;
+          return true;
+        } catch (err) {
+          console.warn('Direct play failed:', err);
+        }
+      }
+    }
+
+    const blobSrc = await this.resolveAudioSrc(song);
+    if (blobSrc) {
+      const ok = await this.tryDirectAudio(audioEl, blobSrc);
+      if (ok) {
+        audioEl.classList.add('is-active');
+        this.setStatus(wrap, '');
+        try {
+          await audioEl.play();
+          this.activeAudio = audioEl;
+          return true;
+        } catch (err) {
+          console.warn('Blob play failed:', err);
+        }
+      }
+    }
+
+    this.setStatus(wrap, 'Could not play preview in browser', true);
+    return false;
+  },
+
+  renderNowPlaying(song) {
+    const driveId = this.getDriveId(song);
+    const container = document.getElementById('now-playing-player');
+    if (!container) return;
+
+    if (driveId) {
+      container.innerHTML = `
+        <iframe class="preview-iframe preview-iframe--queue"
+          src="${Utils.escapeHtml(this.getEmbedUrl(driveId))}"
+          title="Now playing: ${Utils.escapeHtml(song.songTitle)}"
+          allow="autoplay"
+          loading="lazy"></iframe>`;
+      return;
+    }
+
+    container.innerHTML = `<audio class="preview-audio is-active" controls preload="none" id="now-playing-audio-el"></audio>`;
+    const audio = document.getElementById('now-playing-audio-el');
+    if (audio) this.playInAudio(song, audio, container);
+  },
+
+  hydrate(root = document) {
+    root.querySelectorAll('.preview-player--audio .preview-audio').forEach((audio) => {
       audio.addEventListener('play', () => {
         this.pauseOthers(audio);
         this.activeAudio = audio;
       });
-    }
+    });
   },
 
-  hydrate(root = document) {
-    root.querySelectorAll('.preview-player').forEach((player) => this.bindPlayer(player));
-  },
-
-  async playSong(song, audioEl) {
-    const wrap = audioEl.closest('.preview-player') || document.getElementById('now-playing');
-    return this.play(song, audioEl, wrap);
+  async playSong(song) {
+    this.renderNowPlaying(song);
+    return true;
   },
 };
