@@ -264,8 +264,9 @@
 
     nowPlayingTitle.textContent = song.songTitle;
     nowPlayingArtist.textContent = song.artistName;
-    nowPlayingAudio.dataset.previewSrc = src;
-    nowPlayingAudio.dataset.ready = '';
+    nowPlayingAudio.dataset.previewDriveId = song.previewDriveId || Utils.extractDriveId(src) || '';
+    nowPlayingAudio.dataset.previewFallback = src;
+    nowPlayingAudio.dataset.state = '';
     delete nowPlayingAudio.dataset.bound;
     nowPlayingAudio.removeAttribute('src');
     AudioPlayer.bind(nowPlayingAudio);

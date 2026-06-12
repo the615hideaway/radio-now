@@ -24,13 +24,20 @@ const RadioDB = {
     const artistName = get('artistName', 'Artist Name');
     const songTitle = get('songTitle', 'Song Title');
 
+    const rawPreview = get('previewLink', 'Preview Link', 'Audio');
+    const rawMp3 = get('mp3', 'MP3', 'MP3s');
+
     return {
       id: get('id', 'ID') || `song-${index + 1}`,
       artistName,
       songTitle,
       year: get('year', 'Year'),
-      mp3: Utils.toDriveDownload(get('mp3', 'MP3', 'MP3s')),
-      previewLink: get('previewLink', 'Preview Link', 'Audio'),
+      mp3: Utils.toDriveDownload(rawMp3),
+      previewLink: rawPreview,
+      previewDriveId:
+        Utils.extractDriveId(rawPreview) ||
+        Utils.extractDriveId(rawMp3) ||
+        '',
       wav: Utils.toDriveDownload(get('wav', 'WAV')),
       cover: get('cover', 'Cover'),
       songTime: get('songTime', 'Song Time'),

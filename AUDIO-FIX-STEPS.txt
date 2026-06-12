@@ -1,0 +1,70 @@
+FIX AUDIO PREVIEWS ON RADIO NOW (5 MINUTES)
+===========================================
+
+Google Drive blocks direct playback inside websites. The reliable fix is a
+small Google Apps Script "audio proxy" attached to your Radio Now sheet.
+
+Your sheet:
+https://docs.google.com/spreadsheets/d/10rum4RKKF5-CgLcoSwe55EcxzyEzBSDqfxVrnbAuikk/edit
+
+
+STEP 1 — OPEN APPS SCRIPT
+-------------------------
+1. Open your Radio Now Google Sheet (link above)
+2. Click Extensions → Apps Script
+
+
+STEP 2 — PASTE THE CODE
+-----------------------
+1. Delete any code already in the editor
+2. Open this file on your computer:
+     radio-now/google-apps-script/Code.gs
+3. Copy ALL of the code and paste it into Apps Script
+4. Click Save (disk icon). Name the project "Radio Now API"
+
+
+STEP 3 — DEPLOY AS WEB APP
+--------------------------
+1. Click Deploy → New deployment
+2. Click the gear icon → choose "Web app"
+3. Settings:
+     Description: Radio Now API
+     Execute as: Me
+     Who has access: Anyone
+4. Click Deploy
+5. Approve permissions if Google asks
+6. COPY the Web App URL (ends with /exec)
+
+
+STEP 4 — PASTE URL INTO THE SITE
+--------------------------------
+1. Open: radio-now/js/config.js
+2. Paste your URL here:
+
+   googleScriptUrl: 'https://script.google.com/macros/s/YOUR_ID/exec',
+
+3. Save the file
+4. Push to GitHub (or ask your developer to redeploy)
+
+
+STEP 5 — CONFIRM DRIVE FILES ARE PUBLIC
+---------------------------------------
+Each MP3 in your sheet must be shared as:
+   "Anyone with the link" → Viewer
+
+If a file is restricted, previews for that song will fail.
+
+
+TEST IT
+-------
+Open this URL in your browser (replace YOUR_ID and FILE_ID):
+
+https://script.google.com/macros/s/YOUR_ID/exec?action=stream&id=FILE_ID
+
+You should hear/download the MP3. If that works, the site players will work.
+
+
+ALTERNATIVE WHILE YOU WAIT
+--------------------------
+Each song card now has an "Open MP3" link. DJs can click that to listen in
+a new tab even before Apps Script is deployed.

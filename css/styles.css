@@ -515,6 +515,12 @@ select { min-width: 130px; width: auto; }
   border: 1px solid rgba(244, 196, 48, 0.25);
 }
 
+.preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .song-preview audio,
 .preview-audio {
   width: 100%;
@@ -523,6 +529,27 @@ select { min-width: 130px; width: auto; }
 
 .preview-audio.is-loading {
   opacity: 0.55;
+}
+
+.preview-status {
+  font-size: 0.72rem;
+  min-height: 1rem;
+}
+
+.preview-status.error {
+  color: #ffb4b4;
+}
+
+.preview-open-link {
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--gold-bright);
+}
+
+.preview-open-link:hover {
+  color: var(--white);
 }
 
 .song-actions {

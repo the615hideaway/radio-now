@@ -4,11 +4,6 @@
  * Deploy as Web App:
  *   Execute as: Me
  *   Who has access: Anyone
- *
- * Sheet columns (row 1 headers):
- * Artist Name, Song Title, Year, MP3, Preview Link, WAV, Cover, Song Time,
- * Description, Music Style, Band Members, Songwriter, Featured Artist,
- * Website, Record Label, Contact E-Mail
  */
 
 const SHEET_NAME = 'Sheet1';
@@ -65,8 +60,11 @@ function pickValue_(row, headerMap, aliases) {
 }
 
 function extractDriveId_(url) {
-  const match = String(url || '').match(/\/file\/d\/([^/]+)/);
-  return match ? match[1] : '';
+  const value = String(url || '');
+  const fileMatch = value.match(/\/file\/d\/([^/]+)/);
+  if (fileMatch) return fileMatch[1];
+  const openMatch = value.match(/[?&]id=([^&]+)/);
+  return openMatch ? openMatch[1] : '';
 }
 
 function toDriveDownload_(url) {
@@ -89,6 +87,8 @@ function rowToSong_(row, headerMap, rowIndex) {
   } else if (extractDriveId_(song.previewLink)) {
     song.previewLink = toDriveDownload_(song.previewLink);
   }
+
+  song.previewDriveId = extractDriveId_(song.previewLink) || extractDriveId_(song.mp3) || '';
 
   return song;
 }
@@ -137,6 +137,18 @@ function fetchFileBlob_(url) {
   return response.getBlob();
 }
 
+function streamDriveFile_(driveId) {
+  if (!driveId) throw new Error('Missing Drive file id');
+
+  const url = 'https://drive.google.com/uc?export=download&id=' + driveId;
+  const blob = fetchFileBlob_(url);
+  const mime = blob.getContentType() || 'audio/mpeg';
+
+  return ContentService
+    .createOutput(blob)
+    .setMimeType(mime);
+}
+
 function createZip_(songs, format) {
   const blobs = [];
   const skipped = [];
@@ -172,6 +184,10 @@ function createZip_(songs, format) {
 function doGet(e) {
   try {
     const action = (e.parameter.action || 'list').toLowerCase();
+
+    if (action === 'stream') {
+      return streamDriveFile_(e.parameter.id);
+    }
 
     if (action === 'list') {
       return jsonResponse_(listSongs_());
