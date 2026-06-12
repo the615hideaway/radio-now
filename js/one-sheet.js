@@ -41,7 +41,7 @@ const OneSheet = {
     body { margin: 0; padding: 0; background: #fff; color: #111; }
     .promo-sheet {
       width: 7.5in;
-      padding: 0.4in 0.45in 0.5in;
+      padding: 0.55in 0.6in 0.6in;
       font-family: Georgia, "Times New Roman", serif;
       color: #111;
       background: #fff;
@@ -49,8 +49,8 @@ const OneSheet = {
     }
     .promo-brand {
       border-bottom: 3px solid #d4a017;
-      padding-bottom: 8px;
-      margin-bottom: 16px;
+      padding-bottom: 10px;
+      margin-bottom: 22px;
       font-family: Arial, Helvetica, sans-serif;
     }
     .promo-brand-title {
@@ -67,7 +67,7 @@ const OneSheet = {
       color: #666;
       text-align: right;
     }
-    .hero-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    .hero-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; }
     .hero-table td { vertical-align: top; padding: 0; }
     .cover-cell { width: 2.2in; padding-right: 14px !important; }
     .promo-cover {
@@ -93,20 +93,21 @@ const OneSheet = {
     }
     .promo-title {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 28px;
-      line-height: 1.1;
+      font-size: 34px;
+      line-height: 1.12;
       font-weight: 700;
       color: #111;
-      margin-bottom: 8px;
+      margin-bottom: 12px;
     }
     .promo-artist {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 400;
       color: #444;
+      line-height: 1.3;
     }
-    .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; border-bottom: 1px solid #ddd; }
-    .meta-table td { padding: 0 18px 10px 0; vertical-align: top; font-family: Arial, Helvetica, sans-serif; }
+    .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 22px; border-bottom: 1px solid #ddd; }
+    .meta-table td { padding: 0 22px 14px 0; vertical-align: top; font-family: Arial, Helvetica, sans-serif; }
     .meta-label {
       font-size: 9px;
       font-weight: 700;
@@ -120,7 +121,7 @@ const OneSheet = {
       font-weight: 600;
       color: #111;
     }
-    .promo-block { margin-bottom: 14px; page-break-inside: avoid; }
+    .promo-block { margin-bottom: 22px; page-break-inside: avoid; }
     .promo-block h3 {
       font-family: Arial, Helvetica, sans-serif;
       font-size: 9px;
@@ -128,20 +129,26 @@ const OneSheet = {
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: #888;
-      margin-bottom: 6px;
+      margin-bottom: 10px;
     }
-    .promo-block p,
+    .promo-block p {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      color: #333;
+      line-height: 1.65;
+      margin: 0;
+    }
     .promo-line {
       font-family: Arial, Helvetica, sans-serif;
       font-size: 12px;
       color: #333;
-      line-height: 1.5;
-      margin: 0 0 3px;
+      line-height: 1.75;
+      margin: 0 0 6px;
     }
     .credits-table { width: 100%; border-collapse: collapse; border-top: 1px solid #ddd; }
     .credits-table td {
       width: 50%;
-      padding: 10px 12px 0 0;
+      padding: 12px 16px 0 0;
       vertical-align: top;
       font-family: Arial, Helvetica, sans-serif;
       font-size: 12px;
@@ -158,8 +165,8 @@ const OneSheet = {
     .credit-value { color: #111; word-break: break-word; }
     .credit-value a { color: #111; text-decoration: none; }
     .promo-footer {
-      margin-top: 16px;
-      padding-top: 10px;
+      margin-top: 24px;
+      padding-top: 14px;
       border-top: 1px solid #eee;
       text-align: center;
       font-family: Arial, Helvetica, sans-serif;
@@ -381,13 +388,13 @@ const OneSheet = {
     return Utils.resolveCoverUrl(song) || '';
   },
 
-  addPdfSection(doc, label, y, margin, contentWidth) {
+  addPdfSection(doc, label, y, margin) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
     doc.text(String(label).toUpperCase(), margin, y);
     doc.setTextColor(20, 20, 20);
-    return y + 0.18;
+    return y + 0.26;
   },
 
   addPdfWrappedText(doc, text, x, y, maxWidth, fontSize, lineHeight) {
@@ -408,8 +415,8 @@ const OneSheet = {
     doc.setFontSize(11);
     doc.setTextColor(20, 20, 20);
     const lines = doc.splitTextToSize(value, colWidth);
-    doc.text(lines, x, y + 0.14);
-    return y + 0.14 + (lines.length * 0.16) + 0.08;
+    doc.text(lines, x, y + 0.16);
+    return y + 0.16 + (lines.length * 0.18) + 0.12;
   },
 
   async downloadOneSheet(song) {
@@ -417,9 +424,10 @@ const OneSheet = {
     const doc = new JsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
 
     const pageWidth = 8.5;
-    const margin = 0.55;
+    const margin = 0.72;
     const contentWidth = pageWidth - (margin * 2);
-    const bottom = 10.2;
+    const bottom = 10.15;
+    const sectionGap = 0.22;
     let y = margin;
 
     const artist = this.decodeText(song.artistName) || 'Unknown Artist';
@@ -428,23 +436,23 @@ const OneSheet = {
     const bandLines = this.buildBandMemberLines(song);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(12);
     doc.setTextColor(154, 123, 10);
     doc.text('Radio Now', margin, y);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
     doc.text('(615) Hideaway Entertainment', pageWidth - margin, y, { align: 'right' });
-    y += 0.12;
+    y += 0.16;
     doc.setDrawColor(212, 160, 23);
-    doc.setLineWidth(0.02);
+    doc.setLineWidth(0.025);
     doc.line(margin, y, pageWidth - margin, y);
-    y += 0.28;
+    y += 0.38;
 
     const coverData = await this.loadCoverDataUrl(song);
-    const coverSize = 2.05;
-    const textX = margin + coverSize + 0.22;
-    const textWidth = contentWidth - coverSize - 0.22;
+    const coverSize = 2.1;
+    const textX = margin + coverSize + 0.3;
+    const textWidth = contentWidth - coverSize - 0.3;
 
     if (coverData && coverData.startsWith('data:')) {
       try {
@@ -457,20 +465,21 @@ const OneSheet = {
       doc.rect(margin, y, coverSize, coverSize);
       doc.setFontSize(9);
       doc.setTextColor(150, 150, 150);
-      doc.text('Cover not available', margin + 0.35, y + 1.02);
+      doc.text('Cover not available', margin + 0.35, y + 1.05);
       doc.setTextColor(20, 20, 20);
     }
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
+    doc.setFontSize(28);
     const titleLines = doc.splitTextToSize(title, textWidth);
-    doc.text(titleLines, textX, y + 0.45);
+    const titleStartY = y + 0.55;
+    doc.text(titleLines, textX, titleStartY);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(15);
+    doc.setFontSize(17);
     const artistLines = doc.splitTextToSize(artist, textWidth);
-    doc.text(artistLines, textX, y + 0.45 + (titleLines.length * 0.28) + 0.12);
+    doc.text(artistLines, textX, titleStartY + (titleLines.length * 0.34) + 0.18);
 
-    y += coverSize + 0.28;
+    y += coverSize + 0.42;
 
     const meta = [
       { label: 'Year', value: this.decodeText(song.year) },
@@ -487,36 +496,39 @@ const OneSheet = {
         doc.setTextColor(120, 120, 120);
         doc.text(item.label.toUpperCase(), x, y);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(11);
+        doc.setFontSize(12);
         doc.setTextColor(20, 20, 20);
-        doc.text(item.value, x, y + 0.15);
+        doc.text(item.value, x, y + 0.18);
       });
-      y += 0.38;
+      y += 0.48;
       doc.setDrawColor(220, 220, 220);
       doc.line(margin, y, pageWidth - margin, y);
-      y += 0.22;
+      y += 0.3;
     }
 
     if (description) {
-      y = this.addPdfSection(doc, 'Description', y, margin, contentWidth);
-      y = this.addPdfWrappedText(doc, description, margin, y, contentWidth, 11, 0.17) + 0.1;
+      y += sectionGap;
+      y = this.addPdfSection(doc, 'Description', y, margin);
+      y = this.addPdfWrappedText(doc, description, margin, y, contentWidth, 11, 0.2) + 0.18;
     }
 
     if (bandLines.length) {
-      y = this.addPdfSection(doc, 'Band Members', y, margin, contentWidth);
+      y += sectionGap;
+      y = this.addPdfSection(doc, 'Band Members', y, margin);
       bandLines.forEach((line) => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(11);
         doc.text(line, margin, y);
-        y += 0.17;
+        y += 0.22;
       });
-      y += 0.06;
+      y += 0.1;
     }
 
     if (y < bottom - 1.2) {
+      y += sectionGap;
       doc.setDrawColor(220, 220, 220);
       doc.line(margin, y, pageWidth - margin, y);
-      y += 0.2;
+      y += 0.28;
 
       const credits = [
         { label: 'Songwriter', value: this.decodeText(song.songwriter) },
@@ -525,21 +537,21 @@ const OneSheet = {
         { label: 'Contact Email', value: this.decodeText(song.contactEmail) },
       ].filter((item) => item.value);
 
-      const colWidth = (contentWidth - 0.25) / 2;
+      const colWidth = (contentWidth - 0.35) / 2;
       let leftY = y;
       let rightY = y;
       credits.forEach((item, index) => {
         if (index % 2 === 0) {
           leftY = this.addPdfField(doc, item.label, item.value, margin, leftY, colWidth);
         } else {
-          rightY = this.addPdfField(doc, item.label, item.value, margin + colWidth + 0.25, rightY, colWidth);
+          rightY = this.addPdfField(doc, item.label, item.value, margin + colWidth + 0.35, rightY, colWidth);
         }
       });
       y = Math.max(leftY, rightY);
     }
 
     doc.setDrawColor(235, 235, 235);
-    doc.line(margin, bottom - 0.15, pageWidth - margin, bottom - 0.15);
+    doc.line(margin, bottom - 0.2, pageWidth - margin, bottom - 0.2);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
