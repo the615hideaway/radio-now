@@ -1,5 +1,6 @@
 const AudioPlayer = {
   cache: new Map(),
+  activeAudio: null,
 
   getPreviewCandidates(song) {
     const candidates = [];
@@ -11,15 +12,23 @@ const AudioPlayer = {
     }
 
     if (song.previewStreamUrl) candidates.push(song.previewStreamUrl);
-
-    const resolved = Utils.resolvePreviewUrl(song);
-    if (resolved) candidates.push(resolved);
-
     if (song.previewLink && /^https?:\/\//i.test(song.previewLink)) {
       candidates.push(song.previewLink);
     }
 
+    const resolved = Utils.resolvePreviewUrl(song);
+    if (resolved) candidates.push(resolved);
+
     return [...new Set(candidates.filter(Boolean))];
+  },
+
+  songFromElement(el) {
+    return {
+      id: el.dataset.songId || '',
+      previewLink: el.dataset.previewLink || '',
+      previewStreamUrl: el.dataset.previewStream || '',
+      previewDriveId: el.dataset.previewDriveId || '',
+    };
   },
 
   async isPlayableBlob(blob) {
@@ -32,154 +41,153 @@ const AudioPlayer = {
     return isId3 || isMp3Frame;
   },
 
+  async fetchBlobUrl(url) {
+    const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    if (!(await this.isPlayableBlob(blob))) throw new Error('Not audio');
+    return URL.createObjectURL(blob);
+  },
+
   async resolvePlaybackUrl(song) {
-    const cacheKey = song.id || song.previewLink || 'preview';
+    const cacheKey = song.id || song.previewStreamUrl || song.previewLink;
     if (this.cache.has(cacheKey)) return this.cache.get(cacheKey);
 
     const candidates = this.getPreviewCandidates(song);
-    if (!candidates.length) throw new Error('No Preview Link available');
+    if (!candidates.length) throw new Error('No Preview Link');
 
     for (const url of candidates) {
-      if (url.includes('script.google.com') && url.includes('action=stream')) {
+      if (url.includes('script.google.com')) {
         this.cache.set(cacheKey, url);
         return url;
       }
 
       try {
-        const response = await fetch(url, { mode: 'cors', redirect: 'follow' });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const blob = await response.blob();
-        if (!(await this.isPlayableBlob(blob))) throw new Error('Not audio');
-
-        const objectUrl = URL.createObjectURL(blob);
-        this.cache.set(cacheKey, objectUrl);
-        return objectUrl;
+        const blobUrl = await this.fetchBlobUrl(url);
+        this.cache.set(cacheKey, blobUrl);
+        return blobUrl;
       } catch (err) {
-        console.warn('Preview candidate failed:', url, err.message);
+        console.warn('Preview fetch failed:', url, err.message);
       }
     }
 
-    throw new Error('Could not load Preview Link');
+    throw new Error('Could not load preview audio');
+  },
+
+  pauseOthers(currentAudio) {
+    document.querySelectorAll('.preview-audio').forEach((audio) => {
+      if (audio !== currentAudio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
+  },
+
+  setStatus(wrap, message, isError) {
+    const status = wrap?.querySelector('.preview-status');
+    if (!status) return;
+    status.textContent = message || '';
+    status.classList.toggle('error', !!isError);
   },
 
   render(song) {
     const previewLink = song.previewLink || '';
-    const streamUrl = Utils.resolvePreviewUrl(song);
+    const streamUrl = song.previewStreamUrl || Utils.resolvePreviewUrl(song);
+    const driveId = song.previewDriveId || Utils.extractDriveId(previewLink) || '';
     const openUrl = previewLink || streamUrl;
 
     if (!openUrl) {
       return '<span class="muted">No Preview Link</span>';
     }
 
-    const payload = encodeURIComponent(JSON.stringify({
-      id: song.id,
-      previewLink,
-      previewStreamUrl: song.previewStreamUrl || streamUrl,
-      previewDriveId: song.previewDriveId || Utils.extractDriveId(previewLink) || '',
-    }));
-
     return `
-      <div class="preview-wrap">
-        <audio class="preview-audio" controls preload="none"
-          data-song-preview="${Utils.escapeHtml(payload)}"></audio>
+      <div class="preview-player"
+        data-song-id="${Utils.escapeHtml(song.id || '')}"
+        data-preview-link="${Utils.escapeHtml(previewLink)}"
+        data-preview-stream="${Utils.escapeHtml(streamUrl || '')}"
+        data-preview-drive-id="${Utils.escapeHtml(driveId)}">
+        <div class="preview-controls">
+          <button type="button" class="btn btn-secondary btn-sm preview-play-btn">
+            <i class="fa-solid fa-play"></i> Play Preview
+          </button>
+          <a class="preview-open-link" href="${Utils.escapeHtml(openUrl)}" target="_blank" rel="noopener">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+        </div>
+        <audio class="preview-audio" controls preload="none"></audio>
         <div class="preview-status muted" aria-live="polite"></div>
-        <a class="preview-open-link" href="${Utils.escapeHtml(openUrl)}" target="_blank" rel="noopener">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Preview
-        </a>
       </div>`;
   },
 
-  songFromAudio(audio) {
-    try {
-      return JSON.parse(decodeURIComponent(audio.dataset.songPreview || '%7B%7D'));
-    } catch {
-      return {};
-    }
-  },
-
-  setStatus(audio, message, isError) {
-    const status = audio.closest('.preview-wrap')?.querySelector('.preview-status');
-    if (!status) return;
-    status.textContent = message || '';
-    status.classList.toggle('error', !!isError);
-  },
-
-  async prepare(audio) {
-    if (!audio || audio.dataset.state === 'ready') return true;
-
-    const song = this.songFromAudio(audio);
+  async play(song, audioEl, statusWrap) {
+    const wrap = statusWrap || audioEl?.closest('.preview-player');
     if (!song.previewLink && !song.previewStreamUrl) {
-      this.setStatus(audio, 'No Preview Link in catalog', true);
+      this.setStatus(wrap, 'No Preview Link', true);
       return false;
     }
 
-    audio.dataset.state = 'loading';
-    audio.classList.add('is-loading');
-    this.setStatus(audio, 'Loading preview…');
+    const audio = audioEl || wrap?.querySelector('.preview-audio');
+    if (!audio) return false;
+
+    const btn = wrap?.querySelector('.preview-play-btn');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading…';
+    }
+    this.setStatus(wrap, 'Loading preview…');
 
     try {
-      audio.src = await this.resolvePlaybackUrl(song);
-      audio.dataset.state = 'ready';
-      this.setStatus(audio, '');
+      this.pauseOthers(audio);
+      const src = await this.resolvePlaybackUrl(song);
+      audio.src = src;
+      audio.classList.add('is-active');
+      audio.load();
+      this.activeAudio = audio;
+      await audio.play();
+      this.setStatus(wrap, '');
       return true;
     } catch (err) {
-      console.warn('Preview load failed:', err);
-      audio.dataset.state = 'error';
-      this.setStatus(audio, 'Preview blocked — click Open Preview', true);
+      console.warn('Playback failed:', err);
+      this.setStatus(wrap, 'In-page preview blocked — use the open link', true);
+      if (song.previewLink) window.open(song.previewLink, '_blank', 'noopener');
       return false;
     } finally {
-      audio.classList.remove('is-loading');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> Play Preview';
+      }
     }
   },
 
-  bind(audio) {
-    if (!audio || audio.dataset.bound === 'true') return;
-    audio.dataset.bound = 'true';
+  bindPlayer(player) {
+    if (!player || player.dataset.bound === 'true') return;
+    player.dataset.bound = 'true';
 
-    const loadAndPlay = async () => {
-      const wasReady = audio.dataset.state === 'ready';
-      const ok = await this.prepare(audio);
-      if (!ok || wasReady) return;
+    const btn = player.querySelector('.preview-play-btn');
+    const audio = player.querySelector('.preview-audio');
 
-      try {
-        await audio.play();
-      } catch (err) {
-        console.warn('Playback failed:', err);
-        this.setStatus(audio, 'Click Open Preview to listen', true);
-      }
-    };
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        this.play(this.songFromElement(player), audio, player);
+      });
+    }
 
-    audio.addEventListener('play', (event) => {
-      if (audio.dataset.state === 'ready') return;
-      event.preventDefault();
-      audio.pause();
-      loadAndPlay();
-    });
-
-    audio.addEventListener('pointerdown', () => {
-      if (audio.dataset.state !== 'ready') this.prepare(audio);
-    });
+    if (audio) {
+      audio.addEventListener('play', () => {
+        this.pauseOthers(audio);
+        this.activeAudio = audio;
+      });
+    }
   },
 
   hydrate(root = document) {
-    root.querySelectorAll('audio[data-song-preview]').forEach((audio) => this.bind(audio));
+    root.querySelectorAll('.preview-player').forEach((player) => this.bindPlayer(player));
   },
 
   async playSong(song, audioEl) {
-    const payload = encodeURIComponent(JSON.stringify({
-      id: song.id,
-      previewLink: song.previewLink,
-      previewStreamUrl: song.previewStreamUrl || Utils.resolvePreviewUrl(song),
-      previewDriveId: song.previewDriveId || Utils.extractDriveId(song.previewLink) || '',
-    }));
-
-    audioEl.dataset.songPreview = payload;
-    audioEl.dataset.state = '';
-    delete audioEl.dataset.bound;
-    audioEl.removeAttribute('src');
-    this.bind(audioEl);
-    await this.prepare(audioEl);
-    return audioEl.play();
+    const wrap = audioEl.closest('.preview-player') || document.getElementById('now-playing');
+    return this.play(song, audioEl, wrap);
   },
 };
