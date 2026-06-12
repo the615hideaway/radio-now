@@ -438,7 +438,6 @@
     if (queuePlayIndex >= queue.length) {
       queuePlayIndex = -1;
       nowPlaying.classList.add('hidden');
-      nowPlayingAudio.pause();
       return;
     }
     playCurrentQueueTrack();
