@@ -23,7 +23,7 @@
           <p>(615) Hideaway Entertainment</p>
         </div>
       </div>
-      <p class="login-copy">Authorized radio programmers only. Enter the access password to browse artists and build playlists.</p>
+      <p class="login-copy">Authorized radio programmers only. Enter the access password to browse artists.</p>
       <form id="login-form">
         <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
         <label for="password">Access Password</label>
@@ -61,92 +61,28 @@
 
     <div id="connection-banner" class="connection-banner hidden"></div>
 
-    <div class="layout">
-      <main class="catalog-panel artists-panel">
-        <section class="toolbar">
-          <div class="stats-row">
-            <div class="stat"><span id="stat-artists">0</span><label>Artists</label></div>
-            <div class="stat"><span id="stat-songs">0</span><label>Songs</label></div>
-            <div class="stat"><span id="stat-queue">0</span><label>DJ Queue</label></div>
-          </div>
-          <div class="filter-row">
-            <div class="search-wrap">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="search" id="artist-search" placeholder="Search artists…" autocomplete="off">
-            </div>
-            <button class="btn btn-secondary" id="clear-search-btn">Clear</button>
-          </div>
-          <p class="artists-help">Artists are sorted by newest releases. Songs within each artist are newest first.</p>
-        </section>
-
-        <section id="artist-jump-nav" class="artist-jump-nav hidden" aria-label="Jump to artist"></section>
-
-        <section id="artists-list" class="artists-list" aria-live="polite"></section>
-      </main>
-
-      <aside class="queue-panel">
-        <div class="queue-header">
-          <h2><i class="fa-solid fa-list-ul"></i> DJ Queue</h2>
-          <button class="btn btn-ghost btn-sm" id="clear-queue-btn">Clear</button>
+    <main class="artists-page">
+      <section class="toolbar artists-toolbar">
+        <div class="stats-row">
+          <div class="stat"><span id="stat-artists">0</span><label>Artists</label></div>
+          <div class="stat"><span id="stat-songs">0</span><label>Songs</label></div>
         </div>
-        <p class="queue-help">Add songs for show prep and play through previews.</p>
-        <div id="queue-empty" class="queue-empty">
-          <i class="fa-solid fa-headphones"></i>
-          <p>No songs in queue yet. Click <strong>Queue</strong> on any track.</p>
+        <div class="filter-row">
+          <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="search" id="artist-search" placeholder="Search artists…" autocomplete="off">
+          </div>
+          <button class="btn btn-secondary" id="clear-search-btn">Clear</button>
         </div>
-        <div id="queue-list" class="queue-list"></div>
-        <div class="queue-footer">
-          <button class="btn btn-primary btn-full" id="play-queue-btn" disabled>
-            <i class="fa-solid fa-play"></i>
-            Play Queue
-          </button>
-        </div>
+        <p class="artists-help">Tap an artist to open their profile and queue songs.</p>
+      </section>
 
-        <div class="download-queue-section">
-          <div class="queue-header">
-            <h2><i class="fa-solid fa-download"></i> Download Queue</h2>
-            <button class="btn btn-ghost btn-sm" id="clear-download-btn">Clear</button>
-          </div>
-          <p class="queue-help">Queue tracks to bundle into a single ZIP file.</p>
-          <div id="download-empty" class="queue-empty">
-            <i class="fa-solid fa-file-zipper"></i>
-            <p>No downloads queued. Click <strong>Download</strong> on any track.</p>
-          </div>
-          <div id="download-list" class="queue-list download-list"></div>
-          <div class="download-footer">
-            <div class="download-group">
-              <select id="download-format" aria-label="Download format">
-                <option value="mp3">MP3</option>
-                <option value="wav">WAV</option>
-              </select>
-              <button class="btn btn-primary btn-full" id="download-zip-btn" disabled>
-                <i class="fa-solid fa-file-zipper"></i>
-                Download ZIP
-              </button>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </div>
-
-    <div id="now-playing" class="now-playing hidden">
-      <div class="now-playing-meta">
-        <span class="now-label">Now Playing</span>
-        <strong id="now-playing-title"></strong>
-        <span id="now-playing-artist"></span>
-      </div>
-      <div id="now-playing-player" class="now-playing-player"></div>
-      <button class="btn btn-secondary btn-sm" id="skip-queue-btn">
-        <i class="fa-solid fa-forward-step"></i>
-        Skip
-      </button>
-    </div>
+      <section id="artists-grid" class="artists-grid" aria-live="polite"></section>
+    </main>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/utils.js"></script>
-  <script src="js/audio-player.js"></script>
   <script src="js/database.js"></script>
   <script src="js/artists-app.js"></script>
 </body>
