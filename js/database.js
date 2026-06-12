@@ -1,123 +1,69 @@
 const RadioDB = {
+  catalogMeta: null,
+
   isScriptConfigured() {
     return !!(CONFIG.googleScriptUrl && CONFIG.googleScriptUrl.includes('script.google.com'));
   },
 
-  isGvizConfigured() {
-    return !!(CONFIG.googleSheetId && CONFIG.googleSheetId.length > 10);
-  },
-
-  isConfigured() {
-    return this.isScriptConfigured() || this.isGvizConfigured();
-  },
-
   normalizeSong(raw, index) {
-    const get = (...keys) => {
-      for (const key of keys) {
-        if (raw[key] !== undefined && raw[key] !== null && String(raw[key]).trim() !== '') {
-          return String(raw[key]).trim();
-        }
-      }
-      return '';
-    };
-
-    const artistName = get('artistName', 'Artist Name');
-    const songTitle = get('songTitle', 'Song Title');
-
-    const rawPreview = get('previewLink', 'Preview Link', 'Audio');
-    const rawMp3 = get('mp3', 'MP3', 'MP3s');
+    const previewLink = String(raw.previewLink || raw['Preview Link'] || '').trim();
 
     return {
-      id: get('id', 'ID') || `song-${index + 1}`,
-      artistName,
-      songTitle,
-      year: get('year', 'Year'),
-      mp3: Utils.toDriveDownload(rawMp3),
-      previewLink: rawPreview,
-      previewDriveId:
-        Utils.extractDriveId(rawPreview) ||
-        Utils.extractDriveId(rawMp3) ||
-        '',
-      wav: Utils.toDriveDownload(get('wav', 'WAV')),
-      cover: get('cover', 'Cover'),
-      songTime: get('songTime', 'Song Time'),
-      description: Utils.stripHtml(get('description', 'Description')),
-      musicStyle: get('musicStyle', 'Music Style'),
-      bandMembers: get('bandMembers', 'Band Members'),
-      songwriter: get('songwriter', 'Songwriter'),
-      featuredArtist: get('featuredArtist', 'Featured Artist'),
-      website: get('website', 'Website'),
-      recordLabel: get('recordLabel', 'Record Label'),
-      contactEmail: get('contactEmail', 'Contact E-Mail', 'Contact Email'),
+      id: raw.id || `song-${index + 1}`,
+      artistName: raw.artistName || '',
+      songTitle: raw.songTitle || '',
+      year: String(raw.year || ''),
+      mp3: raw.mp3 || Utils.toDriveDownload(raw.MP3 || raw.MP3s || ''),
+      previewLink,
+      previewStreamUrl: raw.previewStreamUrl || Utils.toPreviewStreamUrl(previewLink),
+      previewDriveId: raw.previewDriveId || Utils.extractDriveId(previewLink) || '',
+      wav: raw.wav || Utils.toDriveDownload(raw.WAV || ''),
+      cover: raw.cover || raw.Cover || '',
+      coverThumbnailUrl: raw.coverThumbnailUrl || Utils.resolveCoverUrl({ cover: raw.cover || raw.Cover }),
+      songTime: raw.songTime || '',
+      description: raw.description || Utils.stripHtml(raw.Description || ''),
+      musicStyle: raw.musicStyle || '',
+      bandMembers: raw.bandMembers || '',
+      songwriter: raw.songwriter || '',
+      featuredArtist: raw.featuredArtist || '',
+      website: raw.website || '',
+      recordLabel: raw.recordLabel || '',
+      contactEmail: raw.contactEmail || '',
     };
   },
 
-  async testConnection() {
-    const result = await this.getAllSongs();
-    if (!result.length) throw new Error('Connected but no songs were returned.');
-    return true;
+  async getCatalogMeta() {
+    if (this.catalogMeta) return this.catalogMeta;
+    const response = await fetch(CONFIG.songsDataUrl, { cache: 'no-store' });
+    if (!response.ok) throw new Error('Song catalog JSON not found');
+    const data = await response.json();
+    this.catalogMeta = {
+      syncedAt: data.syncedAt || null,
+      songCount: data.songCount || (data.songs || []).length,
+      source: data.source || 'json',
+    };
+    return this.catalogMeta;
   },
 
   async getAllSongs() {
-    if (this.isScriptConfigured()) {
-      return this.fetchFromScript();
+    const response = await fetch(CONFIG.songsDataUrl, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`Could not load ${CONFIG.songsDataUrl}. Run scripts/sync-sheet-to-json.ps1 to generate it.`);
     }
-    if (this.isGvizConfigured()) {
-      return this.fetchFromGviz();
-    }
-    return this.fetchLocal();
-  },
 
-  async fetchFromScript() {
-    const url = `${CONFIG.googleScriptUrl}?action=list`;
-    const response = await fetch(url);
     const data = await response.json();
-    if (!data.success) throw new Error(data.error || 'Failed to load songs');
-    return (data.songs || []).map((song, i) => this.normalizeSong(song, i));
-  },
+    this.catalogMeta = {
+      syncedAt: data.syncedAt || null,
+      songCount: data.songCount || (data.songs || []).length,
+      source: data.source || 'json',
+    };
 
-  cellValue(cell) {
-    if (!cell) return '';
-    if (cell.f !== undefined && cell.f !== null && String(cell.f).trim() !== '') {
-      return String(cell.f).trim();
-    }
-    if (cell.v !== undefined && cell.v !== null) {
-      const value = cell.v;
-      if (typeof value === 'number' && Number.isFinite(value)) {
-        return String(Math.round(value));
-      }
-      return String(value).trim();
-    }
-    return '';
-  },
+    const songs = (data.songs || [])
+      .map((song, i) => this.normalizeSong(song, i))
+      .filter((song) => song.artistName || song.songTitle);
 
-  async fetchFromGviz() {
-    const sheet = encodeURIComponent(CONFIG.sheetName || 'Sheet1');
-    const url = `https://docs.google.com/spreadsheets/d/${CONFIG.googleSheetId}/gviz/tq?tqx=out:json&sheet=${sheet}`;
-    const response = await fetch(url);
-    const text = await response.text();
-    const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\);?/);
-    if (!match) throw new Error('Could not parse Google Sheet response');
-    const json = JSON.parse(match[1]);
-    const cols = json.table.cols.map((c) => c.label);
-    const rows = json.table.rows || [];
-
-    const songs = rows.map((row, index) => {
-      const record = {};
-      (row.c || []).forEach((cell, i) => {
-        if (cols[i]) record[cols[i]] = this.cellValue(cell);
-      });
-      return this.normalizeSong(record, index);
-    });
-
-    return songs.filter((s) => s.artistName || s.songTitle);
-  },
-
-  async fetchLocal() {
-    const response = await fetch(CONFIG.localDataUrl);
-    if (!response.ok) throw new Error('Local song data not found');
-    const data = await response.json();
-    return (data.songs || []).map((song, i) => this.normalizeSong(song, i));
+    if (!songs.length) throw new Error('Catalog JSON contains no songs.');
+    return songs;
   },
 
   async downloadZip(songs, format = 'mp3') {
@@ -228,9 +174,7 @@ const RadioDB = {
       link.click();
       URL.revokeObjectURL(link.href);
 
-      if (errors.length) {
-        console.warn('Some files were skipped from ZIP:', errors);
-      }
+      if (errors.length) console.warn('Some files were skipped from ZIP:', errors);
       return;
     }
 

@@ -2,9 +2,19 @@
 
 DJ music catalog for **(615) Hideaway Entertainment**.
 
-- Password-protected catalog synced from Google Sheets
-- Audio previews, DJ queue, and MP3/WAV ZIP downloads
+- Password-protected catalog loaded from `data/songs.json`
+- Audio previews use the **Preview Link** column
+- DJ queue and MP3/WAV ZIP downloads
 - Live site: https://the615hideaway.github.io/radio-now/
+
+## Sync catalog from Google Sheet
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/sync-sheet-to-json.ps1
+git add data/songs.json
+git commit -m "Update catalog"
+git push
+```
 
 ## Local development
 
@@ -12,8 +22,4 @@ DJ music catalog for **(615) Hideaway Entertainment**.
 powershell -ExecutionPolicy Bypass -File serve.ps1
 ```
 
-Open http://localhost:8080/ and sign in with the DJ password from `js/config.js`.
-
-## Google Sheets setup
-
-See `SETUP-INSTRUCTIONS.txt`.
+See `SETUP-INSTRUCTIONS.txt` for full details.

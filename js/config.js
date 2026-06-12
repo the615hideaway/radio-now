@@ -3,15 +3,15 @@ const CONFIG = {
   password: '615bluegrass',
   authKey: 'radio_now_auth',
 
-  // Paste your deployed Google Apps Script Web App URL here.
+  // Catalog loads from this JSON file (synced from Google Sheets).
+  songsDataUrl: 'data/songs.json',
+
+  // Optional: Apps Script URL for audio stream proxy and ZIP downloads.
   googleScriptUrl: '',
 
-  // Google Sheet ID (published / link-shared sheet).
+  // Used only by scripts/sync-sheet-to-json.ps1 (not loaded live by the site).
   googleSheetId: '10rum4RKKF5-CgLcoSwe55EcxzyEzBSDqfxVrnbAuikk',
   sheetName: 'Sheet1',
-
-  // Local fallback when Google Sheets is not configured.
-  localDataUrl: 'data/songs.json',
 
   queueKey: 'radio_now_queue',
 };

@@ -1,35 +1,22 @@
 const AudioPlayer = {
   cache: new Map(),
 
-  getDriveId(songOrUrl) {
-    if (typeof songOrUrl === 'string') return Utils.extractDriveId(songOrUrl);
-    return (
-      songOrUrl.previewDriveId ||
-      Utils.extractDriveId(songOrUrl.previewLink) ||
-      Utils.extractDriveId(songOrUrl.mp3)
-    );
-  },
-
-  getStreamCandidates(songOrUrl) {
-    const driveId = this.getDriveId(songOrUrl);
+  getPreviewCandidates(song) {
     const candidates = [];
+    const driveId = song.previewDriveId || Utils.extractDriveId(song.previewLink);
 
     if (CONFIG.googleScriptUrl && driveId) {
       const base = CONFIG.googleScriptUrl.replace(/\/$/, '');
       candidates.push(`${base}?action=stream&id=${encodeURIComponent(driveId)}`);
     }
 
-    if (typeof songOrUrl === 'string') {
-      candidates.push(songOrUrl);
-    } else {
-      const preview = Utils.resolvePreviewUrl(songOrUrl);
-      if (preview) candidates.push(preview);
-    }
+    if (song.previewStreamUrl) candidates.push(song.previewStreamUrl);
 
-    if (driveId) {
-      candidates.push(`https://drive.usercontent.google.com/download?id=${driveId}&export=download`);
-      candidates.push(`https://drive.google.com/uc?export=download&id=${driveId}`);
-      candidates.push(`https://docs.google.com/uc?export=open&id=${driveId}`);
+    const resolved = Utils.resolvePreviewUrl(song);
+    if (resolved) candidates.push(resolved);
+
+    if (song.previewLink && /^https?:\/\//i.test(song.previewLink)) {
+      candidates.push(song.previewLink);
     }
 
     return [...new Set(candidates.filter(Boolean))];
@@ -45,18 +32,16 @@ const AudioPlayer = {
     return isId3 || isMp3Frame;
   },
 
-  async resolveUrl(songOrUrl) {
-    const cacheKey = typeof songOrUrl === 'string' ? songOrUrl : JSON.stringify(this.getStreamCandidates(songOrUrl));
+  async resolvePlaybackUrl(song) {
+    const cacheKey = song.id || song.previewLink || 'preview';
     if (this.cache.has(cacheKey)) return this.cache.get(cacheKey);
 
-    const candidates = typeof songOrUrl === 'string'
-      ? [songOrUrl]
-      : this.getStreamCandidates(songOrUrl);
-
-    let lastError = null;
+    const candidates = this.getPreviewCandidates(song);
+    if (!candidates.length) throw new Error('No Preview Link available');
 
     for (const url of candidates) {
       if (url.includes('script.google.com') && url.includes('action=stream')) {
+        this.cache.set(cacheKey, url);
         return url;
       }
 
@@ -65,46 +50,52 @@ const AudioPlayer = {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const blob = await response.blob();
-        if (!(await this.isPlayableBlob(blob))) {
-          throw new Error('Response was not audio');
-        }
+        if (!(await this.isPlayableBlob(blob))) throw new Error('Not audio');
 
         const objectUrl = URL.createObjectURL(blob);
         this.cache.set(cacheKey, objectUrl);
         return objectUrl;
       } catch (err) {
-        lastError = err;
+        console.warn('Preview candidate failed:', url, err.message);
       }
     }
 
-    const streamUrl = candidates.find((url) => url.includes('action=stream'));
-    if (streamUrl) return streamUrl;
-
-    throw lastError || new Error('Could not load preview');
+    throw new Error('Could not load Preview Link');
   },
 
   render(song) {
-    const driveId = this.getDriveId(song);
-    const fallbackUrl = Utils.resolvePreviewUrl(song);
+    const previewLink = song.previewLink || '';
+    const streamUrl = Utils.resolvePreviewUrl(song);
+    const openUrl = previewLink || streamUrl;
 
-    if (!fallbackUrl && !driveId) {
-      return '<span class="muted">No preview</span>';
+    if (!openUrl) {
+      return '<span class="muted">No Preview Link</span>';
     }
 
-    const openUrl = fallbackUrl || `https://drive.google.com/file/d/${driveId}/view`;
-    const songId = Utils.escapeHtml(song.id || driveId || 'preview');
+    const payload = encodeURIComponent(JSON.stringify({
+      id: song.id,
+      previewLink,
+      previewStreamUrl: song.previewStreamUrl || streamUrl,
+      previewDriveId: song.previewDriveId || Utils.extractDriveId(previewLink) || '',
+    }));
 
     return `
       <div class="preview-wrap">
         <audio class="preview-audio" controls preload="none"
-          data-song-id="${songId}"
-          data-preview-drive-id="${Utils.escapeHtml(driveId || '')}"
-          data-preview-fallback="${Utils.escapeHtml(fallbackUrl || '')}"></audio>
+          data-song-preview="${Utils.escapeHtml(payload)}"></audio>
         <div class="preview-status muted" aria-live="polite"></div>
         <a class="preview-open-link" href="${Utils.escapeHtml(openUrl)}" target="_blank" rel="noopener">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open MP3
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Preview
         </a>
       </div>`;
+  },
+
+  songFromAudio(audio) {
+    try {
+      return JSON.parse(decodeURIComponent(audio.dataset.songPreview || '%7B%7D'));
+    } catch {
+      return {};
+    }
   },
 
   setStatus(audio, message, isError) {
@@ -114,22 +105,12 @@ const AudioPlayer = {
     status.classList.toggle('error', !!isError);
   },
 
-  songFromAudio(audio) {
-    return {
-      id: audio.dataset.songId,
-      previewDriveId: audio.dataset.previewDriveId,
-      previewLink: audio.dataset.previewFallback,
-      mp3: audio.dataset.previewFallback,
-    };
-  },
-
   async prepare(audio) {
     if (!audio || audio.dataset.state === 'ready') return true;
 
     const song = this.songFromAudio(audio);
-    const candidates = this.getStreamCandidates(song);
-    if (!candidates.length) {
-      this.setStatus(audio, 'No preview available', true);
+    if (!song.previewLink && !song.previewStreamUrl) {
+      this.setStatus(audio, 'No Preview Link in catalog', true);
       return false;
     }
 
@@ -138,15 +119,14 @@ const AudioPlayer = {
     this.setStatus(audio, 'Loading preview…');
 
     try {
-      const src = await this.resolveUrl(song);
-      audio.src = src;
+      audio.src = await this.resolvePlaybackUrl(song);
       audio.dataset.state = 'ready';
       this.setStatus(audio, '');
       return true;
     } catch (err) {
       console.warn('Preview load failed:', err);
       audio.dataset.state = 'error';
-      this.setStatus(audio, 'Preview blocked — use Open MP3 or deploy Apps Script (see setup guide)', true);
+      this.setStatus(audio, 'Preview blocked — click Open Preview', true);
       return false;
     } finally {
       audio.classList.remove('is-loading');
@@ -164,9 +144,9 @@ const AudioPlayer = {
 
       try {
         await audio.play();
-      } catch (playErr) {
-        console.warn('Playback failed:', playErr);
-        this.setStatus(audio, 'Tap Open MP3 if playback is blocked', true);
+      } catch (err) {
+        console.warn('Playback failed:', err);
+        this.setStatus(audio, 'Click Open Preview to listen', true);
       }
     };
 
@@ -178,13 +158,28 @@ const AudioPlayer = {
     });
 
     audio.addEventListener('pointerdown', () => {
-      if (!audio.dataset.state) this.prepare(audio);
+      if (audio.dataset.state !== 'ready') this.prepare(audio);
     });
   },
 
   hydrate(root = document) {
-    root.querySelectorAll('audio[data-preview-fallback], audio[data-preview-drive-id]').forEach((audio) => {
-      this.bind(audio);
-    });
+    root.querySelectorAll('audio[data-song-preview]').forEach((audio) => this.bind(audio));
+  },
+
+  async playSong(song, audioEl) {
+    const payload = encodeURIComponent(JSON.stringify({
+      id: song.id,
+      previewLink: song.previewLink,
+      previewStreamUrl: song.previewStreamUrl || Utils.resolvePreviewUrl(song),
+      previewDriveId: song.previewDriveId || Utils.extractDriveId(song.previewLink) || '',
+    }));
+
+    audioEl.dataset.songPreview = payload;
+    audioEl.dataset.state = '';
+    delete audioEl.dataset.bound;
+    audioEl.removeAttribute('src');
+    this.bind(audioEl);
+    await this.prepare(audioEl);
+    return audioEl.play();
   },
 };

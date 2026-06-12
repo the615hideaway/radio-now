@@ -26,10 +26,17 @@ const Utils = {
     return `https://drive.google.com/uc?export=download&id=${id}`;
   },
 
-  toDriveStream(url) {
-    const id = this.extractDriveId(url);
-    if (!id) return url || '';
-    return `https://drive.google.com/uc?export=download&confirm=t&id=${id}`;
+  toPreviewStreamUrl(previewLink) {
+    const preview = String(previewLink || '').trim();
+    if (!preview || preview.startsWith('wix:')) return '';
+
+    const driveId = this.extractDriveId(preview);
+    if (driveId) {
+      return `https://drive.usercontent.google.com/download?id=${driveId}&export=download`;
+    }
+
+    if (/^https?:\/\//i.test(preview)) return preview;
+    return '';
   },
 
   toDriveThumbnail(url) {
@@ -38,15 +45,12 @@ const Utils = {
   },
 
   resolvePreviewUrl(song) {
-    const preview = song.previewLink || '';
-    if (preview && !preview.startsWith('wix:')) {
-      if (this.extractDriveId(preview)) return this.toDriveStream(preview);
-      if (/^https?:\/\//i.test(preview)) return preview;
-    }
-    return this.toDriveStream(song.mp3) || this.toDriveStream(preview) || preview;
+    if (song.previewStreamUrl) return song.previewStreamUrl;
+    return this.toPreviewStreamUrl(song.previewLink);
   },
 
   resolveCoverUrl(song) {
+    if (song.coverThumbnailUrl) return song.coverThumbnailUrl;
     const cover = song.cover || '';
     if (this.extractDriveId(cover)) return this.toDriveThumbnail(cover);
     if (/^https?:\/\//i.test(cover)) return cover;
@@ -63,6 +67,18 @@ const Utils = {
 
   formatDuration(value) {
     return value || '—';
+  },
+
+  formatSyncDate(iso) {
+    if (!iso) return 'unknown date';
+    const date = new Date(iso);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   },
 
   debounce(fn, wait = 200) {

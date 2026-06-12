@@ -259,21 +259,13 @@
     }
 
     const song = queue[queuePlayIndex];
-    const src = Utils.resolvePreviewUrl(song);
-    if (!src) return;
+    if (!song.previewLink && !song.previewStreamUrl) return;
 
     nowPlayingTitle.textContent = song.songTitle;
     nowPlayingArtist.textContent = song.artistName;
-    nowPlayingAudio.dataset.previewDriveId = song.previewDriveId || Utils.extractDriveId(src) || '';
-    nowPlayingAudio.dataset.previewFallback = src;
-    nowPlayingAudio.dataset.state = '';
-    delete nowPlayingAudio.dataset.bound;
-    nowPlayingAudio.removeAttribute('src');
-    AudioPlayer.bind(nowPlayingAudio);
 
     try {
-      await AudioPlayer.prepare(nowPlayingAudio);
-      await nowPlayingAudio.play();
+      await AudioPlayer.playSong(song, nowPlayingAudio);
       nowPlaying.classList.remove('hidden');
     } catch (err) {
       console.warn('Queue preview failed:', err);
@@ -328,34 +320,18 @@
   }
 
   async function checkConnection() {
-    if (RadioDB.isScriptConfigured()) {
-      try {
-        await RadioDB.testConnection();
-        connectionBanner.className = 'connection-banner success';
-        connectionBanner.innerHTML = '<i class="fa-solid fa-circle-check"></i><div><strong>Connected to Google Sheets</strong> via Apps Script</div>';
-      } catch (err) {
-        connectionBanner.className = 'connection-banner error';
-        connectionBanner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><div><strong>Connection issue.</strong> ${Utils.escapeHtml(err.message)}</div>`;
-      }
-      connectionBanner.classList.remove('hidden');
-      return;
+    try {
+      const meta = await RadioDB.getCatalogMeta();
+      connectionBanner.className = 'connection-banner success';
+      connectionBanner.innerHTML = `
+        <i class="fa-solid fa-circle-check"></i>
+        <div><strong>Catalog loaded from JSON</strong> — ${meta.songCount} songs, last synced ${Utils.formatSyncDate(meta.syncedAt)}. Run <code>scripts/sync-sheet-to-json.ps1</code> after sheet updates.</div>`;
+    } catch (err) {
+      connectionBanner.className = 'connection-banner error';
+      connectionBanner.innerHTML = `
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div><strong>Catalog JSON missing.</strong> ${Utils.escapeHtml(err.message)}</div>`;
     }
-
-    if (RadioDB.isGvizConfigured()) {
-      try {
-        await RadioDB.testConnection();
-        connectionBanner.className = 'connection-banner success';
-        connectionBanner.innerHTML = '<i class="fa-solid fa-circle-check"></i><div><strong>Connected to Google Sheets</strong> — live catalog sync</div>';
-      } catch (err) {
-        connectionBanner.className = 'connection-banner error';
-        connectionBanner.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><div><strong>Google Sheet error.</strong> ${Utils.escapeHtml(err.message)}</div>`;
-      }
-      connectionBanner.classList.remove('hidden');
-      return;
-    }
-
-    connectionBanner.className = 'connection-banner info';
-    connectionBanner.innerHTML = '<i class="fa-solid fa-database"></i><div><strong>Using local catalog data.</strong> Add your Google Apps Script URL in <code>js/config.js</code> to connect your sheet.</div>';
     connectionBanner.classList.remove('hidden');
   }
 
