@@ -21,9 +21,7 @@
   const clearDownloadBtn = document.getElementById('clear-download-btn');
   const downloadZipBtn = document.getElementById('download-zip-btn');
   const downloadFormat = document.getElementById('download-format');
-  const detailModal = document.getElementById('detail-modal');
-  const modalClose = document.getElementById('modal-close');
-  const modalBody = document.getElementById('modal-body');
+  const detailPanel = document.getElementById('detail-panel');
   const nowPlaying = document.getElementById('now-playing');
 
   const nowPlayingTitle = document.getElementById('now-playing-title');
@@ -36,6 +34,7 @@
   let queue = [];
   let downloadQueue = [];
   let queuePlayIndex = -1;
+  let expandedDetailId = null;
 
   function isAuthenticated() {
     return sessionStorage.getItem(CONFIG.authKey) === 'true';
@@ -130,8 +129,111 @@
       return matchesSearch && matchesStyle && matchesYear;
     });
 
+    if (expandedDetailId && !filteredSongs.some((s) => s.id === expandedDetailId)) {
+      expandedDetailId = null;
+      hideDetailPanel();
+    }
+
     renderCatalog();
     updateStats();
+  }
+
+  function hideDetailPanel() {
+    detailPanel.classList.add('hidden');
+    detailPanel.innerHTML = '';
+  }
+
+  function renderDetailPanel(song, shouldScroll = true) {
+    const inQueue = queue.some((q) => q.id === song.id);
+    const inDownload = downloadQueue.some((d) => d.id === song.id);
+
+    detailPanel.innerHTML = `
+      <div class="detail-panel-inner">
+        <div class="detail-panel-header">
+          <div class="detail-hero">
+            <div class="detail-cover">${renderCover(song)}</div>
+            <div class="detail-heading">
+              <h2>${Utils.escapeHtml(song.songTitle)}</h2>
+              <p class="detail-artist">${Utils.escapeHtml(song.artistName)}</p>
+              <div class="song-tags">
+                ${song.year ? `<span>${Utils.escapeHtml(song.year)}</span>` : ''}
+                ${song.songTime ? `<span>${Utils.escapeHtml(song.songTime)}</span>` : ''}
+                ${song.musicStyle ? `<span>${Utils.escapeHtml(song.musicStyle)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-ghost detail-close-btn" id="detail-close-btn" aria-label="Close details">
+            <i class="fa-solid fa-xmark"></i> Close
+          </button>
+        </div>
+        <div class="detail-preview">
+          <label>Preview</label>
+          ${renderPreview(song)}
+        </div>
+        <div class="detail-description">
+          <label>Description</label>
+          <p>${Utils.escapeHtml(song.description || '—')}</p>
+        </div>
+        <div class="detail-grid">
+          <div><label>Band Members</label><p>${Utils.escapeHtml(song.bandMembers || '—')}</p></div>
+          <div><label>Songwriter</label><p>${Utils.escapeHtml(song.songwriter || '—')}</p></div>
+          <div><label>Featured Artist</label><p>${Utils.escapeHtml(song.featuredArtist || '—')}</p></div>
+          <div><label>Record Label</label><p>${Utils.escapeHtml(song.recordLabel || '—')}</p></div>
+          <div><label>Contact E-Mail</label><p>${song.contactEmail ? `<a href="mailto:${Utils.escapeHtml(song.contactEmail)}">${Utils.escapeHtml(song.contactEmail)}</a>` : '—'}</p></div>
+          <div><label>Website</label><p>${song.website ? `<a href="${Utils.escapeHtml(song.website)}" target="_blank" rel="noopener">${Utils.escapeHtml(song.website)}</a>` : '—'}</p></div>
+        </div>
+        <div class="detail-downloads">
+          ${song.mp3 ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.mp3)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> MP3</a>` : ''}
+          ${song.wav ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.wav)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> WAV</a>` : ''}
+          <button class="btn btn-secondary add-download-detail-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+            <i class="fa-solid fa-download"></i> ${inDownload ? 'In Download Queue' : 'Add to Download Queue'}
+          </button>
+          <button class="btn btn-primary add-queue-detail-btn" data-id="${Utils.escapeHtml(song.id)}">
+            <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'In DJ Queue' : 'Add to DJ Queue'}
+          </button>
+        </div>
+      </div>`;
+
+    detailPanel.querySelector('#detail-close-btn').addEventListener('click', closeDetail);
+    detailPanel.querySelector('.add-queue-detail-btn').addEventListener('click', () => {
+      toggleQueue(song.id);
+      renderDetailPanel(allSongs.find((s) => s.id === song.id));
+    });
+    detailPanel.querySelector('.add-download-detail-btn').addEventListener('click', () => {
+      toggleDownloadQueue(song.id);
+      renderDetailPanel(allSongs.find((s) => s.id === song.id));
+    });
+
+    AudioPlayer.hydrate(detailPanel);
+    detailPanel.classList.remove('hidden');
+    if (shouldScroll) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function openDetail(id) {
+    if (expandedDetailId === id) {
+      closeDetail();
+      return;
+    }
+
+    const song = allSongs.find((s) => s.id === id);
+    if (!song) return;
+
+    expandedDetailId = id;
+    renderDetailPanel(song);
+    renderCatalog();
+  }
+
+  function closeDetail() {
+    expandedDetailId = null;
+    hideDetailPanel();
+    renderCatalog();
+  }
+
+  function refreshDetailPanelIfOpen() {
+    if (!expandedDetailId) return;
+    const song = allSongs.find((s) => s.id === expandedDetailId);
+    if (song) renderDetailPanel(song, false);
+    else closeDetail();
   }
 
   function renderCatalog() {
@@ -148,9 +250,9 @@
       const inQueue = queue.some((q) => q.id === song.id);
       const inDownload = downloadQueue.some((d) => d.id === song.id);
       return `
-        <article class="song-card ${inDownload ? 'in-download' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+        <article class="song-card ${inDownload ? 'in-download' : ''} ${expandedDetailId === song.id ? 'details-open' : ''}" data-id="${Utils.escapeHtml(song.id)}">
           <div class="song-card-top">
-            <button class="btn-icon details-btn" data-id="${Utils.escapeHtml(song.id)}" title="Song details">
+            <button class="btn-icon details-btn ${expandedDetailId === song.id ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="Song details">
               <i class="fa-solid fa-circle-info"></i>
             </button>
             <div class="song-card-top-actions">
@@ -218,6 +320,7 @@
     saveQueue();
     renderQueue();
     renderCatalog();
+    refreshDetailPanelIfOpen();
     updateStats();
   }
 
@@ -232,6 +335,7 @@
     saveDownloadQueue();
     renderDownloadQueue();
     renderCatalog();
+    refreshDetailPanelIfOpen();
     updateStats();
   }
 
@@ -325,63 +429,6 @@
     } catch (err) {
       console.warn('Queue preview failed:', err);
     }
-  }
-
-  function openDetail(id) {
-    const song = allSongs.find((s) => s.id === id);
-    if (!song) return;
-
-    const inDownload = downloadQueue.some((d) => d.id === song.id);
-
-    modalBody.innerHTML = `
-      <div class="detail-hero">
-        <div class="detail-cover">${renderCover(song)}</div>
-        <div>
-          <h2>${Utils.escapeHtml(song.songTitle)}</h2>
-          <p class="detail-artist">${Utils.escapeHtml(song.artistName)}</p>
-          <div class="song-tags">
-            ${song.year ? `<span>${Utils.escapeHtml(song.year)}</span>` : ''}
-            ${song.songTime ? `<span>${Utils.escapeHtml(song.songTime)}</span>` : ''}
-            ${song.musicStyle ? `<span>${Utils.escapeHtml(song.musicStyle)}</span>` : ''}
-          </div>
-        </div>
-      </div>
-      <div class="detail-preview">
-        <label>Preview</label>
-        ${renderPreview(song)}
-      </div>
-      <div class="detail-grid">
-        <div><label>Description</label><p>${Utils.escapeHtml(song.description || '—')}</p></div>
-        <div><label>Band Members</label><p>${Utils.escapeHtml(song.bandMembers || '—')}</p></div>
-        <div><label>Songwriter</label><p>${Utils.escapeHtml(song.songwriter || '—')}</p></div>
-        <div><label>Featured Artist</label><p>${Utils.escapeHtml(song.featuredArtist || '—')}</p></div>
-        <div><label>Record Label</label><p>${Utils.escapeHtml(song.recordLabel || '—')}</p></div>
-        <div><label>Contact E-Mail</label><p>${song.contactEmail ? `<a href="mailto:${Utils.escapeHtml(song.contactEmail)}">${Utils.escapeHtml(song.contactEmail)}</a>` : '—'}</p></div>
-        <div><label>Website</label><p>${song.website ? `<a href="${Utils.escapeHtml(song.website)}" target="_blank" rel="noopener">${Utils.escapeHtml(song.website)}</a>` : '—'}</p></div>
-      </div>
-      <div class="detail-downloads">
-        ${song.mp3 ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.mp3)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> MP3</a>` : ''}
-        ${song.wav ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.wav)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> WAV</a>` : ''}
-        <button class="btn btn-secondary add-download-modal-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
-          <i class="fa-solid fa-download"></i> ${inDownload ? 'In Download Queue' : 'Add to Download Queue'}
-        </button>
-        <button class="btn btn-primary add-queue-modal-btn" data-id="${Utils.escapeHtml(song.id)}">
-          <i class="fa-solid fa-list-ul"></i> Add to Queue
-        </button>
-      </div>`;
-
-    modalBody.querySelector('.add-queue-modal-btn').addEventListener('click', () => {
-      toggleQueue(song.id);
-      detailModal.classList.remove('open');
-    });
-
-    modalBody.querySelector('.add-download-modal-btn').addEventListener('click', () => {
-      toggleDownloadQueue(song.id);
-      detailModal.classList.remove('open');
-    });
-
-    AudioPlayer.hydrate(modalBody);
-    detailModal.classList.add('open');
   }
 
   async function checkConnection() {
@@ -519,11 +566,6 @@
       return;
     }
     playCurrentQueueTrack();
-  });
-
-  modalClose.addEventListener('click', () => detailModal.classList.remove('open'));
-  detailModal.addEventListener('click', (e) => {
-    if (e.target === detailModal) detailModal.classList.remove('open');
   });
 
   if (isAuthenticated()) showApp();

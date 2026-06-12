@@ -439,6 +439,11 @@ select { min-width: 130px; width: auto; }
   box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.2);
 }
 
+.song-card.details-open {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(244, 196, 48, 0.35);
+}
+
 .song-card-top {
   display: flex;
   justify-content: space-between;
@@ -895,98 +900,111 @@ select { min-width: 130px; width: auto; }
   height: 36px;
 }
 
-/* Modal */
+/* Detail panel */
 
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  z-index: 100;
-}
-
-.modal.open { display: flex; }
-
-.modal-card {
-  width: min(760px, 100%);
-  max-height: 90vh;
-  overflow-y: auto;
+.detail-panel {
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 2px solid rgba(244, 196, 48, 0.45);
   border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  position: relative;
+  margin-bottom: 1rem;
   box-shadow: var(--shadow);
 }
 
-.modal-close {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--text);
-  cursor: pointer;
+.detail-panel-inner {
+  padding: 1.5rem 1.75rem;
+}
+
+.detail-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.detail-close-btn {
+  flex-shrink: 0;
 }
 
 .detail-hero {
   display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: 180px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+  flex: 1;
+  min-width: 0;
 }
 
 .detail-cover {
-  width: 140px;
-  height: 140px;
-  border-radius: 12px;
+  width: 180px;
+  height: 180px;
+  border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
 .detail-cover img { width: 100%; height: 100%; object-fit: cover; }
 
+.detail-heading h2 {
+  margin: 0 0 0.35rem;
+  font-size: 2rem;
+  line-height: 1.15;
+  color: var(--gold-bright);
+}
+
 .detail-artist {
   color: var(--text-secondary);
-  margin: 0.2rem 0 0.5rem;
+  margin: 0 0 0.75rem;
+  font-size: 1.2rem;
 }
 
 .detail-preview {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.detail-preview label, .detail-grid label {
+.detail-preview label,
+.detail-description label,
+.detail-grid label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  margin-bottom: 0.25rem;
+  letter-spacing: 0.08em;
+  color: var(--gold-bright);
+  margin-bottom: 0.5rem;
+}
+
+.detail-description {
+  margin-bottom: 1.5rem;
+}
+
+.detail-description p {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.08rem;
+  line-height: 1.75;
+  max-width: 90ch;
 }
 
 .detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-bottom: 1rem;
+  gap: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .detail-grid p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.92rem;
+  font-size: 1.05rem;
+  line-height: 1.6;
 }
 
 .detail-downloads {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 0.65rem;
 }
 
 /* Empty state */
@@ -1018,13 +1036,31 @@ select { min-width: 130px; width: auto; }
 }
 
 @media (max-width: 640px) {
+  .detail-panel-inner {
+    padding: 1.1rem;
+  }
+
+  .detail-panel-header {
+    flex-direction: column;
+  }
+
   .detail-hero {
     grid-template-columns: 1fr;
   }
 
   .detail-cover {
     width: 100%;
-    max-width: 200px;
+    max-width: 220px;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .detail-heading h2 {
+    font-size: 1.5rem;
+  }
+
+  .detail-description p {
+    font-size: 1rem;
   }
 
   .detail-grid {
