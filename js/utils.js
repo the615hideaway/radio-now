@@ -151,4 +151,79 @@ const Utils = {
       timer = setTimeout(() => fn(...args), wait);
     };
   },
+
+  songYear(song) {
+    return parseInt(String(song.year || ''), 10) || 0;
+  },
+
+  compareSongsNewestFirst(a, b) {
+    const yearDiff = this.songYear(b) - this.songYear(a);
+    if (yearDiff !== 0) return yearDiff;
+    const indexDiff = (b.catalogIndex ?? -1) - (a.catalogIndex ?? -1);
+    if (indexDiff !== 0) return indexDiff;
+    return String(a.songTitle || '').localeCompare(String(b.songTitle || ''));
+  },
+
+  groupSongsByArtist(songs) {
+    const groups = new Map();
+
+    songs.forEach((song, index) => {
+      const name = String(song.artistName || 'Unknown Artist').trim() || 'Unknown Artist';
+      if (!groups.has(name)) {
+        groups.set(name, {
+          name,
+          songs: [],
+          maxYear: 0,
+          newestIndex: -1,
+        });
+      }
+
+      const group = groups.get(name);
+      const entry = { ...song, catalogIndex: index };
+      group.songs.push(entry);
+
+      const year = this.songYear(song);
+      if (year > group.maxYear) group.maxYear = year;
+      if (index > group.newestIndex) group.newestIndex = index;
+    });
+
+    const usedSlugs = new Set();
+
+    return Array.from(groups.values())
+      .map((group) => {
+        const sortedSongs = [...group.songs].sort((a, b) => this.compareSongsNewestFirst(a, b));
+        let slug = this.artistSlug(group.name);
+        const baseSlug = slug;
+        let suffix = 2;
+        while (usedSlugs.has(slug)) {
+          slug = `${baseSlug}-${suffix}`;
+          suffix += 1;
+        }
+        usedSlugs.add(slug);
+
+        return {
+          name: group.name,
+          slug,
+          songs: sortedSongs,
+          maxYear: group.maxYear,
+          newestIndex: group.newestIndex,
+          songCount: sortedSongs.length,
+          coverSong: sortedSongs[0],
+          website: sortedSongs[0]?.website || '',
+        };
+      })
+      .sort((a, b) => {
+        if (b.maxYear !== a.maxYear) return b.maxYear - a.maxYear;
+        if (b.newestIndex !== a.newestIndex) return b.newestIndex - a.newestIndex;
+        return a.name.localeCompare(b.name);
+      });
+  },
+
+  artistSlug(name) {
+    const slug = String(name || 'artist')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    return slug || 'artist';
+  },
 };

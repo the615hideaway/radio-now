@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Radio Now — DJ catalog for browsing, previewing, and downloading music.">
-  <title>Radio Now — (615) Hideaway Entertainment</title>
+  <meta name="description" content="Radio Now — Browse artists and their songs.">
+  <title>Artists — Radio Now</title>
   <link rel="icon" href="assets/logo.jpg" type="image/jpeg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +23,7 @@
           <p>(615) Hideaway Entertainment</p>
         </div>
       </div>
-      <p class="login-copy">Authorized radio programmers only. Enter the access password to browse the catalog, preview tracks, and build download playlists.</p>
+      <p class="login-copy">Authorized radio programmers only. Enter the access password to browse artists and build playlists.</p>
       <form id="login-form">
         <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
         <label for="password">Access Password</label>
@@ -47,8 +47,8 @@
           </div>
         </a>
         <nav class="site-nav" aria-label="Main navigation">
-          <a href="index.html" class="nav-link active">Catalog</a>
-          <a href="artists.html" class="nav-link">Artists</a>
+          <a href="index.html" class="nav-link">Catalog</a>
+          <a href="artists.html" class="nav-link active">Artists</a>
         </nav>
         <div class="header-actions">
           <button class="btn btn-ghost" id="logout-btn">
@@ -62,32 +62,26 @@
     <div id="connection-banner" class="connection-banner hidden"></div>
 
     <div class="layout">
-      <main class="catalog-panel">
+      <main class="catalog-panel artists-panel">
         <section class="toolbar">
           <div class="stats-row">
-            <div class="stat"><span id="stat-total">0</span><label>Songs</label></div>
+            <div class="stat"><span id="stat-artists">0</span><label>Artists</label></div>
+            <div class="stat"><span id="stat-songs">0</span><label>Songs</label></div>
             <div class="stat"><span id="stat-queue">0</span><label>DJ Queue</label></div>
-            <div class="stat"><span id="stat-download">0</span><label>Downloads</label></div>
           </div>
           <div class="filter-row">
             <div class="search-wrap">
               <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="search" id="search-input" placeholder="Search artist, song, style, label…" autocomplete="off">
+              <input type="search" id="artist-search" placeholder="Search artists…" autocomplete="off">
             </div>
-            <select id="style-filter" aria-label="Filter by music style">
-              <option value="">All styles</option>
-            </select>
-            <select id="year-filter" aria-label="Filter by year">
-              <option value="">All years</option>
-            </select>
-            <button class="btn btn-secondary" id="clear-filters-btn">Clear</button>
+            <button class="btn btn-secondary" id="clear-search-btn">Clear</button>
           </div>
-
+          <p class="artists-help">Artists are sorted by newest releases. Songs within each artist are newest first.</p>
         </section>
 
-        <section id="detail-panel" class="detail-panel hidden" aria-live="polite"></section>
+        <section id="artist-jump-nav" class="artist-jump-nav hidden" aria-label="Jump to artist"></section>
 
-        <section id="catalog-grid" class="catalog-grid" aria-live="polite"></section>
+        <section id="artists-list" class="artists-list" aria-live="polite"></section>
       </main>
 
       <aside class="queue-panel">
@@ -98,7 +92,7 @@
         <p class="queue-help">Add songs for show prep and play through previews.</p>
         <div id="queue-empty" class="queue-empty">
           <i class="fa-solid fa-headphones"></i>
-          <p>No songs in queue yet. Click <strong>Queue</strong> on any track to add it.</p>
+          <p>No songs in queue yet. Click <strong>Queue</strong> on any track.</p>
         </div>
         <div id="queue-list" class="queue-list"></div>
         <div class="queue-footer">
@@ -116,7 +110,7 @@
           <p class="queue-help">Queue tracks to bundle into a single ZIP file.</p>
           <div id="download-empty" class="queue-empty">
             <i class="fa-solid fa-file-zipper"></i>
-            <p>No downloads queued. Click <strong>+ Download</strong> on any track.</p>
+            <p>No downloads queued. Click <strong>Download</strong> on any track.</p>
           </div>
           <div id="download-list" class="queue-list download-list"></div>
           <div class="download-footer">
@@ -154,6 +148,6 @@
   <script src="js/utils.js"></script>
   <script src="js/audio-player.js"></script>
   <script src="js/database.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/artists-app.js"></script>
 </body>
 </html>
