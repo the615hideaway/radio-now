@@ -69,10 +69,42 @@ const Utils = {
       .trim() || 'Track';
   },
 
-  coverDownloadUrl(song) {
+  scriptStreamUrl(driveId) {
+    const id = String(driveId || '').trim();
+    const scriptUrl = String(CONFIG.googleScriptUrl || '').trim();
+    if (!id || !scriptUrl.includes('script.google.com')) return '';
+    return `${scriptUrl.replace(/\/$/, '')}?action=stream&id=${encodeURIComponent(id)}`;
+  },
+
+  driveApiMediaUrl(driveId) {
+    const id = String(driveId || '').trim();
+    const apiKey = String(CONFIG.googleApiKey || '').trim();
+    if (!id || !apiKey) return '';
+    return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media&key=${encodeURIComponent(apiKey)}`;
+  },
+
+  getCoverDownloadCandidates(song) {
+    const urls = [];
     const driveId = this.extractDriveId(song.cover || '');
-    if (driveId) return `https://drive.google.com/thumbnail?id=${driveId}&sz=w800`;
-    return this.resolveCoverUrl(song) || '';
+
+    if (driveId) {
+      const stream = this.scriptStreamUrl(driveId);
+      const api = this.driveApiMediaUrl(driveId);
+      if (stream) urls.push(stream);
+      if (api) urls.push(api);
+      urls.push(`https://drive.google.com/thumbnail?id=${driveId}&sz=w800`);
+      urls.push(...this.getDriveDownloadUrls(driveId));
+    }
+
+    [song.coverThumbnailUrl, this.resolveCoverUrl(song), song.cover].forEach((url) => {
+      if (url) urls.push(url);
+    });
+
+    return [...new Set(urls.filter(Boolean))];
+  },
+
+  coverDownloadUrl(song) {
+    return this.getCoverDownloadCandidates(song)[0] || '';
   },
 
   uniqueZipFilename(usedNames, artist, title, ext) {
@@ -110,6 +142,16 @@ const Utils = {
 
   getSongDownloadCandidates(song, format) {
     const urls = [];
+    const driveId = this.getSongDriveId(song, format);
+
+    if (driveId) {
+      const stream = this.scriptStreamUrl(driveId);
+      const api = this.driveApiMediaUrl(driveId);
+      if (stream) urls.push(stream);
+      if (api) urls.push(api);
+      urls.push(...this.getDriveDownloadUrls(driveId));
+    }
+
     const primary = format === 'wav' && song.wav ? song.wav : song.mp3;
     const fallback = format === 'wav' ? song.mp3 : (song.wav || '');
 
@@ -117,11 +159,14 @@ const Utils = {
       if (!url) return;
       urls.push(url);
       const id = this.extractDriveId(url);
-      if (id) urls.push(...this.getDriveDownloadUrls(id));
+      if (id) {
+        const stream = this.scriptStreamUrl(id);
+        const api = this.driveApiMediaUrl(id);
+        if (stream) urls.push(stream);
+        if (api) urls.push(api);
+        urls.push(...this.getDriveDownloadUrls(id));
+      }
     });
-
-    const driveId = this.getSongDriveId(song, format);
-    if (driveId) urls.push(...this.getDriveDownloadUrls(driveId));
 
     return [...new Set(urls.filter(Boolean))];
   },

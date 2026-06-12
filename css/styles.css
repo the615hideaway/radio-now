@@ -810,6 +810,19 @@ select { min-width: 130px; width: auto; }
   font-size: 0.82rem;
 }
 
+.queue-warning {
+  color: #c9a227;
+  background: rgba(244, 196, 48, 0.08);
+  border: 1px solid rgba(244, 196, 48, 0.25);
+  border-radius: 6px;
+  padding: 0.55rem 0.65rem;
+  line-height: 1.45;
+}
+
+.queue-warning code {
+  font-size: 0.78rem;
+}
+
 .queue-empty {
   text-align: center;
   color: var(--text-muted);

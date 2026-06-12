@@ -44,6 +44,7 @@
   function showApp() {
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
+    updateDownloadSetupNotice();
     loadQueuesFromStorage();
     checkConnection();
     loadSongs();
@@ -125,6 +126,12 @@
         playSongPreview(btn.dataset.id);
       });
     });
+  }
+
+  function updateDownloadSetupNotice() {
+    const notice = document.getElementById('download-setup-notice');
+    if (!notice) return;
+    notice.classList.toggle('hidden', RadioDB.isScriptConfigured());
   }
 
   function updateStats() {

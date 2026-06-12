@@ -35,9 +35,16 @@
     return sessionStorage.getItem(CONFIG.authKey) === 'true';
   }
 
+  function updateDownloadSetupNotice() {
+    const notice = document.getElementById('download-setup-notice');
+    if (!notice) return;
+    notice.classList.toggle('hidden', RadioDB.isScriptConfigured());
+  }
+
   function showApp() {
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
+    updateDownloadSetupNotice();
     loadArtist();
   }
 

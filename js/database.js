@@ -5,6 +5,11 @@ const RadioDB = {
     return !!(CONFIG.googleScriptUrl && CONFIG.googleScriptUrl.includes('script.google.com'));
   },
 
+  zipSetupHint() {
+    if (this.isScriptConfigured()) return '';
+    return ' ZIP downloads need a one-time Apps Script setup: open your Radio Now Google Sheet → Extensions → Apps Script → paste google-apps-script/Code.gs → Deploy as Web app (Anyone) → paste the /exec URL into js/config.js as googleScriptUrl. See AUDIO-FIX-STEPS.txt in the repo.';
+  },
+
   normalizeSong(raw, index) {
     const previewLink = String(raw.previewLink || raw['Preview Link'] || '').trim();
 
@@ -70,8 +75,13 @@ const RadioDB = {
     if (!songs.length) throw new Error('Download queue is empty.');
 
     if (this.isScriptConfigured()) {
-      return this.downloadZipViaScript(songs, format, onProgress);
+      try {
+        return await this.downloadZipViaScript(songs, format, onProgress);
+      } catch (err) {
+        console.warn('Server ZIP failed, retrying in browser via Apps Script stream:', err.message);
+      }
     }
+
     return this.downloadZipClient(songs, format, onProgress);
   },
 
@@ -102,19 +112,24 @@ const RadioDB = {
   },
 
   async fetchCoverBlob(song) {
-    const url = Utils.coverDownloadUrl(song);
-    if (!url) return null;
+    const candidates = Utils.getCoverDownloadCandidates(song);
+    if (!candidates.length) return null;
 
-    try {
-      const response = await fetch(url, { mode: 'cors', redirect: 'follow', credentials: 'omit' });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const blob = await response.blob();
-      if (!blob.size || blob.type === 'text/html') return null;
-      return blob;
-    } catch (err) {
-      console.warn('Cover fetch failed:', song.songTitle, err.message);
-      return null;
+    const errors = [];
+    for (const url of candidates) {
+      try {
+        const response = await fetch(url, { mode: 'cors', redirect: 'follow', credentials: 'omit' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        if (!blob.size || blob.type === 'text/html') throw new Error('not an image');
+        return blob;
+      } catch (err) {
+        errors.push(err.message);
+      }
     }
+
+    console.warn('Cover fetch failed:', song.songTitle, errors[errors.length - 1]);
+    return null;
   },
 
   coverExtension(blob) {
@@ -146,7 +161,7 @@ const RadioDB = {
 
     const response = await fetch(CONFIG.googleScriptUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({
         action: 'zip',
         format,
@@ -283,11 +298,8 @@ const RadioDB = {
     }
 
     if (!added) {
-      await this.downloadFilesIndividually(songs, format);
-      throw new Error(
-        `Could not build a ZIP in the browser (${errors.length} failed). `
-        + 'Opened individual downloads instead. For reliable ZIPs, deploy the Google Apps Script URL in config.js.'
-      );
+      const detail = errors.length ? errors.join('; ') : 'no download sources worked';
+      throw new Error(`Could not build a ZIP (${detail}).${this.zipSetupHint()}`);
     }
 
     onProgress?.({ current: songs.length, total: songs.length, added, status: 'zipping' });
@@ -297,7 +309,7 @@ const RadioDB = {
     onProgress?.({ current: songs.length, total: songs.length, added, status: 'done' });
 
     if (errors.length) {
-      throw new Error(`ZIP created with ${added} of ${songs.length} songs. Could not include: ${errors.join('; ')}`);
+      throw new Error(`ZIP created with ${added} of ${songs.length} songs. Could not include: ${errors.join('; ')}.${this.zipSetupHint()}`);
     }
   },
 };
