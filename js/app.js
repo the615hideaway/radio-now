@@ -35,6 +35,7 @@
   let downloadQueue = [];
   let queuePlayIndex = -1;
   let expandedDetailId = null;
+  let currentPreviewId = null;
 
   function isAuthenticated() {
     return sessionStorage.getItem(CONFIG.authKey) === 'true';
@@ -85,8 +86,45 @@
     return '<div class="cover-fallback"><i class="fa-solid fa-compact-disc"></i></div>';
   }
 
-  function renderPreview(song) {
-    return AudioPlayer.render(song);
+  function renderPlayButton(song) {
+    if (!AudioPlayer.hasPreview(song)) {
+      return '<span class="muted">No preview available</span>';
+    }
+    const isPlaying = currentPreviewId === song.id;
+    return `
+      <button type="button" class="btn btn-secondary btn-full preview-trigger-btn ${isPlaying ? 'is-playing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+        <i class="fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play'}"></i>
+        ${isPlaying ? 'Playing in Bottom Player' : 'Play Preview'}
+      </button>`;
+  }
+
+  async function playSongPreview(id, fromQueueIndex = -1) {
+    const song = allSongs.find((s) => s.id === id);
+    if (!song || !AudioPlayer.hasPreview(song)) return;
+
+    currentPreviewId = id;
+    if (fromQueueIndex >= 0) queuePlayIndex = fromQueueIndex;
+
+    nowPlayingTitle.textContent = song.songTitle;
+    nowPlayingArtist.textContent = song.artistName;
+
+    try {
+      await AudioPlayer.playSong(song);
+      nowPlaying.classList.remove('hidden');
+      renderCatalog();
+      refreshDetailPanelIfOpen();
+    } catch (err) {
+      console.warn('Preview failed:', err);
+    }
+  }
+
+  function bindPreviewButtons(root) {
+    root.querySelectorAll('.preview-trigger-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        playSongPreview(btn.dataset.id);
+      });
+    });
   }
 
   function updateStats() {
@@ -167,8 +205,7 @@
           </button>
         </div>
         <div class="detail-preview">
-          <label>Preview</label>
-          ${renderPreview(song)}
+          ${renderPlayButton(song)}
         </div>
         <div class="detail-description">
           <label>Description</label>
@@ -204,7 +241,7 @@
       renderDetailPanel(allSongs.find((s) => s.id === song.id));
     });
 
-    AudioPlayer.hydrate(detailPanel);
+    bindPreviewButtons(detailPanel);
     detailPanel.classList.remove('hidden');
     if (shouldScroll) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -250,11 +287,8 @@
       const inQueue = queue.some((q) => q.id === song.id);
       const inDownload = downloadQueue.some((d) => d.id === song.id);
       return `
-        <article class="song-card ${inDownload ? 'in-download' : ''} ${expandedDetailId === song.id ? 'details-open' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+        <article class="song-card ${inDownload ? 'in-download' : ''} ${expandedDetailId === song.id ? 'details-open' : ''} ${currentPreviewId === song.id ? 'is-previewing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
           <div class="song-card-top">
-            <button class="btn-icon details-btn ${expandedDetailId === song.id ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="Song details">
-              <i class="fa-solid fa-circle-info"></i>
-            </button>
             <div class="song-card-top-actions">
               <button class="btn-icon download-toggle ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inDownload ? 'Remove from download queue' : 'Add to download queue'}">
                 <i class="fa-solid ${inDownload ? 'fa-check' : 'fa-download'}"></i>
@@ -264,9 +298,7 @@
               </button>
             </div>
           </div>
-          <button class="song-cover-btn" data-id="${Utils.escapeHtml(song.id)}">
-            <div class="song-cover">${renderCover(song)}</div>
-          </button>
+          <div class="song-cover">${renderCover(song)}</div>
           <div class="song-meta">
             <h3>${Utils.escapeHtml(song.songTitle)}</h3>
             <p class="artist">${Utils.escapeHtml(song.artistName)}</p>
@@ -276,8 +308,11 @@
               ${song.musicStyle ? `<span>${Utils.escapeHtml(song.musicStyle)}</span>` : ''}
             </div>
           </div>
-          <div class="song-preview">${renderPreview(song)}</div>
+          <div class="song-preview">${renderPlayButton(song)}</div>
           <div class="song-actions">
+            <button class="btn btn-secondary btn-sm details-btn ${expandedDetailId === song.id ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+              <i class="fa-solid fa-circle-info"></i> Song Details
+            </button>
             <button class="btn btn-secondary btn-sm add-download-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
               <i class="fa-solid fa-download"></i> ${inDownload ? 'Queued' : 'Download'}
             </button>
@@ -288,9 +323,14 @@
         </article>`;
     }).join('');
 
-    catalogGrid.querySelectorAll('.details-btn, .song-cover-btn').forEach((btn) => {
-      btn.addEventListener('click', () => openDetail(btn.dataset.id));
+    catalogGrid.querySelectorAll('.details-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDetail(btn.dataset.id);
+      });
     });
+
+    bindPreviewButtons(catalogGrid);
 
     catalogGrid.querySelectorAll('.add-queue-btn, .queue-toggle').forEach((btn) => {
       btn.addEventListener('click', (e) => {
@@ -306,7 +346,6 @@
       });
     });
 
-    AudioPlayer.hydrate(catalogGrid);
   }
 
   function toggleQueue(id) {
@@ -375,8 +414,8 @@
 
     queueList.querySelectorAll('.play-one-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        queuePlayIndex = queue.findIndex((s) => s.id === btn.dataset.id);
-        playCurrentQueueTrack();
+        const index = queue.findIndex((s) => s.id === btn.dataset.id);
+        playSongPreview(btn.dataset.id, index);
       });
     });
   }
@@ -413,22 +452,13 @@
 
   async function playCurrentQueueTrack() {
     if (queuePlayIndex < 0 || queuePlayIndex >= queue.length) {
+      currentPreviewId = null;
       nowPlaying.classList.add('hidden');
+      renderCatalog();
       return;
     }
 
-    const song = queue[queuePlayIndex];
-    if (!song.previewLink && !song.previewStreamUrl && !song.previewDriveId) return;
-
-    nowPlayingTitle.textContent = song.songTitle;
-    nowPlayingArtist.textContent = song.artistName;
-
-    try {
-      await AudioPlayer.playSong(song);
-      nowPlaying.classList.remove('hidden');
-    } catch (err) {
-      console.warn('Queue preview failed:', err);
-    }
+    await playSongPreview(queue[queuePlayIndex].id, queuePlayIndex);
   }
 
   async function checkConnection() {
@@ -509,6 +539,7 @@
   clearQueueBtn.addEventListener('click', () => {
     queue = [];
     queuePlayIndex = -1;
+    currentPreviewId = null;
     saveQueue();
     renderQueue();
     renderCatalog();
@@ -562,7 +593,9 @@
     queuePlayIndex += 1;
     if (queuePlayIndex >= queue.length) {
       queuePlayIndex = -1;
+      currentPreviewId = null;
       nowPlaying.classList.add('hidden');
+      renderCatalog();
       return;
     }
     playCurrentQueueTrack();

@@ -446,7 +446,7 @@ select { min-width: 130px; width: auto; }
 
 .song-card-top {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 0.5rem;
 }
@@ -454,7 +454,11 @@ select { min-width: 130px; width: auto; }
 .song-card-top-actions {
   display: flex;
   gap: 0.35rem;
-  margin-left: auto;
+}
+
+.song-card.is-previewing {
+  border-color: rgba(230, 57, 57, 0.55);
+  box-shadow: 0 0 0 1px rgba(230, 57, 57, 0.25);
 }
 
 .song-select {
@@ -464,14 +468,6 @@ select { min-width: 130px; width: auto; }
 }
 
 .song-select input { accent-color: var(--gold); }
-
-.song-cover-btn {
-  border: none;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-}
 
 .song-cover {
   aspect-ratio: 1;
@@ -669,9 +665,17 @@ select { min-width: 130px; width: auto; }
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
-.preview-player--now-playing .preview-iframe {
-  height: 72px;
-  min-width: 280px;
+.preview-iframe--now-playing {
+  height: 88px;
+  min-width: 360px;
+  flex: 1;
+}
+
+.now-playing-fallback {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
 }
 
 .song-preview .preview-audio,
@@ -707,24 +711,37 @@ select { min-width: 130px; width: auto; }
   align-items: center;
 }
 
-.now-playing-player .preview-player {
-  width: 100%;
+.song-preview {
+  margin-top: 0.15rem;
+}
+
+.preview-trigger-btn.is-playing {
+  background: rgba(230, 57, 57, 0.15);
+  border-color: rgba(230, 57, 57, 0.55);
+  color: #ffb4b4;
 }
 
 .song-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.45rem;
   margin-top: auto;
 }
 
 .song-actions .btn {
   min-width: 0;
-  padding-left: 0.55rem;
-  padding-right: 0.55rem;
+  padding-left: 0.45rem;
+  padding-right: 0.45rem;
+  font-size: 0.78rem;
 }
 
 .song-actions .btn.active,
+.details-btn.active {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
 .add-download-btn.active {
   background: rgba(74, 222, 128, 0.12);
   border-color: rgba(74, 222, 128, 0.55);
@@ -961,9 +978,9 @@ select { min-width: 130px; width: auto; }
 
 .detail-preview {
   margin-bottom: 1.5rem;
+  max-width: 320px;
 }
 
-.detail-preview label,
 .detail-description label,
 .detail-grid label {
   display: block;
@@ -1065,6 +1082,15 @@ select { min-width: 130px; width: auto; }
 
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .song-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-iframe--now-playing {
+    min-width: 0;
+    width: 100%;
   }
 
   .now-playing {
