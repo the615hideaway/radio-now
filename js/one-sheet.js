@@ -37,46 +37,42 @@ const OneSheet = {
 
   promoStyles() {
     return `
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { margin: 0; padding: 0; background: #fff; color: #111; }
     .promo-sheet {
       width: 7.5in;
-      padding: 0.45in 0.5in;
+      padding: 0.4in 0.45in 0.5in;
       font-family: Georgia, "Times New Roman", serif;
       color: #111;
       background: #fff;
       line-height: 1.45;
     }
     .promo-brand {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       border-bottom: 3px solid #d4a017;
-      padding-bottom: 0.3rem;
-      margin-bottom: 0.85rem;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
       font-family: Arial, Helvetica, sans-serif;
     }
-    .promo-brand strong {
-      font-size: 0.95rem;
+    .promo-brand-title {
+      font-size: 15px;
+      font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: #9a7b0a;
     }
-    .promo-brand span {
-      font-size: 0.68rem;
+    .promo-brand-sub {
+      font-size: 10px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: #666;
+      text-align: right;
     }
-    .promo-hero {
-      display: grid;
-      grid-template-columns: 2.35in 1fr;
-      gap: 0.85rem;
-      align-items: start;
-      margin-bottom: 0.75rem;
-    }
+    .hero-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+    .hero-table td { vertical-align: top; padding: 0; }
+    .cover-cell { width: 2.2in; padding-right: 14px !important; }
     .promo-cover {
-      width: 2.35in;
-      height: 2.35in;
+      width: 2.1in;
+      height: 2.1in;
       object-fit: cover;
       border: 1px solid #ccc;
       border-radius: 4px;
@@ -84,121 +80,139 @@ const OneSheet = {
       display: block;
     }
     .promo-cover-placeholder {
-      width: 2.35in;
-      height: 2.35in;
+      width: 2.1in;
+      height: 2.1in;
       border: 1px solid #ccc;
       border-radius: 4px;
       background: #f3f3f3;
-      display: grid;
-      place-items: center;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 0.75rem;
+      font-size: 11px;
       color: #999;
       text-align: center;
-      padding: 0.5rem;
+      padding: 12px;
     }
-    .promo-titles h1 {
-      margin: 0 0 0.35rem;
+    .promo-title {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 1.85rem;
+      font-size: 28px;
       line-height: 1.1;
       font-weight: 700;
       color: #111;
+      margin-bottom: 8px;
     }
-    .promo-titles h2 {
-      margin: 0;
+    .promo-artist {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 1.25rem;
+      font-size: 18px;
       font-weight: 400;
       color: #444;
     }
-    .promo-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem 1.25rem;
-      margin-bottom: 0.85rem;
-      padding-bottom: 0.65rem;
-      border-bottom: 1px solid #ddd;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-    .promo-meta-item label {
-      display: block;
-      font-size: 0.65rem;
+    .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 14px; border-bottom: 1px solid #ddd; }
+    .meta-table td { padding: 0 18px 10px 0; vertical-align: top; font-family: Arial, Helvetica, sans-serif; }
+    .meta-label {
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: #888;
-      margin-bottom: 0.1rem;
+      margin-bottom: 3px;
     }
-    .promo-meta-item span {
-      font-size: 0.9rem;
+    .meta-value {
+      font-size: 13px;
       font-weight: 600;
       color: #111;
     }
-    .promo-section {
-      margin-bottom: 0.75rem;
-    }
-    .promo-section h3 {
-      margin: 0 0 0.35rem;
+    .promo-block { margin-bottom: 14px; page-break-inside: avoid; }
+    .promo-block h3 {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 0.68rem;
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: #888;
+      margin-bottom: 6px;
     }
-    .promo-section p {
-      margin: 0;
-      font-size: 0.9rem;
+    .promo-block p,
+    .promo-line {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
       color: #333;
-    }
-    .promo-lines {
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 0.84rem;
-      color: #222;
       line-height: 1.5;
+      margin: 0 0 3px;
     }
-    .promo-line { margin: 0; }
-    .promo-credits {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.45rem 1rem;
+    .credits-table { width: 100%; border-collapse: collapse; border-top: 1px solid #ddd; }
+    .credits-table td {
+      width: 50%;
+      padding: 10px 12px 0 0;
+      vertical-align: top;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 0.82rem;
-      color: #222;
-      border-top: 1px solid #ddd;
-      padding-top: 0.7rem;
+      font-size: 12px;
+      color: #111;
     }
-    .promo-credit label {
-      display: block;
-      font-size: 0.65rem;
+    .credit-label {
+      font-size: 9px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: #888;
-      margin-bottom: 0.12rem;
+      margin-bottom: 3px;
     }
-    .promo-credit span,
-    .promo-credit a {
-      color: #111;
-      word-break: break-word;
-      text-decoration: none;
-    }
+    .credit-value { color: #111; word-break: break-word; }
+    .credit-value a { color: #111; text-decoration: none; }
     .promo-footer {
-      margin-top: 0.85rem;
-      padding-top: 0.55rem;
+      margin-top: 16px;
+      padding-top: 10px;
       border-top: 1px solid #eee;
       text-align: center;
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 0.68rem;
+      font-size: 9px;
       color: #777;
       letter-spacing: 0.04em;
     }`;
   },
 
-  renderMetaItem(label, value) {
-    if (!value) return '';
-    return `<div class="promo-meta-item"><label>${this.escapeHtml(label)}</label><span>${this.escapeHtml(value)}</span></div>`;
+  renderMetaRow(song) {
+    const items = [
+      { label: 'Year', value: this.decodeText(song.year) },
+      { label: 'Song Time', value: this.decodeText(song.songTime) },
+      { label: 'Music Style', value: this.decodeText(song.musicStyle) },
+    ].filter((item) => item.value);
+
+    if (!items.length) return '';
+
+    const cells = items.map((item) => `
+      <td>
+        <div class="meta-label">${this.escapeHtml(item.label)}</div>
+        <div class="meta-value">${this.escapeHtml(item.value)}</div>
+      </td>`).join('');
+
+    return `<table class="meta-table"><tr>${cells}</tr></table>`;
+  },
+
+  renderCreditsBlock(song) {
+    const items = [
+      { label: 'Songwriter', value: this.decodeText(song.songwriter), isLink: false },
+      { label: 'Record Label', value: this.decodeText(song.recordLabel), isLink: false },
+      { label: 'Website', value: this.decodeText(song.website), isLink: true },
+      { label: 'Contact Email', value: this.decodeText(song.contactEmail), isEmail: true },
+    ].filter((item) => item.value);
+
+    if (!items.length) return '';
+
+    const cells = items.map((item) => {
+      let valueHtml = this.escapeHtml(item.value);
+      if (item.isEmail) valueHtml = `<a href="mailto:${valueHtml}">${valueHtml}</a>`;
+      if (item.isLink) valueHtml = `<a href="${valueHtml}">${valueHtml}</a>`;
+      return `<td>
+        <div class="credit-label">${this.escapeHtml(item.label)}</div>
+        <div class="credit-value">${valueHtml}</div>
+      </td>`;
+    });
+
+    const rows = [];
+    for (let i = 0; i < cells.length; i += 2) {
+      rows.push(`<tr>${cells[i]}${cells[i + 1] || '<td></td>'}</tr>`);
+    }
+
+    return `<table class="credits-table">${rows.join('')}</table>`;
   },
 
   renderPromoBody(song, options = {}) {
@@ -207,59 +221,57 @@ const OneSheet = {
     const description = this.decodeText(song.description);
     const bandLines = this.buildBandMemberLines(song);
     const coverSrc = options.coverSrc || '';
-    const coverHtml = coverSrc
-      ? `<img class="promo-cover" src="${this.escapeHtml(coverSrc)}" alt="${this.escapeHtml(title)} cover art">`
-      : '<div class="promo-cover-placeholder">Cover art<br>not available</div>';
 
-    const metaHtml = [
-      this.renderMetaItem('Year', this.decodeText(song.year)),
-      this.renderMetaItem('Song Time', this.decodeText(song.songTime)),
-      this.renderMetaItem('Music Style', this.decodeText(song.musicStyle)),
-    ].filter(Boolean).join('');
+    const coverHtml = coverSrc
+      ? `<img class="promo-cover" src="${this.escapeHtml(coverSrc)}" alt="${this.escapeHtml(title)} cover art" width="202" height="202">`
+      : '<div class="promo-cover-placeholder">Cover art not available</div>';
 
     const bandHtml = bandLines.length
-      ? `<section class="promo-section">
+      ? `<div class="promo-block">
           <h3>Band Members</h3>
-          <div class="promo-lines">${bandLines.map((line) => `<p class="promo-line">${this.escapeHtml(line)}</p>`).join('')}</div>
-        </section>`
+          ${bandLines.map((line) => `<p class="promo-line">${this.escapeHtml(line)}</p>`).join('')}
+        </div>`
       : '';
-
-    const website = this.decodeText(song.website);
-    const email = this.decodeText(song.contactEmail);
-    const songwriter = this.decodeText(song.songwriter);
-    const label = this.decodeText(song.recordLabel);
 
     return `
     <div class="promo-sheet">
-      <div class="promo-brand">
-        <strong>Radio Now</strong>
-        <span>(615) Hideaway Entertainment</span>
-      </div>
-      <div class="promo-hero">
-        ${coverHtml}
-        <div class="promo-titles">
-          <h1>${this.escapeHtml(title)}</h1>
-          <h2>${this.escapeHtml(artist)}</h2>
-        </div>
-      </div>
-      ${metaHtml ? `<div class="promo-meta">${metaHtml}</div>` : ''}
+      <table class="promo-brand" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td class="promo-brand-title">Radio Now</td>
+          <td class="promo-brand-sub">(615) Hideaway Entertainment</td>
+        </tr>
+      </table>
+
+      <table class="hero-table" cellpadding="0" cellspacing="0">
+        <tr>
+          <td class="cover-cell">${coverHtml}</td>
+          <td>
+            <div class="promo-title">${this.escapeHtml(title)}</div>
+            <div class="promo-artist">${this.escapeHtml(artist)}</div>
+          </td>
+        </tr>
+      </table>
+
+      ${this.renderMetaRow(song)}
+
       ${description ? `
-      <section class="promo-section">
+      <div class="promo-block">
         <h3>Description</h3>
         <p>${this.escapeHtml(description)}</p>
-      </section>` : ''}
+      </div>` : ''}
+
       ${bandHtml}
-      <section class="promo-section promo-credits">
-        ${songwriter ? `<div class="promo-credit"><label>Songwriter</label><span>${this.escapeHtml(songwriter)}</span></div>` : ''}
-        ${label ? `<div class="promo-credit"><label>Record Label</label><span>${this.escapeHtml(label)}</span></div>` : ''}
-        ${website ? `<div class="promo-credit"><label>Website</label><a href="${this.escapeHtml(website)}">${this.escapeHtml(website)}</a></div>` : ''}
-        ${email ? `<div class="promo-credit"><label>Contact Email</label><a href="mailto:${this.escapeHtml(email)}">${this.escapeHtml(email)}</a></div>` : ''}
-      </section>
+
+      <div class="promo-block">
+        ${this.renderCreditsBlock(song)}
+      </div>
+
       <div class="promo-footer">Radio Now DJ One-Sheet — For radio programmer use only</div>
     </div>`;
   },
 
   resolveCoverSrc(song, options = {}) {
+    if (options.coverSrc) return options.coverSrc;
     if (options.coverFile) return options.coverFile;
     if (options.coverDataUrl) return options.coverDataUrl;
     return Utils.resolveCoverUrl(song) || '';
@@ -268,9 +280,7 @@ const OneSheet = {
   generateHtml(song, options = {}) {
     const artist = this.decodeText(song.artistName) || 'Unknown Artist';
     const title = this.decodeText(song.songTitle) || 'Untitled';
-    const coverSrc = this.resolveCoverSrc(song, {
-      coverFile: options.hasCover ? (options.coverFile || 'cover.jpg') : '',
-    });
+    const coverSrc = this.resolveCoverSrc(song, options);
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -289,6 +299,21 @@ const OneSheet = {
   pdfFilename(song) {
     const base = Utils.zipFolderName(song.artistName, song.songTitle);
     return `${base} - One-Sheet.pdf`.replace(/[<>:"/\\|?*]/g, '');
+  },
+
+  waitForImages(root) {
+    const images = Array.from(root.querySelectorAll('img'));
+    if (!images.length) return Promise.resolve();
+
+    return Promise.all(images.map((img) => new Promise((resolve) => {
+      if (img.complete && img.naturalWidth) {
+        resolve();
+        return;
+      }
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      setTimeout(resolve, 2500);
+    })));
   },
 
   async loadCoverDataUrl(song) {
@@ -317,15 +342,22 @@ const OneSheet = {
     }
 
     const coverSrc = await this.loadCoverDataUrl(song);
-    const mount = document.createElement('div');
-    mount.style.position = 'fixed';
-    mount.style.left = '-10000px';
-    mount.style.top = '0';
-    mount.style.width = '7.5in';
-    mount.innerHTML = `<style>${this.promoStyles()}</style>${this.renderPromoBody(song, { coverSrc })}`;
-    document.body.appendChild(mount);
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.style.cssText = 'position:fixed;left:0;top:0;width:8.5in;height:11in;border:0;opacity:0;pointer-events:none;z-index:-1;';
+    document.body.appendChild(iframe);
 
-    const element = mount.querySelector('.promo-sheet');
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(this.generateHtml(song, { coverSrc }));
+    doc.close();
+
+    await this.waitForImages(doc.body);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    const element = doc.querySelector('.promo-sheet');
+    const sheetHeight = Math.max(element.scrollHeight, element.offsetHeight, 900);
+    const sheetWidth = Math.max(element.scrollWidth, element.offsetWidth, 720);
 
     try {
       await html2pdf()
@@ -339,18 +371,24 @@ const OneSheet = {
             allowTaint: true,
             logging: false,
             backgroundColor: '#ffffff',
+            width: sheetWidth,
+            height: sheetHeight,
+            windowWidth: sheetWidth,
+            windowHeight: sheetHeight,
+            scrollX: 0,
+            scrollY: 0,
           },
           jsPDF: {
             unit: 'in',
             format: 'letter',
             orientation: 'portrait',
           },
-          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+          pagebreak: { mode: ['css', 'legacy'] },
         })
         .from(element)
         .save();
     } finally {
-      mount.remove();
+      iframe.remove();
     }
   },
 };

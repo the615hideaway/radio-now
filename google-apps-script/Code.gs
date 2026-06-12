@@ -199,45 +199,117 @@ function stripHtml_(html) {
     .trim();
 }
 
-function oneSheetField_(label, value, isLink) {
-  if (!value) return '';
-  const content = isLink === 'email'
-    ? '<a href="mailto:' + escapeHtml_(value) + '">' + escapeHtml_(value) + '</a>'
-    : isLink === 'url'
-      ? '<a href="' + escapeHtml_(value) + '" target="_blank" rel="noopener">' + escapeHtml_(value) + '</a>'
-      : escapeHtml_(value);
-  return '<div class="detail"><dt>' + escapeHtml_(label) + '</dt><dd>' + content + '</dd></div>';
+function promoStyles_() {
+  return '*{box-sizing:border-box;margin:0;padding:0}body{margin:0;padding:0;background:#fff;color:#111}'
+    + '.promo-sheet{width:7.5in;padding:.4in .45in .5in;font-family:Georgia,serif;color:#111;background:#fff;line-height:1.45}'
+    + '.promo-brand{border-bottom:3px solid #d4a017;padding-bottom:8px;margin-bottom:16px;font-family:Arial,sans-serif}'
+    + '.promo-brand-title{font-size:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#9a7b0a}'
+    + '.promo-brand-sub{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#666;text-align:right}'
+    + '.hero-table{width:100%;border-collapse:collapse;margin-bottom:14px}'
+    + '.hero-table td{vertical-align:top;padding:0}'
+    + '.cover-cell{width:2.2in;padding-right:14px!important}'
+    + '.promo-cover{width:2.1in;height:2.1in;object-fit:cover;border:1px solid #ccc;border-radius:4px;background:#f3f3f3;display:block}'
+    + '.promo-cover-placeholder{width:2.1in;height:2.1in;border:1px solid #ccc;border-radius:4px;background:#f3f3f3;font-family:Arial,sans-serif;font-size:11px;color:#999;text-align:center;padding:12px}'
+    + '.promo-title{font-family:Arial,sans-serif;font-size:28px;line-height:1.1;font-weight:700;color:#111;margin-bottom:8px}'
+    + '.promo-artist{font-family:Arial,sans-serif;font-size:18px;font-weight:400;color:#444}'
+    + '.meta-table{width:100%;border-collapse:collapse;margin-bottom:14px;border-bottom:1px solid #ddd}'
+    + '.meta-table td{padding:0 18px 10px 0;vertical-align:top;font-family:Arial,sans-serif}'
+    + '.meta-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:3px}'
+    + '.meta-value{font-size:13px;font-weight:600;color:#111}'
+    + '.promo-block{margin-bottom:14px}'
+    + '.promo-block h3{font-family:Arial,sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#888;margin-bottom:6px}'
+    + '.promo-block p,.promo-line{font-family:Arial,sans-serif;font-size:12px;color:#333;line-height:1.5;margin:0 0 3px}'
+    + '.credits-table{width:100%;border-collapse:collapse;border-top:1px solid #ddd}'
+    + '.credits-table td{width:50%;padding:10px 12px 0 0;vertical-align:top;font-family:Arial,sans-serif;font-size:12px;color:#111}'
+    + '.credit-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:3px}'
+    + '.credit-value{color:#111;word-break:break-word}'
+    + '.credit-value a{color:#111;text-decoration:none}'
+    + '.promo-footer{margin-top:16px;padding-top:10px;border-top:1px solid #eee;text-align:center;font-family:Arial,sans-serif;font-size:9px;color:#777;letter-spacing:.04em}';
+}
+
+function renderMetaRow_(song) {
+  var items = [
+    { label: 'Year', value: stripHtml_(song.year) },
+    { label: 'Song Time', value: stripHtml_(song.songTime) },
+    { label: 'Music Style', value: stripHtml_(song.musicStyle) },
+  ];
+
+  var cells = [];
+  items.forEach(function (item) {
+    if (!item.value) return;
+    cells.push('<td><div class="meta-label">' + escapeHtml_(item.label) + '</div>'
+      + '<div class="meta-value">' + escapeHtml_(item.value) + '</div></td>');
+  });
+
+  return cells.length ? '<table class="meta-table"><tr>' + cells.join('') + '</tr></table>' : '';
+}
+
+function renderCreditsBlock_(song) {
+  var items = [
+    { label: 'Songwriter', value: stripHtml_(song.songwriter), kind: 'text' },
+    { label: 'Record Label', value: stripHtml_(song.recordLabel), kind: 'text' },
+    { label: 'Website', value: stripHtml_(song.website), kind: 'url' },
+    { label: 'Contact Email', value: stripHtml_(song.contactEmail), kind: 'email' },
+  ];
+
+  var cells = [];
+  items.forEach(function (item) {
+    if (!item.value) return;
+    var valueHtml = escapeHtml_(item.value);
+    if (item.kind === 'email') valueHtml = '<a href="mailto:' + valueHtml + '">' + valueHtml + '</a>';
+    if (item.kind === 'url') valueHtml = '<a href="' + valueHtml + '">' + valueHtml + '</a>';
+    cells.push('<td><div class="credit-label">' + escapeHtml_(item.label) + '</div>'
+      + '<div class="credit-value">' + valueHtml + '</div></td>');
+  });
+
+  if (!cells.length) return '';
+
+  var rows = [];
+  for (var i = 0; i < cells.length; i += 2) {
+    rows.push('<tr>' + cells[i] + (cells[i + 1] || '<td></td>') + '</tr>');
+  }
+
+  return '<table class="credits-table">' + rows.join('') + '</table>';
+}
+
+function renderBandMembersBlock_(song) {
+  var lines = bandMemberLinesFromSong_(song);
+  if (!lines.length) return '';
+
+  var lineHtml = lines.map(function (line) {
+    return '<p class="promo-line">' + escapeHtml_(line) + '</p>';
+  }).join('');
+
+  return '<div class="promo-block"><h3>Band Members</h3>' + lineHtml + '</div>';
 }
 
 function generateOneSheetHtml_(song, coverFile, hasCover) {
-  const artist = stripHtml_(song.artistName) || 'Unknown Artist';
-  const title = stripHtml_(song.songTitle) || 'Untitled';
-  const description = stripHtml_(song.description);
-  const coverHtml = hasCover
-    ? '<img class="cover" src="' + escapeHtml_(coverFile) + '" alt="' + escapeHtml_(title) + ' cover art">'
-    : '<div class="cover cover-placeholder">Cover not available</div>';
-
-  const details = [
-    oneSheetField_('Year', song.year),
-    oneSheetField_('Song Time', song.songTime),
-    oneSheetField_('Music Style', song.musicStyle),
-    oneSheetField_('Songwriter', song.songwriter),
-    oneSheetField_('Featured Artist', song.featuredArtist),
-    oneSheetField_('Record Label', song.recordLabel),
-    oneSheetField_('Contact', song.contactEmail, 'email'),
-    oneSheetField_('Website', song.website, 'url'),
-  ].join('');
+  var artist = stripHtml_(song.artistName) || 'Unknown Artist';
+  var title = stripHtml_(song.songTitle) || 'Untitled';
+  var description = stripHtml_(song.description);
+  var coverHtml = hasCover
+    ? '<img class="promo-cover" src="' + escapeHtml_(coverFile) + '" alt="' + escapeHtml_(title) + ' cover art" width="202" height="202">'
+    : '<div class="promo-cover-placeholder">Cover art not available</div>';
 
   return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>'
     + escapeHtml_(artist) + ' - ' + escapeHtml_(title)
-    + '</title><style>*{box-sizing:border-box}body{margin:0;font-family:Georgia,serif;color:#111;background:#fff;line-height:1.5}.sheet{max-width:8.5in;margin:0 auto;padding:.55in}.brand{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #f4c430;padding-bottom:.35rem;margin-bottom:1rem}.brand h1{margin:0;font-family:Arial,sans-serif;font-size:1.15rem;letter-spacing:.04em;text-transform:uppercase;color:#b8860b}.brand p{margin:0;font-family:Arial,sans-serif;font-size:.75rem;color:#666;text-transform:uppercase;letter-spacing:.08em}.hero{display:grid;grid-template-columns:2.2in 1fr;gap:1rem;margin-bottom:1rem}.cover{width:2.2in;height:2.2in;object-fit:cover;border:1px solid #ddd;border-radius:6px;background:#f5f5f5}.cover-placeholder{display:grid;place-items:center;font-family:Arial,sans-serif;font-size:.8rem;color:#999}.title-block h2{margin:0 0 .25rem;font-size:1.65rem;line-height:1.15}.title-block h3{margin:0 0 .75rem;font-size:1.1rem;font-weight:normal;color:#444}.details{display:grid;grid-template-columns:1fr 1fr;gap:.45rem 1rem;font-family:Arial,sans-serif;font-size:.82rem}.detail dt{margin:0;font-weight:700;text-transform:uppercase;letter-spacing:.05em;font-size:.68rem;color:#888}.detail dd{margin:.1rem 0 0;color:#222}.detail dd a{color:#8b6914;word-break:break-word}.description,.band-members{border-top:1px solid #ddd;padding-top:.85rem;margin-top:.85rem}.description h4,.band-members h4{margin:0 0 .45rem;font-family:Arial,sans-serif;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:#888}.description p{margin:0;font-size:.92rem;color:#333;white-space:pre-wrap}.band-lines{font-family:Arial,sans-serif;font-size:.88rem;color:#333;line-height:1.55}.band-line{margin:0}.footer{margin-top:1rem;padding-top:.65rem;border-top:1px solid #eee;font-family:Arial,sans-serif;font-size:.72rem;color:#777;text-align:center}</style></head><body><div class="sheet"><div class="brand"><h1>Radio Now</h1><p>(615) Hideaway Entertainment</p></div><div class="hero">'
-    + coverHtml
-    + '<div class="title-block"><h2>' + escapeHtml_(title) + '</h2><h3>' + escapeHtml_(artist) + '</h3><dl class="details">'
-    + details
-    + '</dl></div></div>'
-    + (description ? '<section class="description"><h4>Description</h4><p>' + escapeHtml_(description) + '</p></section>' : '')
-    + bandMembersSectionHtml_(song)
-    + '<div class="footer">Radio Now DJ One-Sheet — For radio programmer use only</div></div></body></html>';
+    + ' | Radio Now One-Sheet</title><style>' + promoStyles_() + '</style></head><body>'
+    + '<div class="promo-sheet">'
+    + '<table class="promo-brand" width="100%" cellpadding="0" cellspacing="0"><tr>'
+    + '<td class="promo-brand-title">Radio Now</td>'
+    + '<td class="promo-brand-sub">(615) Hideaway Entertainment</td>'
+    + '</tr></table>'
+    + '<table class="hero-table" cellpadding="0" cellspacing="0"><tr>'
+    + '<td class="cover-cell">' + coverHtml + '</td>'
+    + '<td><div class="promo-title">' + escapeHtml_(title) + '</div>'
+    + '<div class="promo-artist">' + escapeHtml_(artist) + '</div></td>'
+    + '</tr></table>'
+    + renderMetaRow_(song)
+    + (description ? '<div class="promo-block"><h3>Description</h3><p>' + escapeHtml_(description) + '</p></div>' : '')
+    + renderBandMembersBlock_(song)
+    + '<div class="promo-block">' + renderCreditsBlock_(song) + '</div>'
+    + '<div class="promo-footer">Radio Now DJ One-Sheet — For radio programmer use only</div>'
+    + '</div></body></html>';
 }
 
 function fetchCoverBlob_(song) {
