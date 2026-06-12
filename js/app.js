@@ -235,8 +235,8 @@
           <div><label>Website</label><p>${song.website ? `<a href="${Utils.escapeHtml(song.website)}" target="_blank" rel="noopener">${Utils.escapeHtml(song.website)}</a>` : '—'}</p></div>
         </div>
         <div class="detail-downloads">
-          <button class="btn btn-secondary download-onesheet-pdf-btn" type="button">
-            <i class="fa-solid fa-file-pdf"></i> Download One-Sheet PDF
+          <button class="btn btn-secondary print-onesheet-btn" type="button">
+            <i class="fa-solid fa-print"></i> Print One-Sheet
           </button>
           ${song.mp3 ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.mp3)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> MP3</a>` : ''}
           ${song.wav ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.wav)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> WAV</a>` : ''}
@@ -260,19 +260,19 @@
       renderDetailPanel(allSongs.find((s) => s.id === song.id));
     });
 
-    const pdfBtn = detailPanel.querySelector('.download-onesheet-pdf-btn');
-    if (pdfBtn) {
-      pdfBtn.addEventListener('click', async () => {
-        const originalHtml = pdfBtn.innerHTML;
-        pdfBtn.disabled = true;
-        pdfBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF…';
+    const printBtn = detailPanel.querySelector('.print-onesheet-btn');
+    if (printBtn) {
+      printBtn.addEventListener('click', async () => {
+        const originalHtml = printBtn.innerHTML;
+        printBtn.disabled = true;
+        printBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Opening…';
         try {
-          await OneSheet.downloadPdf(song);
+          await OneSheet.printOneSheet(song);
         } catch (err) {
-          alert(err.message || 'Could not generate one-sheet PDF.');
+          alert(err.message || 'Could not open one-sheet for printing.');
         } finally {
-          pdfBtn.disabled = false;
-          pdfBtn.innerHTML = originalHtml;
+          printBtn.disabled = false;
+          printBtn.innerHTML = originalHtml;
         }
       });
     }

@@ -166,6 +166,36 @@ const OneSheet = {
       font-size: 9px;
       color: #777;
       letter-spacing: 0.04em;
+    }
+    .print-bar {
+      padding: 14px 16px;
+      background: #f8f4e8;
+      border-bottom: 1px solid #d4a017;
+      font-family: Arial, Helvetica, sans-serif;
+      text-align: center;
+    }
+    .print-bar button {
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #9a7b0a;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
+    .print-bar p {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: #555;
+    }
+    @page { size: letter portrait; margin: 0.5in; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; }
+      .promo-sheet { width: auto; max-width: none; padding: 0; }
+      .promo-cover { max-width: 2.1in; }
+      a { color: #000 !important; text-decoration: none; }
     }`;
   },
 
@@ -281,6 +311,12 @@ const OneSheet = {
     const artist = this.decodeText(song.artistName) || 'Unknown Artist';
     const title = this.decodeText(song.songTitle) || 'Untitled';
     const coverSrc = this.resolveCoverSrc(song, options);
+    const printBar = options.forPrint
+      ? `<div class="print-bar no-print">
+          <button type="button" onclick="window.print()">Print / Save as PDF</button>
+          <p>In the print dialog, choose <strong>Save as PDF</strong> to download.</p>
+        </div>`
+      : '';
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -291,14 +327,10 @@ const OneSheet = {
   <style>${this.promoStyles()}</style>
 </head>
 <body>
+  ${printBar}
   ${this.renderPromoBody(song, { coverSrc })}
 </body>
 </html>`;
-  },
-
-  pdfFilename(song) {
-    const base = Utils.zipFolderName(song.artistName, song.songTitle);
-    return `${base} - One-Sheet.pdf`.replace(/[<>:"/\\|?*]/g, '');
   },
 
   waitForImages(root) {
@@ -336,59 +368,33 @@ const OneSheet = {
     return Utils.resolveCoverUrl(song) || '';
   },
 
-  async downloadPdf(song) {
-    if (!window.html2pdf) {
-      throw new Error('PDF library not loaded. Refresh the page and try again.');
-    }
-
+  async printOneSheet(song) {
     const coverSrc = await this.loadCoverDataUrl(song);
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('aria-hidden', 'true');
-    iframe.style.cssText = 'position:fixed;left:0;top:0;width:8.5in;height:11in;border:0;opacity:0;pointer-events:none;z-index:-1;';
-    document.body.appendChild(iframe);
+    const printWin = window.open('', '_blank');
 
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open();
-    doc.write(this.generateHtml(song, { coverSrc }));
-    doc.close();
-
-    await this.waitForImages(doc.body);
-    await new Promise((resolve) => setTimeout(resolve, 150));
-
-    const element = doc.querySelector('.promo-sheet');
-    const sheetHeight = Math.max(element.scrollHeight, element.offsetHeight, 900);
-    const sheetWidth = Math.max(element.scrollWidth, element.offsetWidth, 720);
-
-    try {
-      await html2pdf()
-        .set({
-          margin: [0.35, 0.4, 0.35, 0.4],
-          filename: this.pdfFilename(song),
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-            backgroundColor: '#ffffff',
-            width: sheetWidth,
-            height: sheetHeight,
-            windowWidth: sheetWidth,
-            windowHeight: sheetHeight,
-            scrollX: 0,
-            scrollY: 0,
-          },
-          jsPDF: {
-            unit: 'in',
-            format: 'letter',
-            orientation: 'portrait',
-          },
-          pagebreak: { mode: ['css', 'legacy'] },
-        })
-        .from(element)
-        .save();
-    } finally {
-      iframe.remove();
+    if (!printWin) {
+      throw new Error('Pop-up blocked. Allow pop-ups for this site, then try again.');
     }
+
+    printWin.document.open();
+    printWin.document.write(this.generateHtml(song, { coverSrc, forPrint: true }));
+    printWin.document.close();
+
+    const runPrint = async () => {
+      await this.waitForImages(printWin.document.body);
+      printWin.focus();
+      printWin.print();
+    };
+
+    if (printWin.document.readyState === 'complete') {
+      await runPrint();
+      return;
+    }
+
+    printWin.addEventListener('load', () => {
+      runPrint().catch((err) => {
+        console.warn('Print failed:', err.message);
+      });
+    });
   },
 };
