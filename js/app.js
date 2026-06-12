@@ -74,9 +74,7 @@
   }
 
   function renderPreview(song) {
-    const src = Utils.resolvePreviewUrl(song);
-    if (!src) return '<span class="muted">No preview</span>';
-    return `<audio controls preload="none" src="${Utils.escapeHtml(src)}"></audio>`;
+    return AudioPlayer.render(song);
   }
 
   function updateStats() {
@@ -193,6 +191,8 @@
         toggleQueue(btn.dataset.id);
       });
     });
+
+    AudioPlayer.hydrate(catalogGrid);
   }
 
   function toggleQueue(id) {
@@ -251,7 +251,7 @@
     });
   }
 
-  function playCurrentQueueTrack() {
+  async function playCurrentQueueTrack() {
     if (queuePlayIndex < 0 || queuePlayIndex >= queue.length) {
       nowPlaying.classList.add('hidden');
       nowPlayingAudio.pause();
@@ -264,9 +264,19 @@
 
     nowPlayingTitle.textContent = song.songTitle;
     nowPlayingArtist.textContent = song.artistName;
-    nowPlayingAudio.src = src;
-    nowPlayingAudio.play().catch(() => {});
-    nowPlaying.classList.remove('hidden');
+    nowPlayingAudio.dataset.previewSrc = src;
+    nowPlayingAudio.dataset.ready = '';
+    delete nowPlayingAudio.dataset.bound;
+    nowPlayingAudio.removeAttribute('src');
+    AudioPlayer.bind(nowPlayingAudio);
+
+    try {
+      await AudioPlayer.prepare(nowPlayingAudio);
+      await nowPlayingAudio.play();
+      nowPlaying.classList.remove('hidden');
+    } catch (err) {
+      console.warn('Queue preview failed:', err);
+    }
   }
 
   function openDetail(id) {
@@ -312,6 +322,7 @@
       detailModal.classList.remove('open');
     });
 
+    AudioPlayer.hydrate(modalBody);
     detailModal.classList.add('open');
   }
 

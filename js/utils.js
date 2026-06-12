@@ -22,7 +22,14 @@ const Utils = {
 
   toDriveDownload(url) {
     const id = this.extractDriveId(url);
-    return id ? `https://drive.google.com/uc?export=download&id=${id}` : url || '';
+    if (!id) return url || '';
+    return `https://drive.google.com/uc?export=download&id=${id}`;
+  },
+
+  toDriveStream(url) {
+    const id = this.extractDriveId(url);
+    if (!id) return url || '';
+    return `https://drive.google.com/uc?export=download&confirm=t&id=${id}`;
   },
 
   toDriveThumbnail(url) {
@@ -33,10 +40,10 @@ const Utils = {
   resolvePreviewUrl(song) {
     const preview = song.previewLink || '';
     if (preview && !preview.startsWith('wix:')) {
-      if (this.extractDriveId(preview)) return this.toDriveDownload(preview);
+      if (this.extractDriveId(preview)) return this.toDriveStream(preview);
       if (/^https?:\/\//i.test(preview)) return preview;
     }
-    return this.toDriveDownload(song.mp3) || preview;
+    return this.toDriveStream(song.mp3) || this.toDriveStream(preview) || preview;
   },
 
   resolveCoverUrl(song) {
