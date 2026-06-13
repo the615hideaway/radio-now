@@ -39,6 +39,19 @@ const DjActivity = {
     return DjAuth.authRequest('dj_dashboard');
   },
 
+  async fetchDemoDashboard() {
+    const scriptUrl = String(CONFIG.googleScriptUrl || '').trim();
+    if (!scriptUrl.includes('script.google.com')) {
+      throw new Error('Demo dashboard needs Apps Script setup.');
+    }
+
+    const url = `${scriptUrl.replace(/\/$/, '')}?action=demo_dashboard`;
+    const response = await fetch(url, { cache: 'no-store' });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Demo dashboard unavailable');
+    return data;
+  },
+
   async updateShareEmail(shareEmail) {
     const data = await DjAuth.authRequest('dj_profile_update', { shareEmail: !!shareEmail });
     DjAuth.updateDjProfile(data.dj);

@@ -564,6 +564,84 @@ a:hover { color: var(--white); }
   }
 }
 
+.login-demo-links {
+  margin: 0 0 1.25rem;
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.login-demo-links a {
+  color: var(--gold-bright);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-demo-links a:hover {
+  text-decoration: underline;
+}
+
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1.25rem;
+  background: rgba(244, 196, 48, 0.12);
+  border-bottom: 1px solid rgba(244, 196, 48, 0.35);
+  color: var(--text-primary);
+}
+
+.demo-banner.hidden {
+  display: none;
+}
+
+.demo-banner-copy {
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.demo-sales-note {
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(244, 196, 48, 0.1);
+  border: 1px solid rgba(244, 196, 48, 0.28);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.demo-sales-note strong {
+  color: var(--gold-bright);
+}
+
+.demo-sales-sub {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+body.demo-mode .download-queue-section,
+body.demo-mode .add-download-btn,
+body.demo-mode .download-toggle,
+body.demo-mode .add-download-detail-btn,
+body.demo-mode .download-track-btn,
+body.demo-mode #stat-download {
+  display: none !important;
+}
+
+body.demo-mode .detail-downloads .download-onesheet-btn {
+  width: 100%;
+}
+
 .login-card label {
   display: block;
   margin-bottom: 0.4rem;

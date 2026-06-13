@@ -1,4 +1,5 @@
 (function () {
+  const isDemoMode = Demo.isActive();
   const loginGate = document.getElementById('login-gate');
   const appShell = document.getElementById('app-shell');
   const logoutBtn = document.getElementById('logout-btn');
@@ -41,7 +42,12 @@
   function showApp() {
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
-    DjAuthUI.updateWelcome();
+    if (isDemoMode) {
+      Demo.applyMode();
+      Demo.bindExit(logoutBtn);
+    } else {
+      DjAuthUI.updateWelcome();
+    }
     updateDownloadSetupNotice();
     loadQueuesFromStorage();
     checkConnection();
@@ -58,6 +64,10 @@
   }
 
   function triggerTrackedDownload(song, format) {
+    if (isDemoMode) {
+      alert('Sign up for a free DJ account to download MP3 and WAV files.');
+      return;
+    }
     const url = format === 'wav' ? song.wav : song.mp3;
     if (!url) return;
     RadioDB.triggerFileDownload(url, Utils.safeFilename(song.artistName, song.songTitle, format));
@@ -245,6 +255,7 @@
           <div><label>Website</label><p>${song.website ? `<a href="${Utils.escapeHtml(song.website)}" target="_blank" rel="noopener">${Utils.escapeHtml(song.website)}</a>` : '—'}</p></div>
         </div>
         <div class="detail-downloads">
+          ${isDemoMode ? Demo.salesNoteHtml() : ''}
           <button class="btn btn-secondary download-onesheet-btn" type="button">
             <i class="fa-solid fa-file-pdf"></i> Download One-Sheet
           </button>
@@ -274,6 +285,10 @@
       btn.addEventListener('click', async () => {
         const format = btn.dataset.format;
         if (format === 'wav') {
+          if (isDemoMode) {
+            alert('Sign up for a free DJ account to download WAV files.');
+            return;
+          }
           const originalHtml = btn.innerHTML;
           btn.disabled = true;
           btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Downloading WAV…';
@@ -300,7 +315,7 @@
         downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating PDF…';
         try {
           await OneSheet.downloadOneSheet(song);
-          DjActivity.log(song, 'download_onesheet', 'pdf');
+          if (!isDemoMode) DjActivity.log(song, 'download_onesheet', 'pdf');
         } catch (err) {
           alert(err.message || 'Could not download one-sheet PDF.');
         } finally {
@@ -572,8 +587,14 @@
     renderDownloadQueue();
   }
 
-  DjAuthUI.init({ onAuthenticated: showApp });
-  DjAuthUI.bindLogout(logoutBtn, showLogin);
+  if (isDemoMode) {
+    showApp();
+  } else {
+    DjAuthUI.init({ onAuthenticated: showApp });
+    DjAuthUI.bindLogout(logoutBtn, showLogin);
+    if (DjAuth.isAuthenticated()) showApp();
+    else showLogin();
+  }
 
   searchInput.addEventListener('input', Utils.debounce(filterSongs, 180));
   styleFilter.addEventListener('change', filterSongs);
@@ -605,6 +626,10 @@
   });
 
   downloadZipBtn.addEventListener('click', async () => {
+    if (isDemoMode) {
+      alert('Sign up for a free DJ account to download MP3 ZIP files.');
+      return;
+    }
     if (!downloadQueue.length) return;
 
     const total = downloadQueue.length;
@@ -656,6 +681,4 @@
     playCurrentQueueTrack();
   });
 
-  if (isAuthenticated()) showApp();
-  else showLogin();
 })();

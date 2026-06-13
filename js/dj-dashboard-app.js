@@ -1,7 +1,9 @@
 (function () {
+  const isDemoMode = Demo.isActive();
   const loginGate = document.getElementById('login-gate');
   const appShell = document.getElementById('app-shell');
   const logoutBtn = document.getElementById('logout-btn');
+  const privacyPanel = document.getElementById('privacy-panel');
   const dashboardTitle = document.getElementById('dashboard-title');
   const dashboardStats = document.getElementById('dashboard-stats');
   const dashboardHistory = document.getElementById('dashboard-history');
@@ -12,7 +14,13 @@
   function showApp() {
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
-    DjAuthUI.updateWelcome();
+    if (isDemoMode) {
+      Demo.applyMode();
+      Demo.bindExit(logoutBtn);
+      if (privacyPanel) privacyPanel.classList.add('hidden');
+    } else {
+      DjAuthUI.updateWelcome();
+    }
     loadDashboard();
   }
 
@@ -74,8 +82,10 @@
   }
 
   async function loadDashboard() {
-    const dj = DjAuth.getDj();
-    dashboardTitle.textContent = dj?.name ? `${dj.name}, your download history` : 'Your download history';
+    const dj = isDemoMode ? null : DjAuth.getDj();
+    dashboardTitle.textContent = isDemoMode
+      ? 'Demo DJ dashboard'
+      : (dj?.name ? `${dj.name}, your download history` : 'Your download history');
     dashboardStats.innerHTML = `
       <div class="dj-stat-card">
         <span class="dj-stat-value"><i class="fa-solid fa-spinner fa-spin"></i></span>
@@ -88,11 +98,23 @@
       </div>`;
 
     try {
-      const data = await DjActivity.fetchDashboard();
-      DjAuth.updateDjProfile(data.dj);
+      const data = isDemoMode
+        ? await DjActivity.fetchDemoDashboard()
+        : await DjActivity.fetchDashboard();
+
+      if (isDemoMode && data.dj?.name) {
+        dashboardTitle.textContent = `${data.dj.name} — demo dashboard`;
+        const copy = document.querySelector('.dj-dashboard-copy');
+        if (copy) {
+          copy.textContent = 'Read-only preview of a real DJ dashboard and download history. Create your own account to track your station.';
+        }
+      } else if (!isDemoMode) {
+        DjAuth.updateDjProfile(data.dj);
+        updateShareEmailUi(data.dj);
+      }
+
       renderStats(data.stats || {});
       renderHistory(data.activity || []);
-      updateShareEmailUi(data.dj);
       Charts.loadInto(
         document.getElementById('dashboard-chart-week'),
         document.getElementById('dashboard-chart-month'),
@@ -107,7 +129,8 @@
     }
   }
 
-  shareEmailToggle?.addEventListener('change', async () => {
+  if (!isDemoMode) {
+    shareEmailToggle?.addEventListener('change', async () => {
     const previous = shareEmailToggle.checked;
     shareEmailToggle.disabled = true;
     try {
@@ -119,11 +142,15 @@
     } finally {
       shareEmailToggle.disabled = false;
     }
-  });
+    });
+  }
 
-  DjAuthUI.init({ onAuthenticated: showApp });
-  DjAuthUI.bindLogout(logoutBtn, showLogin);
-
-  if (DjAuth.isAuthenticated()) showApp();
-  else showLogin();
+  if (isDemoMode) {
+    showApp();
+  } else {
+    DjAuthUI.init({ onAuthenticated: showApp });
+    DjAuthUI.bindLogout(logoutBtn, showLogin);
+    if (DjAuth.isAuthenticated()) showApp();
+    else showLogin();
+  }
 })();

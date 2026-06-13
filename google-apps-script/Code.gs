@@ -634,6 +634,48 @@ function findDjByEmail_(email) {
   return null;
 }
 
+var DEMO_DJ_NAME = 'Sammy Passamano';
+
+function findDjByName_(name) {
+  var target = String(name || '').trim().toLowerCase();
+  if (!target) return null;
+
+  var sheet = getDjSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var dj = djRowToObject_(rows[i], headerMap);
+    if (String(dj.name || '').trim().toLowerCase() === target) return dj;
+  }
+
+  return null;
+}
+
+function getDemoDj_() {
+  var props = PropertiesService.getScriptProperties();
+  var email = normalizeEmail_(props.getProperty('DEMO_DJ_EMAIL') || '');
+  var dj = email ? findDjByEmail_(email) : null;
+  if (!dj) dj = findDjByName_(DEMO_DJ_NAME);
+  if (!dj || String(dj.status).toLowerCase() !== 'active') {
+    throw new Error('Demo DJ account not found. Add "' + DEMO_DJ_NAME + '" to the DJs sheet.');
+  }
+  return dj;
+}
+
+function demoDashboard_() {
+  var dj = getDemoDj_();
+  var activity = listDjActivity_(dj.dj_id, 250);
+
+  return {
+    success: true,
+    demo: true,
+    dj: publicDj_(dj),
+    stats: computeDjStats_(activity),
+    activity: activity,
+  };
+}
+
 function publicDj_(dj) {
   return {
     id: dj.dj_id,
@@ -987,6 +1029,10 @@ function doGet(e) {
     if (action === 'charts') {
       var chartLimit = parseInt(e.parameter.limit, 10);
       return jsonResponse_(computeCharts_(isNaN(chartLimit) ? 10 : chartLimit));
+    }
+
+    if (action === 'demo_dashboard') {
+      return jsonResponse_(demoDashboard_());
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });

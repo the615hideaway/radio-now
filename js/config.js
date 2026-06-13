@@ -11,6 +11,8 @@ const CONFIG = {
   // (Extensions → Apps Script → Deploy as Web app → Anyone). See AUDIO-FIX-STEPS.txt.
   googleScriptUrl: 'https://script.google.com/macros/s/AKfycbxhREXi6EDdwIfIunoXbZfuBjbHPIDCoFLye-o51dJss4bvhOQQjMH23WHraY1Af2JRVw/exec',
 
+  // Demo dashboard uses DJ "Sammy Passamano" from the DJs sheet (see Code.gs DEMO_DJ_NAME).
+
   // Optional fallback: Google Cloud API key with Drive API enabled (public files only).
   googleApiKey: '',
 

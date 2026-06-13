@@ -24,6 +24,11 @@
         </div>
       </div>
       <p class="login-copy">Sign in to view your DJ dashboard and download history.</p>
+      <p class="login-demo-links">
+        <a href="index.html?demo=1"><i class="fa-solid fa-compact-disc"></i> Try demo catalog</a>
+        <span aria-hidden="true">·</span>
+        <a href="dj-dashboard.html?demo=1"><i class="fa-solid fa-chart-line"></i> Preview DJ dashboard</a>
+      </p>
 
       <div class="auth-tabs" role="tablist" aria-label="DJ account">
         <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">Sign In</button>
@@ -91,6 +96,13 @@
       </div>
     </header>
 
+    <div id="demo-banner" class="demo-banner hidden" role="status">
+      <div class="demo-banner-copy">
+        <strong>Demo mode</strong> — Read-only preview. Charts and history are real sample data.
+      </div>
+      <a href="index.html" class="btn btn-secondary btn-sm">Create DJ account</a>
+    </div>
+
     <main class="dj-dashboard-page">
       <section class="dj-dashboard-hero">
         <div>
@@ -122,7 +134,7 @@
       <section class="dj-dashboard-stats" id="dashboard-stats"></section>
 
       <section class="dj-dashboard-grid">
-        <div class="dj-panel">
+        <div class="dj-panel" id="privacy-panel">
           <div class="dj-panel-header">
             <h2>Privacy Settings</h2>
           </div>
@@ -148,6 +160,7 @@
   <script src="js/config.js"></script>
   <script src="js/dj-auth.js"></script>
   <script src="js/dj-auth-ui.js"></script>
+  <script src="js/demo.js"></script>
   <script src="js/dj-activity.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/utils.js"></script>

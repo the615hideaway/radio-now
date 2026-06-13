@@ -23,7 +23,12 @@
           <p>(615) Hideaway Entertainment</p>
         </div>
       </div>
-      <p class="login-copy">Radio programmer sign-in. Create a DJ account to browse the catalog, preview tracks, and download music.</p>
+      <p class="login-copy">Radio programmer sign-in. Create a DJ account to download music and track your history.</p>
+      <p class="login-demo-links">
+        <a href="index.html?demo=1"><i class="fa-solid fa-compact-disc"></i> Try demo catalog</a>
+        <span aria-hidden="true">·</span>
+        <a href="dj-dashboard.html?demo=1"><i class="fa-solid fa-chart-line"></i> Preview DJ dashboard</a>
+      </p>
 
       <div class="auth-tabs" role="tablist" aria-label="DJ account">
         <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">Sign In</button>
@@ -90,6 +95,13 @@
         </div>
       </div>
     </header>
+
+    <div id="demo-banner" class="demo-banner hidden" role="status">
+      <div class="demo-banner-copy">
+        <strong>Demo mode</strong> — Play previews and download a free radio one-sheet PDF (artists: we build it for you). MP3, WAV, and ZIP downloads require a DJ account.
+      </div>
+      <a href="index.html" class="btn btn-secondary btn-sm">Create DJ account</a>
+    </div>
 
     <div id="connection-banner" class="connection-banner hidden"></div>
 
@@ -201,6 +213,7 @@
   <script src="js/config.js"></script>
   <script src="js/dj-auth.js"></script>
   <script src="js/dj-auth-ui.js"></script>
+  <script src="js/demo.js"></script>
   <script src="js/dj-activity.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/utils.js"></script>
