@@ -255,7 +255,7 @@
           <div><label>Website</label><p>${song.website ? `<a href="${Utils.escapeHtml(song.website)}" target="_blank" rel="noopener">${Utils.escapeHtml(song.website)}</a>` : '—'}</p></div>
         </div>
         <div class="detail-downloads">
-          ${isDemoMode ? Demo.salesNoteHtml() : ''}
+          ${isDemoMode ? Demo.salesNoteHtml() : TurnkeyPitch.detailNoteHtml(false)}
           <button class="btn btn-secondary download-onesheet-btn" type="button">
             <i class="fa-solid fa-file-pdf"></i> Download One-Sheet
           </button>

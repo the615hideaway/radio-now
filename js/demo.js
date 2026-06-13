@@ -27,11 +27,6 @@ const Demo = {
   },
 
   salesNoteHtml() {
-    return `
-      <p class="demo-sales-note">
-        <i class="fa-solid fa-file-pdf"></i>
-        <strong>Free one-sheet PDF</strong> — radio-ready promo, auto-built from your song data. Artists: skip the layout struggle; DJs get a pro sheet in one click.
-        <span class="demo-sales-sub">Sign up as a DJ to download MP3 &amp; WAV files.</span>
-      </p>`;
+    return TurnkeyPitch.detailNoteHtml(true);
   },
 };

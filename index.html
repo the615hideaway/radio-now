@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Radio Now — DJ catalog for browsing, previewing, and downloading music.">
+  <meta name="description" content="Radio Now — Turn-key radio promo: MP3, cover art, and one-sheet PDF in every download folder, named and ready for DJs. Artists: full setup from $5.">
   <title>Radio Now — (615) Hideaway Entertainment</title>
   <link rel="icon" href="assets/logo.jpg" type="image/jpeg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,6 +15,7 @@
 <body>
 
   <div id="login-gate" class="login-gate">
+    <div id="turnkey-pitch-login" class="turnkey-pitch-login-wrap"></div>
     <div class="login-card">
       <div class="brand-lockup brand-lockup--centered">
         <img src="assets/logo.jpg" alt="(615) Hideaway Entertainment" class="brand-logo brand-logo--large">
@@ -23,7 +24,7 @@
           <p>(615) Hideaway Entertainment</p>
         </div>
       </div>
-      <p class="login-copy">Radio programmer sign-in. Create a DJ account to download music and track your history.</p>
+      <p class="login-copy">DJ sign-in — browse, preview, and download turn-key promo folders (audio, cover &amp; one-sheet, all named right).</p>
       <p class="login-demo-links">
         <a href="index.html?demo=1"><i class="fa-solid fa-compact-disc"></i> Try demo catalog</a>
         <span aria-hidden="true">·</span>
@@ -98,7 +99,7 @@
 
     <div id="demo-banner" class="demo-banner hidden" role="status">
       <div class="demo-banner-copy">
-        <strong>Demo mode</strong> — Play previews and download a free radio one-sheet PDF (artists: we build it for you). MP3, WAV, and ZIP downloads require a DJ account.
+        <strong>Demo mode</strong> — See the turn-key setup: play previews &amp; download a free one-sheet PDF. Full folders (MP3, cover, one-sheet) require a free DJ account. Artists: promo from <strong>$5</strong>.
       </div>
       <a href="index.html" class="btn btn-secondary btn-sm">Create DJ account</a>
     </div>
@@ -128,6 +129,8 @@
           </div>
 
         </section>
+
+        <div id="turnkey-pitch-catalog" class="turnkey-pitch-catalog-wrap"></div>
 
         <section class="charts-panel" aria-label="Top downloads">
           <div class="charts-block">
@@ -172,7 +175,8 @@
             <h2><i class="fa-solid fa-download"></i> Download Queue</h2>
             <button class="btn btn-ghost btn-sm" id="clear-download-btn">Clear</button>
           </div>
-          <p class="queue-help">Queue tracks for an MP3 ZIP (audio, cover art, and PDF one-sheet). WAV files are large — download one track at a time from song details.</p>
+          <div id="turnkey-pitch-queue"></div>
+          <p class="queue-help">Queue tracks for an MP3 ZIP. WAV files are large — download one track at a time from song details.</p>
           <p id="download-setup-notice" class="queue-help queue-warning hidden">
             <i class="fa-solid fa-triangle-exclamation"></i>
             ZIP downloads need a one-time Apps Script setup. Open your Radio Now Google Sheet → Extensions → Apps Script → deploy <code>Code.gs</code> → paste the Web App URL into <code>js/config.js</code>. See <code>AUDIO-FIX-STEPS.txt</code>.
@@ -213,6 +217,7 @@
   <script src="js/config.js"></script>
   <script src="js/dj-auth.js"></script>
   <script src="js/dj-auth-ui.js"></script>
+  <script src="js/pitch.js"></script>
   <script src="js/demo.js"></script>
   <script src="js/dj-activity.js"></script>
   <script src="js/charts.js"></script>

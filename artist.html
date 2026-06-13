@@ -106,7 +106,7 @@
           <h2><i class="fa-solid fa-list-ul"></i> DJ Queue</h2>
           <button class="btn btn-ghost btn-sm" id="clear-queue-btn">Clear</button>
         </div>
-          <p class="queue-help">Queue songs for show prep. ZIP downloads include audio, cover, and a one-sheet per song.</p>
+          <p class="queue-help">Queue songs for show prep — each turn-key folder includes audio, cover &amp; one-sheet, all named right.</p>
         <div id="queue-empty" class="queue-empty">
           <i class="fa-solid fa-headphones"></i>
           <p>No songs in queue yet.</p>
@@ -124,7 +124,8 @@
             <h2><i class="fa-solid fa-download"></i> Download Queue</h2>
             <button class="btn btn-ghost btn-sm" id="clear-download-btn">Clear</button>
           </div>
-          <p class="queue-help">Queue tracks for an MP3 ZIP (audio, cover art, and PDF one-sheet). WAV files download one at a time from song details.</p>
+          <div id="turnkey-pitch-queue"></div>
+          <p class="queue-help">Queue tracks for an MP3 ZIP. WAV files download one at a time from song details.</p>
           <p id="download-setup-notice" class="queue-help queue-warning hidden">
             <i class="fa-solid fa-triangle-exclamation"></i>
             ZIP downloads need Apps Script setup — see <code>AUDIO-FIX-STEPS.txt</code> in the repo.
@@ -165,6 +166,7 @@
   <script src="js/dj-auth.js"></script>
   <script src="js/dj-auth-ui.js"></script>
   <script src="js/dj-activity.js"></script>
+  <script src="js/pitch.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/audio-player.js"></script>
   <script src="js/one-sheet.js"></script>
