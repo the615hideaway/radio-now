@@ -496,18 +496,16 @@
 
   async function checkConnection() {
     try {
-      const meta = await RadioDB.getCatalogMeta();
-      connectionBanner.className = 'connection-banner success';
-      connectionBanner.innerHTML = `
-        <i class="fa-solid fa-circle-check"></i>
-        <div><strong>Catalog loaded from JSON</strong> — ${meta.songCount} songs, last synced ${Utils.formatSyncDate(meta.syncedAt)}. Run <code>scripts/sync-sheet-to-json.ps1</code> after sheet updates.</div>`;
+      await RadioDB.getCatalogMeta();
+      connectionBanner.classList.add('hidden');
+      connectionBanner.innerHTML = '';
     } catch (err) {
       connectionBanner.className = 'connection-banner error';
       connectionBanner.innerHTML = `
         <i class="fa-solid fa-triangle-exclamation"></i>
-        <div><strong>Catalog JSON missing.</strong> ${Utils.escapeHtml(err.message)}</div>`;
+        <div><strong>Catalog unavailable.</strong> ${Utils.escapeHtml(err.message)}</div>`;
+      connectionBanner.classList.remove('hidden');
     }
-    connectionBanner.classList.remove('hidden');
   }
 
   async function loadSongs() {
