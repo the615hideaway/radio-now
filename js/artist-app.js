@@ -192,10 +192,6 @@
     renderProfile();
 
     artistSongs.querySelectorAll('.preview-trigger-btn').forEach((btn) => {
-      btn.addEventListener('mouseenter', () => {
-        const song = allSongs.find((s) => s.id === btn.dataset.id);
-        if (song) AudioPlayer.prefetch(song);
-      });
       btn.addEventListener('click', () => playSongPreview(btn.dataset.id));
     });
 
