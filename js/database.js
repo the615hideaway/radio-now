@@ -83,14 +83,6 @@ const RadioDB = {
       throw new Error('WAV downloads are one track at a time. Open a song and use the WAV button in track details.');
     }
 
-    if (this.isScriptConfigured()) {
-      try {
-        return await this.downloadZipViaScript(songs, format, onProgress);
-      } catch (err) {
-        console.warn('Server ZIP failed, retrying in browser:', err.message);
-      }
-    }
-
     return this.downloadZipClient(songs, format, onProgress);
   },
 
