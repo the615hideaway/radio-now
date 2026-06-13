@@ -127,7 +127,7 @@ const AudioPlayer = {
     }
   },
 
-  waitForCanPlay(audio, timeoutMs = 12000) {
+  waitForCanPlay(audio, timeoutMs = 5000) {
     if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
       return Promise.resolve();
     }

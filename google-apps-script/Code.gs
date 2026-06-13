@@ -414,11 +414,8 @@ function streamMedia_(driveId) {
   if (!driveId) throw new Error('Missing Drive file id');
 
   const blob = fetchDriveBlobById_(driveId);
-  const mime = blob.getContentType() || 'audio/mpeg';
-
-  return ContentService
-    .createTextOutput(blob.getBytes())
-    .setMimeType(mime);
+  // Apps Script MimeType enum does not include audio/* — serve raw bytes and let the browser sniff MP3.
+  return ContentService.createTextOutput(blob.getBytes());
 }
 
 function createZip_(songs, format) {
