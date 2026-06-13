@@ -145,7 +145,7 @@
             <h2><i class="fa-solid fa-download"></i> Download Queue</h2>
             <button class="btn btn-ghost btn-sm" id="clear-download-btn">Clear</button>
           </div>
-          <p class="queue-help">Queue tracks to bundle into a ZIP. Each song includes audio, cover art, and a printable one-sheet.</p>
+          <p class="queue-help">Queue tracks for an MP3 ZIP (audio, cover art, and PDF one-sheet). WAV files are large — download one track at a time from song details.</p>
           <p id="download-setup-notice" class="queue-help queue-warning hidden">
             <i class="fa-solid fa-triangle-exclamation"></i>
             ZIP downloads need a one-time Apps Script setup. Open your Radio Now Google Sheet → Extensions → Apps Script → deploy <code>Code.gs</code> → paste the Web App URL into <code>js/config.js</code>. See <code>AUDIO-FIX-STEPS.txt</code>.
@@ -157,13 +157,9 @@
           <div id="download-list" class="queue-list download-list"></div>
           <div class="download-footer">
             <div class="download-group">
-              <select id="download-format" aria-label="Download format">
-                <option value="mp3">MP3</option>
-                <option value="wav">WAV</option>
-              </select>
               <button class="btn btn-primary btn-full" id="download-zip-btn" disabled>
                 <i class="fa-solid fa-file-zipper"></i>
-                Download ZIP
+                Download MP3 ZIP
               </button>
             </div>
           </div>

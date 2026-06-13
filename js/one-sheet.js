@@ -874,7 +874,7 @@ const OneSheet = {
     return layout.y;
   },
 
-  async downloadOneSheet(song) {
+  async buildPdfDocument(song) {
     const JsPDF = await this.ensureJsPDF();
     const doc = new JsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
     const theme = this.pdfTheme();
@@ -950,6 +950,16 @@ const OneSheet = {
     this.addPdfCredits(layout, credits);
     this.finalizePdfFooters(doc, layout);
 
+    return doc;
+  },
+
+  async generatePdfBlob(song) {
+    const doc = await this.buildPdfDocument(song);
+    return new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
+  },
+
+  async downloadOneSheet(song) {
+    const doc = await this.buildPdfDocument(song);
     doc.save(this.pdfFilename(song));
   },
 };

@@ -11,7 +11,6 @@
   const downloadEmpty = document.getElementById('download-empty');
   const clearDownloadBtn = document.getElementById('clear-download-btn');
   const downloadZipBtn = document.getElementById('download-zip-btn');
-  const downloadFormat = document.getElementById('download-format');
   const nowPlaying = document.getElementById('now-playing');
   const nowPlayingTitle = document.getElementById('now-playing-title');
   const nowPlayingArtist = document.getElementById('now-playing-artist');
@@ -389,10 +388,10 @@
     downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing 0/${total}…`;
 
     try {
-      const zipFormat = downloadFormat.value;
+      const zipFormat = 'mp3';
       await RadioDB.downloadZip(downloadQueue, zipFormat, (progress) => {
-        if (progress.status === 'browser-zip') {
-          downloadZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Building ZIP in browser (WAV files are large)…';
+        if (progress.status === 'onesheet') {
+          downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Adding PDF one-sheets ${progress.current}/${progress.total}…`;
           return;
         }
         if (progress.status === 'zipping') {
@@ -410,7 +409,7 @@
       alert(err.message);
     } finally {
       downloadZipBtn.disabled = downloadQueue.length === 0;
-      downloadZipBtn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Download ZIP';
+      downloadZipBtn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Download MP3 ZIP';
     }
   });
 

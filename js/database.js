@@ -79,22 +79,32 @@ const RadioDB = {
 
   async downloadZip(songs, format = 'mp3', onProgress) {
     if (!songs.length) throw new Error('Download queue is empty.');
-
-    const preferClientZip = format === 'wav';
-    if (preferClientZip) {
-      onProgress?.({ current: 0, total: songs.length, added: 0, status: 'browser-zip' });
+    if (format === 'wav') {
+      throw new Error('WAV downloads are one track at a time. Open a song and use the WAV button in track details.');
     }
 
-    if (this.isScriptConfigured() && !preferClientZip) {
+    if (this.isScriptConfigured()) {
       try {
         return await this.downloadZipViaScript(songs, format, onProgress);
       } catch (err) {
         console.warn('Server ZIP failed, retrying in browser:', err.message);
-        onProgress?.({ current: 0, total: songs.length, added: 0, status: 'browser-zip' });
       }
     }
 
     return this.downloadZipClient(songs, format, onProgress);
+  },
+
+  async downloadSingleTrack(song, format = 'mp3') {
+    const ext = format === 'wav' ? 'wav' : 'mp3';
+    const candidates = Utils.getSongDownloadCandidates(song, format);
+    if (!candidates.length) throw new Error(`No ${format.toUpperCase()} download link for this track.`);
+
+    const blob = await this.fetchSongBlob(song, format);
+    if (!(await Utils.isAudioBlob(blob))) {
+      throw new Error('Downloaded file is not a valid audio file.');
+    }
+
+    this.triggerBlobDownload(blob, Utils.safeFilename(song.artistName, song.songTitle, ext));
   },
 
   songPayloadForZip(song, format) {
@@ -217,13 +227,39 @@ const RadioDB = {
 
     const coverBlob = await this.fetchCoverBlob(song);
     if (coverBlob) {
-      const coverName = `cover.${this.coverExtension(coverBlob)}`;
-      folder.file(coverName, coverBlob);
-      folder.file('one-sheet.html', OneSheet.generateHtml(song, { hasCover: true, coverFile: coverName }));
-      return;
+      folder.file(`cover.${this.coverExtension(coverBlob)}`, coverBlob);
     }
 
-    folder.file('one-sheet.html', OneSheet.generateHtml(song, { hasCover: false }));
+    const pdfBlob = await OneSheet.generatePdfBlob(song);
+    folder.file(OneSheet.pdfFilename(song), pdfBlob);
+  },
+
+  async upgradeZipOneSheetsToPdf(zipBlob, songs, onProgress) {
+    if (!window.JSZip) return zipBlob;
+
+    const zip = await JSZip.loadAsync(zipBlob);
+
+    for (let i = 0; i < songs.length; i++) {
+      const song = songs[i];
+      const folderName = Utils.zipFolderName(song.artistName, song.songTitle);
+      const folder = zip.folder(folderName);
+      if (!folder) continue;
+
+      onProgress?.({
+        current: i + 1,
+        total: songs.length,
+        added: songs.length,
+        status: 'onesheet',
+        songTitle: song.songTitle,
+      });
+
+      folder.remove('one-sheet.html');
+      const pdfBlob = await OneSheet.generatePdfBlob(song);
+      folder.file(OneSheet.pdfFilename(song), pdfBlob);
+    }
+
+    onProgress?.({ current: songs.length, total: songs.length, added: songs.length, status: 'zipping' });
+    return zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   },
 
   base64ToBlob(dataBase64, mimeType) {
@@ -256,7 +292,8 @@ const RadioDB = {
 
     if (!data.success) throw new Error(data.error || 'Zip creation failed');
 
-    const blob = this.base64ToBlob(data.zipBase64, 'application/zip');
+    let blob = this.base64ToBlob(data.zipBase64, 'application/zip');
+    blob = await this.upgradeZipOneSheetsToPdf(blob, songs, onProgress);
     this.triggerBlobDownload(blob, data.filename || 'radio-now-selection.zip');
 
     onProgress?.({ current: songs.length, total: songs.length, added: data.added || songs.length, status: 'done' });
@@ -390,6 +427,13 @@ const RadioDB = {
         usedNames.add(folderName.toLowerCase());
 
         const folder = zip.folder(folderName);
+        onProgress?.({
+          current: i + 1,
+          total: songs.length,
+          added,
+          status: 'onesheet',
+          songTitle: song.songTitle,
+        });
         await this.addSongPackageToZip(folder, song, format, audioBlob);
         added++;
       } catch (err) {

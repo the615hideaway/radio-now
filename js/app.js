@@ -18,7 +18,6 @@
   const downloadEmpty = document.getElementById('download-empty');
   const clearDownloadBtn = document.getElementById('clear-download-btn');
   const downloadZipBtn = document.getElementById('download-zip-btn');
-  const downloadFormat = document.getElementById('download-format');
   const detailPanel = document.getElementById('detail-panel');
   const nowPlaying = document.getElementById('now-playing');
 
@@ -267,8 +266,24 @@
     });
 
     detailPanel.querySelectorAll('.download-track-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        triggerTrackedDownload(song, btn.dataset.format);
+      btn.addEventListener('click', async () => {
+        const format = btn.dataset.format;
+        if (format === 'wav') {
+          const originalHtml = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Downloading WAV…';
+          try {
+            await RadioDB.downloadSingleTrack(song, 'wav');
+            DjActivity.log(song, 'download_wav', 'wav');
+          } catch (err) {
+            alert(err.message || 'Could not download WAV.');
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+          }
+          return;
+        }
+        triggerTrackedDownload(song, format);
       });
     });
 
@@ -592,10 +607,10 @@
     downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing 0/${total}…`;
 
     try {
-      const zipFormat = downloadFormat.value;
+      const zipFormat = 'mp3';
       await RadioDB.downloadZip(downloadQueue, zipFormat, (progress) => {
-        if (progress.status === 'browser-zip') {
-          downloadZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Building ZIP in browser (WAV files are large)…';
+        if (progress.status === 'onesheet') {
+          downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Adding PDF one-sheets ${progress.current}/${progress.total}…`;
           return;
         }
         if (progress.status === 'zipping') {
@@ -613,7 +628,7 @@
       alert(err.message);
     } finally {
       downloadZipBtn.disabled = downloadQueue.length === 0;
-      downloadZipBtn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Download ZIP';
+      downloadZipBtn.innerHTML = '<i class="fa-solid fa-file-zipper"></i> Download MP3 ZIP';
     }
   });
 
