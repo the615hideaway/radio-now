@@ -54,6 +54,10 @@
         <input type="email" id="signup-email" placeholder="you@station.com" autocomplete="email" required>
         <label for="signup-password">Password</label>
         <input type="password" id="signup-password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required>
+        <label class="checkbox-field">
+          <input type="checkbox" id="signup-share-email">
+          <span>Share my email with artists when I download their music (so they can say thank you)</span>
+        </label>
         <button type="submit" class="btn btn-primary btn-full">
           <i class="fa-solid fa-user-plus"></i>
           Create DJ Account
@@ -75,6 +79,7 @@
         <nav class="site-nav" aria-label="Main navigation">
           <a href="index.html" class="nav-link">Catalog</a>
           <a href="artists.html" class="nav-link active">Artists</a>
+          <a href="dj-dashboard.html" class="nav-link">My Dashboard</a>
         </nav>
         <div class="header-actions">
           <span id="dj-welcome" class="dj-welcome hidden"></span>
@@ -111,6 +116,7 @@
   <script src="js/config.js"></script>
   <script src="js/dj-auth.js"></script>
   <script src="js/dj-auth-ui.js"></script>
+  <script src="js/dj-activity.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/database.js"></script>
   <script src="js/artists-app.js"></script>

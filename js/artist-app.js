@@ -389,7 +389,8 @@
     downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing 0/${total}…`;
 
     try {
-      await RadioDB.downloadZip(downloadQueue, downloadFormat.value, (progress) => {
+      const zipFormat = downloadFormat.value;
+      await RadioDB.downloadZip(downloadQueue, zipFormat, (progress) => {
         if (progress.status === 'zipping') {
           downloadZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating ZIP…';
           return;
@@ -400,6 +401,7 @@
         }
         downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing ${progress.current}/${progress.total}…`;
       });
+      DjActivity.logMany(downloadQueue, 'download_zip', zipFormat);
     } catch (err) {
       alert(err.message);
     } finally {

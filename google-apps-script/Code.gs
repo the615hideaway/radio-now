@@ -465,7 +465,12 @@ function createZip_(songs, format) {
 }
 
 var DJ_SHEET_NAME = 'DJs';
-var DJ_HEADERS = ['dj_id', 'name', 'email', 'password_hash', 'password_salt', 'station', 'show_name', 'status', 'created_at'];
+var DJ_HEADERS = ['dj_id', 'name', 'email', 'password_hash', 'password_salt', 'station', 'show_name', 'share_email', 'status', 'created_at'];
+var ACTIVITY_SHEET_NAME = 'DJ Activity';
+var ACTIVITY_HEADERS = [
+  'activity_id', 'timestamp', 'dj_id', 'dj_name', 'dj_station', 'dj_show_name',
+  'share_email', 'contact_email', 'event_type', 'song_id', 'song_title', 'artist_name', 'format',
+];
 
 function getAuthSecret_() {
   var props = PropertiesService.getScriptProperties();
@@ -518,8 +523,52 @@ function getDjSheet_() {
     sheet = ss.insertSheet(DJ_SHEET_NAME);
     sheet.getRange(1, 1, 1, DJ_HEADERS.length).setValues([DJ_HEADERS]);
     sheet.setFrozenRows(1);
+    return sheet;
   }
+
+  ensureSheetHeaders_(sheet, DJ_HEADERS);
   return sheet;
+}
+
+function getActivitySheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(ACTIVITY_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(ACTIVITY_SHEET_NAME);
+    sheet.getRange(1, 1, 1, ACTIVITY_HEADERS.length).setValues([ACTIVITY_HEADERS]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  ensureSheetHeaders_(sheet, ACTIVITY_HEADERS);
+  return sheet;
+}
+
+function ensureSheetHeaders_(sheet, headers) {
+  var lastCol = Math.max(sheet.getLastColumn(), 1);
+  var existing = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var map = {};
+  existing.forEach(function (header, index) {
+    var key = String(header || '').trim();
+    if (key) map[key] = true;
+  });
+
+  headers.forEach(function (header) {
+    if (!map[header]) {
+      lastCol += 1;
+      sheet.getRange(1, lastCol).setValue(header);
+      map[header] = true;
+    }
+  });
+}
+
+function shareEmailFlag_(value) {
+  var normalized = String(value || '').trim().toLowerCase();
+  return normalized === 'yes' || normalized === 'true' || normalized === '1' || normalized === 'y';
+}
+
+function shareEmailValue_(enabled) {
+  return enabled ? 'yes' : 'no';
 }
 
 function getDjHeaderMap_(sheet) {
@@ -548,9 +597,28 @@ function djRowToObject_(row, headerMap) {
     password_salt: pick('password_salt'),
     station: pick('station'),
     show_name: pick('show_name'),
+    share_email: pick('share_email'),
     status: pick('status') || 'active',
     created_at: pick('created_at'),
   };
+}
+
+function findDjById_(djId) {
+  var targetId = String(djId || '').trim();
+  if (!targetId) return null;
+
+  var sheet = getDjSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var dj = djRowToObject_(rows[i], headerMap);
+    if (dj.dj_id === targetId) {
+      return { rowIndex: i + 1, dj: dj };
+    }
+  }
+
+  return null;
 }
 
 function findDjByEmail_(email) {
@@ -573,8 +641,42 @@ function publicDj_(dj) {
     email: dj.email,
     station: dj.station,
     showName: dj.show_name || '',
+    shareEmail: shareEmailFlag_(dj.share_email),
     status: dj.status,
   };
+}
+
+function parseSessionToken_(token) {
+  if (!token) throw new Error('Not signed in.');
+
+  var decoded = Utilities.newBlob(Utilities.base64DecodeWebSafe(String(token))).getDataAsString();
+  var sigIndex = decoded.lastIndexOf('|');
+  if (sigIndex < 0) throw new Error('Invalid session.');
+
+  var body = decoded.substring(0, sigIndex);
+  var sig = decoded.substring(sigIndex + 1);
+  if (hmacHex_(body) !== sig) throw new Error('Invalid session.');
+
+  var parts = body.split('|');
+  if (parts.length < 3) throw new Error('Invalid session.');
+
+  var exp = parseInt(parts[2], 10);
+  if (!exp || exp < Date.now()) throw new Error('Session expired. Please sign in again.');
+
+  return {
+    djId: parts[0],
+    email: parts[1],
+    exp: exp,
+  };
+}
+
+function requireDjSession_(token) {
+  var session = parseSessionToken_(token);
+  var found = findDjById_(session.djId);
+  if (!found || String(found.dj.status).toLowerCase() !== 'active') {
+    throw new Error('DJ account not found or inactive.');
+  }
+  return found;
 }
 
 function createSessionToken_(dj) {
@@ -617,6 +719,7 @@ function djSignup_(payload) {
   var showName = String(payload.showName || '').trim();
   var email = normalizeEmail_(payload.email);
   var password = String(payload.password || '');
+  var shareEmail = !!payload.shareEmail;
 
   if (!name || !station || !email || !password) {
     throw new Error('Name, station, email, and password are required.');
@@ -643,6 +746,7 @@ function djSignup_(payload) {
     hashed.salt,
     station,
     showName,
+    shareEmailValue_(shareEmail),
     'active',
     createdAt,
   ]);
@@ -653,6 +757,7 @@ function djSignup_(payload) {
     email: email,
     station: station,
     show_name: showName,
+    share_email: shareEmailValue_(shareEmail),
     status: 'active',
     created_at: createdAt,
   };
@@ -661,6 +766,121 @@ function djSignup_(payload) {
     success: true,
     token: createSessionToken_(dj),
     dj: publicDj_(dj),
+  };
+}
+
+function logDjActivity_(token, payload) {
+  var found = requireDjSession_(token);
+  var dj = found.dj;
+  var share = shareEmailFlag_(dj.share_email);
+  var sheet = getActivitySheet_();
+  var activityId = 'act-' + Utilities.getUuid().slice(0, 10);
+  var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+
+  sheet.appendRow([
+    activityId,
+    timestamp,
+    dj.dj_id,
+    dj.name,
+    dj.station,
+    dj.show_name,
+    share ? 'yes' : 'no',
+    share ? dj.email : '',
+    String(payload.eventType || '').trim(),
+    String(payload.songId || '').trim(),
+    String(payload.songTitle || '').trim(),
+    String(payload.artistName || '').trim(),
+    String(payload.format || '').trim(),
+  ]);
+
+  return { success: true };
+}
+
+function listDjActivity_(djId, limit) {
+  var sheet = getActivitySheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var items = [];
+
+  for (var i = rows.length - 1; i >= 1; i--) {
+    var row = rows[i];
+    function pick(key) {
+      var idx = headerMap[key];
+      if (idx === undefined) return '';
+      return String(row[idx] || '').trim();
+    }
+
+    if (pick('dj_id') !== djId) continue;
+
+    items.push({
+      id: pick('activity_id'),
+      timestamp: pick('timestamp'),
+      eventType: pick('event_type'),
+      songId: pick('song_id'),
+      songTitle: pick('song_title'),
+      artistName: pick('artist_name'),
+      format: pick('format'),
+    });
+
+    if (items.length >= limit) break;
+  }
+
+  return items;
+}
+
+function computeDjStats_(activity) {
+  var now = Date.now();
+  var weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+  var monthAgo = now - (30 * 24 * 60 * 60 * 1000);
+  var uniqueSongs = {};
+  var weekCount = 0;
+  var monthCount = 0;
+
+  activity.forEach(function (item) {
+    if (item.songId) uniqueSongs[item.songId] = true;
+    var ts = Date.parse(item.timestamp);
+    if (!isNaN(ts)) {
+      if (ts >= weekAgo) weekCount += 1;
+      if (ts >= monthAgo) monthCount += 1;
+    }
+  });
+
+  return {
+    totalDownloads: activity.length,
+    thisWeek: weekCount,
+    thisMonth: monthCount,
+    uniqueSongs: Object.keys(uniqueSongs).length,
+  };
+}
+
+function djDashboard_(token) {
+  var found = requireDjSession_(token);
+  var activity = listDjActivity_(found.dj.dj_id, 250);
+
+  return {
+    success: true,
+    dj: publicDj_(found.dj),
+    stats: computeDjStats_(activity),
+    activity: activity,
+  };
+}
+
+function djProfileUpdate_(token, shareEmail) {
+  var found = requireDjSession_(token);
+  var sheet = getDjSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var shareCol = headerMap.share_email;
+
+  if (shareCol === undefined) {
+    throw new Error('share_email column missing from DJs sheet.');
+  }
+
+  sheet.getRange(found.rowIndex, shareCol + 1).setValue(shareEmailValue_(!!shareEmail));
+  found.dj.share_email = shareEmailValue_(!!shareEmail);
+
+  return {
+    success: true,
+    dj: publicDj_(found.dj),
   };
 }
 
@@ -711,6 +931,18 @@ function doPost(e) {
 
     if (action === 'dj_signup') {
       return jsonResponse_(djSignup_(body));
+    }
+
+    if (action === 'dj_log') {
+      return jsonResponse_(logDjActivity_(body.token, body));
+    }
+
+    if (action === 'dj_dashboard') {
+      return jsonResponse_(djDashboard_(body.token));
+    }
+
+    if (action === 'dj_profile_update') {
+      return jsonResponse_(djProfileUpdate_(body.token, body.shareEmail));
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });

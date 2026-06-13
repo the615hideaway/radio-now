@@ -54,6 +54,13 @@
     appShell.classList.add('hidden');
   }
 
+  function triggerTrackedDownload(song, format) {
+    const url = format === 'wav' ? song.wav : song.mp3;
+    if (!url) return;
+    RadioDB.triggerFileDownload(url, Utils.safeFilename(song.artistName, song.songTitle, format));
+    DjActivity.log(song, format === 'wav' ? 'download_wav' : 'download_mp3', format);
+  }
+
   function saveQueue() {
     localStorage.setItem(CONFIG.queueKey, JSON.stringify(queue.map((s) => s.id)));
   }
@@ -237,8 +244,8 @@
           <button class="btn btn-secondary download-onesheet-btn" type="button">
             <i class="fa-solid fa-file-pdf"></i> Download One-Sheet
           </button>
-          ${song.mp3 ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.mp3)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> MP3</a>` : ''}
-          ${song.wav ? `<a class="btn btn-secondary" href="${Utils.escapeHtml(song.wav)}" target="_blank" rel="noopener"><i class="fa-solid fa-download"></i> WAV</a>` : ''}
+          ${song.mp3 ? `<button type="button" class="btn btn-secondary download-track-btn" data-format="mp3"><i class="fa-solid fa-download"></i> MP3</button>` : ''}
+          ${song.wav ? `<button type="button" class="btn btn-secondary download-track-btn" data-format="wav"><i class="fa-solid fa-download"></i> WAV</button>` : ''}
         </div>
         <div class="detail-panel-footer">
           <button class="btn btn-ghost detail-close-btn detail-close-btn--bottom" aria-label="Close details">
@@ -259,6 +266,12 @@
       renderDetailPanel(allSongs.find((s) => s.id === song.id));
     });
 
+    detailPanel.querySelectorAll('.download-track-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        triggerTrackedDownload(song, btn.dataset.format);
+      });
+    });
+
     const downloadBtn = detailPanel.querySelector('.download-onesheet-btn');
     if (downloadBtn) {
       downloadBtn.addEventListener('click', async () => {
@@ -267,6 +280,7 @@
         downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating PDF…';
         try {
           await OneSheet.downloadOneSheet(song);
+          DjActivity.log(song, 'download_onesheet', 'pdf');
         } catch (err) {
           alert(err.message || 'Could not download one-sheet PDF.');
         } finally {
@@ -578,7 +592,8 @@
     downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing 0/${total}…`;
 
     try {
-      await RadioDB.downloadZip(downloadQueue, downloadFormat.value, (progress) => {
+      const zipFormat = downloadFormat.value;
+      await RadioDB.downloadZip(downloadQueue, zipFormat, (progress) => {
         if (progress.status === 'zipping') {
           downloadZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating ZIP…';
           return;
@@ -589,6 +604,7 @@
         }
         downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing ${progress.current}/${progress.total}…`;
       });
+      DjActivity.logMany(downloadQueue, 'download_zip', zipFormat);
     } catch (err) {
       alert(err.message);
     } finally {

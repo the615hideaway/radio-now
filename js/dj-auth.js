@@ -79,8 +79,22 @@ const DjAuth = {
       showName: String(fields.showName || '').trim(),
       email: String(fields.email || '').trim(),
       password: String(fields.password || ''),
+      shareEmail: !!fields.shareEmail,
     });
     this.saveSession(data);
     return data.dj;
+  },
+
+  async authRequest(action, payload = {}) {
+    const token = this.getToken();
+    if (!token) throw new Error('Not signed in.');
+    return this.request(action, { token, ...payload });
+  },
+
+  updateDjProfile(dj) {
+    const session = this.getSession();
+    if (!session) return;
+    session.dj = { ...session.dj, ...dj };
+    sessionStorage.setItem(CONFIG.djSessionKey, JSON.stringify(session));
   },
 };

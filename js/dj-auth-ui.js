@@ -75,6 +75,7 @@ const DjAuthUI = {
           showName: document.getElementById('signup-show')?.value || '',
           email: document.getElementById('signup-email')?.value || '',
           password: document.getElementById('signup-password')?.value || '',
+          shareEmail: !!document.getElementById('signup-share-email')?.checked,
         });
         signupForm.reset();
         DjAuthUI.updateWelcome();

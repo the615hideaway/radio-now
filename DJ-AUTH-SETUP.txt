@@ -72,10 +72,25 @@ Login page still asks for old shared password
   → Hard refresh (Ctrl+F5) after pulling latest code
 
 
-WHAT'S NEXT (NOT BUILT YET)
+PHASE 2 — DJ DASHBOARD (NEW)
 ----------------------------
-- Log downloads per DJ
-- Weekly / monthly top song charts
-- Artist download reports
+After redeploying the latest Code.gs, DJs get:
+- My Dashboard page (download history + stats)
+- Download logging for MP3, WAV, ZIP, and one-sheet PDF
+- Optional "share my email with artists" setting
 
-Tell your developer when sign-in testing looks good and we can add Phase 2.
+Test flow:
+1. Redeploy Apps Script (new version)
+2. Hard refresh site
+3. Download a song from the catalog
+4. Open My Dashboard — the download should appear
+5. Toggle email sharing on/off in Privacy Settings
+
+New sheet tab created automatically:
+  DJ Activity
+
+
+STILL COMING LATER
+------------------
+- Weekly / monthly top song charts (site-wide)
+- Artist-facing download reports
