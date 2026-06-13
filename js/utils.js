@@ -51,6 +51,7 @@ const Utils = {
   },
 
   resolveCoverUrl(song) {
+    if (song.coverLocal) return song.coverLocal;
     if (song.coverThumbnailUrl) return song.coverThumbnailUrl;
     const cover = song.cover || '';
     if (this.extractDriveId(cover)) return this.toDriveThumbnail(cover);
@@ -84,14 +85,25 @@ const Utils = {
     return `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media&key=${encodeURIComponent(apiKey)}`;
   },
 
+  scriptCoverUrl(driveId) {
+    const id = String(driveId || '').trim();
+    const scriptUrl = String(CONFIG.googleScriptUrl || '').trim();
+    if (!id || !scriptUrl.includes('script.google.com')) return '';
+    return `${scriptUrl.replace(/\/$/, '')}?action=cover&id=${encodeURIComponent(id)}`;
+  },
+
+  getCoverDriveId(song) {
+    return song.coverDriveId || this.extractDriveId(song.cover || '') || '';
+  },
+
   getCoverDownloadCandidates(song) {
     const urls = [];
-    const driveId = this.extractDriveId(song.cover || '');
+    const driveId = this.getCoverDriveId(song);
+
+    if (song.coverLocal) urls.push(song.coverLocal);
 
     if (driveId) {
-      const stream = this.scriptStreamUrl(driveId);
       const api = this.driveApiMediaUrl(driveId);
-      if (stream) urls.push(stream);
       if (api) urls.push(api);
       urls.push(`https://drive.google.com/thumbnail?id=${driveId}&sz=w800`);
       urls.push(...this.getDriveDownloadUrls(driveId));
@@ -171,6 +183,17 @@ const Utils = {
     });
 
     return [...new Set(urls.filter(Boolean))];
+  },
+
+  async isImageBlob(blob) {
+    if (!blob || !blob.size) return false;
+    if (blob.type && blob.type.startsWith('image/')) return true;
+
+    const header = new Uint8Array(await blob.slice(0, 4).arrayBuffer());
+    const isJpeg = header[0] === 0xff && header[1] === 0xd8;
+    const isPng = header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47;
+    const isWebp = header[0] === 0x52 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x46;
+    return isJpeg || isPng || isWebp;
   },
 
   async isAudioBlob(blob) {

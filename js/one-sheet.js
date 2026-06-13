@@ -393,24 +393,26 @@ const OneSheet = {
     return JsPDF;
   },
 
+  blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Could not read cover image'));
+      reader.readAsDataURL(blob);
+    });
+  },
+
   async loadCoverDataUrl(song) {
     if (typeof RadioDB !== 'undefined' && RadioDB.fetchCoverBlob) {
       try {
         const blob = await RadioDB.fetchCoverBlob(song);
-        if (blob?.size) {
-          return await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(new Error('Could not read cover image'));
-            reader.readAsDataURL(blob);
-          });
-        }
+        if (blob?.size) return await this.blobToDataUrl(blob);
       } catch (err) {
         console.warn('Cover embed failed for PDF:', err.message);
       }
     }
 
-    return Utils.resolveCoverUrl(song) || '';
+    return '';
   },
 
   pdfTheme() {

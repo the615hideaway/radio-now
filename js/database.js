@@ -27,6 +27,8 @@ const RadioDB = {
       previewDriveId: raw.previewDriveId || Utils.extractDriveId(mp3Source) || '',
       wav: raw.wav || Utils.toDriveDownload(raw.WAV || ''),
       cover: raw.cover || raw.Cover || raw['Cover Art'] || '',
+      coverDriveId: raw.coverDriveId || Utils.getCoverDriveId({ cover: raw.cover || raw.Cover, coverDriveId: raw.coverDriveId }),
+      coverLocal: raw.coverLocal || '',
       coverThumbnailUrl: raw.coverThumbnailUrl || Utils.resolveCoverUrl({ cover: raw.cover || raw.Cover }),
       songTime: raw.songTime || '',
       description: raw.description || Utils.stripHtml(raw.Description || ''),
@@ -116,24 +118,68 @@ const RadioDB = {
     };
   },
 
-  async fetchCoverBlob(song) {
-    const candidates = Utils.getCoverDownloadCandidates(song);
-    if (!candidates.length) return null;
+  async fetchCoverViaScript(driveId) {
+    const url = Utils.scriptCoverUrl(driveId);
+    if (!url) return null;
 
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+    if (!data.success || !data.dataBase64) {
+      throw new Error(data.error || 'Cover proxy failed');
+    }
+
+    const bytes = atob(data.dataBase64);
+    const buffer = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i);
+
+    const blob = new Blob([buffer], { type: data.mimeType || 'image/jpeg' });
+    if (!(await Utils.isImageBlob(blob))) throw new Error('not an image');
+    return blob;
+  },
+
+  async fetchCoverBlob(song) {
+    const driveId = Utils.getCoverDriveId(song);
     const errors = [];
+
+    if (song.coverLocal) {
+      try {
+        const response = await fetch(song.coverLocal, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        if (await Utils.isImageBlob(blob)) return blob;
+        throw new Error('not an image');
+      } catch (err) {
+        errors.push(`local: ${err.message}`);
+      }
+    }
+
+    if (driveId && this.isScriptConfigured()) {
+      try {
+        const blob = await this.fetchCoverViaScript(driveId);
+        if (blob) return blob;
+      } catch (err) {
+        errors.push(`script: ${err.message}`);
+      }
+    }
+
+    const candidates = Utils.getCoverDownloadCandidates(song);
     for (const url of candidates) {
+      if (url === song.coverLocal) continue;
       try {
         const response = await fetch(url, { mode: 'cors', redirect: 'follow', credentials: 'omit' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const blob = await response.blob();
         if (!blob.size || blob.type === 'text/html') throw new Error('not an image');
-        return blob;
+        if (await Utils.isImageBlob(blob)) return blob;
+        throw new Error('not an image');
       } catch (err) {
         errors.push(err.message);
       }
     }
 
-    console.warn('Cover fetch failed:', song.songTitle, errors[errors.length - 1]);
+    console.warn('Cover fetch failed:', song.songTitle, errors[errors.length - 1] || 'no sources');
     return null;
   },
 

@@ -77,6 +77,40 @@ function Build-BandMemberLines([hashtable]$Record) {
   return ,$lines.ToArray()
 }
 
+function Save-CoverArt {
+  param(
+    [string]$DriveId,
+    [string]$DestPath
+  )
+
+  if (-not $DriveId) { return $false }
+
+  $urls = @(
+    "https://drive.google.com/thumbnail?id=$DriveId&sz=w800",
+    "https://drive.usercontent.google.com/download?id=$DriveId&export=download"
+  )
+
+  foreach ($url in $urls) {
+    try {
+      Invoke-WebRequest -Uri $url -OutFile $DestPath -UseBasicParsing
+      if ((Test-Path $DestPath) -and ((Get-Item $DestPath).Length -gt 1200)) {
+        return $true
+      }
+    } catch {
+      # Try the next source.
+    }
+  }
+
+  if (Test-Path $DestPath) { Remove-Item $DestPath -Force -ErrorAction SilentlyContinue }
+  return $false
+}
+
+$outDir = Split-Path $OutPath -Parent
+if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out-Null }
+
+$coversDir = Join-Path $outDir 'covers'
+if (-not (Test-Path $coversDir)) { New-Item -ItemType Directory -Path $coversDir | Out-Null }
+
 $gvizUrl = "https://docs.google.com/spreadsheets/d/$SheetId/gviz/tq?tqx=out:json&sheet=$([uri]::EscapeDataString($SheetName))"
 $text = (Invoke-WebRequest -Uri $gvizUrl -UseBasicParsing).Content
 
@@ -121,6 +155,15 @@ foreach ($row in $rows) {
   }
 
   $bandMemberLines = Build-BandMemberLines $record
+  $coverDriveId = Get-DriveId $cover
+  $coverLocal = ''
+
+  if ($coverDriveId) {
+    $coverFile = Join-Path $coversDir "song-$index.jpg"
+    if (Save-CoverArt -DriveId $coverDriveId -DestPath $coverFile) {
+      $coverLocal = "data/covers/song-$index.jpg"
+    }
+  }
 
   $songs.Add([ordered]@{
     id                 = "song-$index"
@@ -133,6 +176,8 @@ foreach ($row in $rows) {
     previewDriveId     = $previewDriveId
     wav                = Get-DriveDownload $wav
     cover              = $cover
+    coverDriveId       = $coverDriveId
+    coverLocal         = $coverLocal
     coverThumbnailUrl  = Get-DriveThumbnail $cover
     songTime           = $record['Song Time']
     description        = Strip-Html $record['Description']
@@ -156,9 +201,6 @@ $output = [ordered]@{
   songCount = $songs.Count
   songs     = $songs
 }
-
-$dir = Split-Path $OutPath -Parent
-if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
 
 $json = $output | ConvertTo-Json -Depth 8
 [System.IO.File]::WriteAllText($OutPath, $json, [System.Text.UTF8Encoding]::new($false))

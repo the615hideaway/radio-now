@@ -384,16 +384,30 @@ function fetchSongBlob_(song, format) {
   return fetchFileBlob_(url);
 }
 
+function coverJsonResponse_(driveId) {
+  if (!driveId) throw new Error('Missing Drive file id');
+
+  const blob = fetchDriveBlobById_(driveId);
+  const mime = blob.getContentType() || 'image/jpeg';
+
+  return jsonResponse_({
+    success: true,
+    mimeType: mime,
+    dataBase64: Utilities.base64Encode(blob.getBytes()),
+  });
+}
+
 function streamDriveFile_(driveId) {
   if (!driveId) throw new Error('Missing Drive file id');
 
-  const url = 'https://drive.google.com/uc?export=download&id=' + driveId;
-  const blob = fetchFileBlob_(url);
-  const mime = blob.getContentType() || 'audio/mpeg';
+  const blob = fetchDriveBlobById_(driveId);
+  const mime = blob.getContentType() || 'application/octet-stream';
 
-  return ContentService
-    .createOutput(blob)
-    .setMimeType(mime);
+  return jsonResponse_({
+    success: true,
+    mimeType: mime,
+    dataBase64: Utilities.base64Encode(blob.getBytes()),
+  });
 }
 
 function createZip_(songs, format) {
@@ -456,6 +470,10 @@ function doGet(e) {
 
     if (action === 'stream') {
       return streamDriveFile_(e.parameter.id);
+    }
+
+    if (action === 'cover') {
+      return coverJsonResponse_(e.parameter.id);
     }
 
     if (action === 'list') {

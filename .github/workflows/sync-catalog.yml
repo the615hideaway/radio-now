@@ -22,7 +22,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/songs.json
+          git add data/songs.json data/covers
           if git diff --staged --quiet; then
             echo "No catalog changes"
             exit 0
