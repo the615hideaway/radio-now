@@ -469,7 +469,7 @@ var DJ_HEADERS = ['dj_id', 'name', 'email', 'password_hash', 'password_salt', 's
 var ACTIVITY_SHEET_NAME = 'DJ Activity';
 var ACTIVITY_HEADERS = [
   'activity_id', 'timestamp', 'dj_id', 'dj_name', 'dj_station', 'dj_show_name',
-  'share_email', 'contact_email', 'event_type', 'song_id', 'song_title', 'artist_name', 'format',
+  'share_email', 'contact_email', 'event_type', 'song_id', 'song_title', 'artist_name', 'music_style', 'format',
 ];
 
 function getAuthSecret_() {
@@ -790,6 +790,7 @@ function logDjActivity_(token, payload) {
     String(payload.songId || '').trim(),
     String(payload.songTitle || '').trim(),
     String(payload.artistName || '').trim(),
+    String(payload.musicStyle || '').trim(),
     String(payload.format || '').trim(),
   ]);
 
@@ -819,6 +820,7 @@ function listDjActivity_(djId, limit) {
       songId: pick('song_id'),
       songTitle: pick('song_title'),
       artistName: pick('artist_name'),
+      musicStyle: pick('music_style'),
       format: pick('format'),
     });
 
@@ -850,6 +852,84 @@ function computeDjStats_(activity) {
     thisWeek: weekCount,
     thisMonth: monthCount,
     uniqueSongs: Object.keys(uniqueSongs).length,
+  };
+}
+
+function isDownloadEvent_(eventType) {
+  var type = String(eventType || '').trim().toLowerCase();
+  return type === 'downloaded'
+    || type === 'download_mp3'
+    || type === 'download_wav'
+    || type === 'download_zip';
+}
+
+function bumpChartCount_(bucket, songId, meta, timestampMs) {
+  if (!bucket[songId]) {
+    bucket[songId] = {
+      songId: songId,
+      songTitle: meta.songTitle || 'Untitled',
+      artistName: meta.artistName || 'Unknown Artist',
+      musicStyle: meta.musicStyle || '',
+      count: 0,
+    };
+  }
+
+  bucket[songId].count += 1;
+  if (meta.songTitle) bucket[songId].songTitle = meta.songTitle;
+  if (meta.artistName) bucket[songId].artistName = meta.artistName;
+  if (meta.musicStyle) bucket[songId].musicStyle = meta.musicStyle;
+}
+
+function sortChartEntries_(bucket, limit) {
+  return Object.keys(bucket)
+    .map(function (key) { return bucket[key]; })
+    .sort(function (a, b) {
+      if (b.count !== a.count) return b.count - a.count;
+      return String(a.songTitle).localeCompare(String(b.songTitle));
+    })
+    .slice(0, limit || 10);
+}
+
+function computeCharts_(limit) {
+  var sheet = getActivitySheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var now = Date.now();
+  var weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+  var monthAgo = now - (30 * 24 * 60 * 60 * 1000);
+  var weekCounts = {};
+  var monthCounts = {};
+
+  for (var i = 1; i < rows.length; i++) {
+    var row = rows[i];
+    function pick(key) {
+      var idx = headerMap[key];
+      if (idx === undefined) return '';
+      return String(row[idx] || '').trim();
+    }
+
+    if (!isDownloadEvent_(pick('event_type'))) continue;
+
+    var songId = pick('song_id');
+    if (!songId) continue;
+
+    var ts = Date.parse(pick('timestamp'));
+    if (isNaN(ts)) continue;
+
+    var meta = {
+      songTitle: pick('song_title'),
+      artistName: pick('artist_name'),
+      musicStyle: pick('music_style'),
+    };
+
+    if (ts >= weekAgo) bumpChartCount_(weekCounts, songId, meta, ts);
+    if (ts >= monthAgo) bumpChartCount_(monthCounts, songId, meta, ts);
+  }
+
+  return {
+    success: true,
+    week: sortChartEntries_(weekCounts, limit),
+    month: sortChartEntries_(monthCounts, limit),
   };
 }
 
@@ -902,6 +982,11 @@ function doGet(e) {
 
     if (action === 'list') {
       return jsonResponse_(listSongs_());
+    }
+
+    if (action === 'charts') {
+      var chartLimit = parseInt(e.parameter.limit, 10);
+      return jsonResponse_(computeCharts_(isNaN(chartLimit) ? 10 : chartLimit));
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });

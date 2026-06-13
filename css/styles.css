@@ -431,6 +431,108 @@ a:hover { color: var(--white); }
   white-space: nowrap;
 }
 
+.charts-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.charts-panel--dashboard {
+  margin-bottom: 1.25rem;
+}
+
+.charts-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow);
+}
+
+.charts-block-header {
+  margin-bottom: 0.75rem;
+}
+
+.charts-block-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-family: var(--font-display);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.charts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.charts-item {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.charts-rank {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--gold);
+  text-align: center;
+}
+
+.charts-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.charts-copy strong {
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.charts-copy span {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.charts-count {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--gold-bright);
+  background: rgba(244, 196, 48, 0.12);
+  border: 1px solid rgba(244, 196, 48, 0.25);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+.charts-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
 .dj-empty-state {
   padding: 2rem 1rem;
 }
@@ -455,6 +557,10 @@ a:hover { color: var(--white); }
   .dj-history-meta {
     align-items: flex-start;
     text-align: left;
+  }
+
+  .charts-panel {
+    grid-template-columns: 1fr;
   }
 }
 

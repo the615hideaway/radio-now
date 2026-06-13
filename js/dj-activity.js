@@ -22,6 +22,7 @@ const DjActivity = {
         songId: song.id || '',
         songTitle: song.songTitle || '',
         artistName: song.artistName || '',
+        musicStyle: song.musicStyle || '',
         format,
       });
     } catch (err) {

@@ -54,7 +54,7 @@
           <article class="dj-history-item">
             <div class="dj-history-main">
               <h3>${Utils.escapeHtml(item.songTitle || 'Untitled')}</h3>
-              <p>${Utils.escapeHtml(item.artistName || 'Unknown Artist')}</p>
+              <p>${Utils.escapeHtml(item.artistName || 'Unknown Artist')}${item.musicStyle ? ` · ${Utils.escapeHtml(item.musicStyle)}` : ''}</p>
             </div>
             <div class="dj-history-meta">
               <span class="dj-history-type">${Utils.escapeHtml(DjActivity.formatLabel(item.eventType, item.format))}</span>
@@ -93,6 +93,10 @@
       renderStats(data.stats || {});
       renderHistory(data.activity || []);
       updateShareEmailUi(data.dj);
+      Charts.loadInto(
+        document.getElementById('dashboard-chart-week'),
+        document.getElementById('dashboard-chart-month'),
+      );
     } catch (err) {
       dashboardStats.innerHTML = '';
       dashboardHistory.innerHTML = `

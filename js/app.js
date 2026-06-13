@@ -46,6 +46,10 @@
     loadQueuesFromStorage();
     checkConnection();
     loadSongs();
+    Charts.loadInto(
+      document.getElementById('chart-week'),
+      document.getElementById('chart-month'),
+    );
   }
 
   function showLogin() {
