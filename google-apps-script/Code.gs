@@ -464,6 +464,206 @@ function createZip_(songs, format) {
   };
 }
 
+var DJ_SHEET_NAME = 'DJs';
+var DJ_HEADERS = ['dj_id', 'name', 'email', 'password_hash', 'password_salt', 'station', 'show_name', 'status', 'created_at'];
+
+function getAuthSecret_() {
+  var props = PropertiesService.getScriptProperties();
+  var secret = props.getProperty('AUTH_SECRET');
+  if (!secret) {
+    secret = Utilities.getUuid();
+    props.setProperty('AUTH_SECRET', secret);
+  }
+  return secret;
+}
+
+function bytesToHex_(bytes) {
+  return bytes.map(function (byte) {
+    var value = byte < 0 ? byte + 256 : byte;
+    var hex = value.toString(16);
+    return hex.length === 1 ? '0' + hex : hex;
+  }).join('');
+}
+
+function hmacHex_(value) {
+  var sig = Utilities.computeHmacSha256Signature(String(value), getAuthSecret_());
+  return bytesToHex_(sig);
+}
+
+function hashPassword_(password, salt) {
+  salt = salt || Utilities.getUuid();
+  var digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.SHA_256,
+    salt + ':' + password + ':' + getAuthSecret_(),
+    Utilities.Charset.UTF_8
+  );
+  return {
+    salt: salt,
+    hash: bytesToHex_(digest),
+  };
+}
+
+function verifyPassword_(password, salt, hash) {
+  return hashPassword_(password, salt).hash === hash;
+}
+
+function normalizeEmail_(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function getDjSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(DJ_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(DJ_SHEET_NAME);
+    sheet.getRange(1, 1, 1, DJ_HEADERS.length).setValues([DJ_HEADERS]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getDjHeaderMap_(sheet) {
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var map = {};
+  headers.forEach(function (header, index) {
+    var key = String(header || '').trim();
+    if (key) map[key] = index;
+  });
+  return map;
+}
+
+function djRowToObject_(row, headerMap) {
+  function pick(key) {
+    var idx = headerMap[key];
+    if (idx === undefined) return '';
+    return String(row[idx] || '').trim();
+  }
+
+  return {
+    dj_id: pick('dj_id'),
+    name: pick('name'),
+    email: pick('email'),
+    password_hash: pick('password_hash'),
+    password_salt: pick('password_salt'),
+    station: pick('station'),
+    show_name: pick('show_name'),
+    status: pick('status') || 'active',
+    created_at: pick('created_at'),
+  };
+}
+
+function findDjByEmail_(email) {
+  var sheet = getDjSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var dj = djRowToObject_(rows[i], headerMap);
+    if (normalizeEmail_(dj.email) === email) return dj;
+  }
+
+  return null;
+}
+
+function publicDj_(dj) {
+  return {
+    id: dj.dj_id,
+    name: dj.name,
+    email: dj.email,
+    station: dj.station,
+    showName: dj.show_name || '',
+    status: dj.status,
+  };
+}
+
+function createSessionToken_(dj) {
+  var exp = Date.now() + (7 * 24 * 60 * 60 * 1000);
+  var body = dj.dj_id + '|' + normalizeEmail_(dj.email) + '|' + exp;
+  return Utilities.base64EncodeWebSafe(body + '|' + hmacHex_(body));
+}
+
+function djLogin_(email, password) {
+  email = normalizeEmail_(email);
+  password = String(password || '');
+
+  if (!email || !password) {
+    throw new Error('Email and password are required.');
+  }
+
+  var dj = findDjByEmail_(email);
+  if (!dj || !dj.password_hash || !dj.password_salt) {
+    throw new Error('Invalid email or password.');
+  }
+
+  if (String(dj.status).toLowerCase() !== 'active') {
+    throw new Error('This DJ account is not active yet. Contact Radio Now if you need access.');
+  }
+
+  if (!verifyPassword_(password, dj.password_salt, dj.password_hash)) {
+    throw new Error('Invalid email or password.');
+  }
+
+  return {
+    success: true,
+    token: createSessionToken_(dj),
+    dj: publicDj_(dj),
+  };
+}
+
+function djSignup_(payload) {
+  var name = String(payload.name || '').trim();
+  var station = String(payload.station || '').trim();
+  var showName = String(payload.showName || '').trim();
+  var email = normalizeEmail_(payload.email);
+  var password = String(payload.password || '');
+
+  if (!name || !station || !email || !password) {
+    throw new Error('Name, station, email, and password are required.');
+  }
+
+  if (password.length < 8) {
+    throw new Error('Password must be at least 8 characters.');
+  }
+
+  if (findDjByEmail_(email)) {
+    throw new Error('An account with this email already exists. Try signing in instead.');
+  }
+
+  var sheet = getDjSheet_();
+  var hashed = hashPassword_(password);
+  var djId = 'dj-' + Utilities.getUuid().slice(0, 8);
+  var createdAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+
+  sheet.appendRow([
+    djId,
+    name,
+    email,
+    hashed.hash,
+    hashed.salt,
+    station,
+    showName,
+    'active',
+    createdAt,
+  ]);
+
+  var dj = {
+    dj_id: djId,
+    name: name,
+    email: email,
+    station: station,
+    show_name: showName,
+    status: 'active',
+    created_at: createdAt,
+  };
+
+  return {
+    success: true,
+    token: createSessionToken_(dj),
+    dj: publicDj_(dj),
+  };
+}
+
 function doGet(e) {
   try {
     const action = (e.parameter.action || 'list').toLowerCase();
@@ -503,6 +703,14 @@ function doPost(e) {
         added: result.added,
         skipped: result.skipped,
       });
+    }
+
+    if (action === 'dj_login') {
+      return jsonResponse_(djLogin_(body.email, body.password));
+    }
+
+    if (action === 'dj_signup') {
+      return jsonResponse_(djSignup_(body));
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });

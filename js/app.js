@@ -1,8 +1,6 @@
 (function () {
   const loginGate = document.getElementById('login-gate');
   const appShell = document.getElementById('app-shell');
-  const loginForm = document.getElementById('login-form');
-  const loginError = document.getElementById('login-error');
   const logoutBtn = document.getElementById('logout-btn');
   const searchInput = document.getElementById('search-input');
   const styleFilter = document.getElementById('style-filter');
@@ -38,12 +36,13 @@
   let currentPreviewId = null;
 
   function isAuthenticated() {
-    return sessionStorage.getItem(CONFIG.authKey) === 'true';
+    return DjAuth.isAuthenticated();
   }
 
   function showApp() {
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
+    DjAuthUI.updateWelcome();
     updateDownloadSetupNotice();
     loadQueuesFromStorage();
     checkConnection();
@@ -539,23 +538,8 @@
     renderDownloadQueue();
   }
 
-  loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const password = document.getElementById('password').value;
-    if (password === CONFIG.password) {
-      sessionStorage.setItem(CONFIG.authKey, 'true');
-      loginError.classList.remove('show');
-      showApp();
-    } else {
-      loginError.classList.add('show');
-    }
-  });
-
-  logoutBtn.addEventListener('click', () => {
-    sessionStorage.removeItem(CONFIG.authKey);
-    document.getElementById('password').value = '';
-    showLogin();
-  });
+  DjAuthUI.init({ onAuthenticated: showApp });
+  DjAuthUI.bindLogout(logoutBtn, showLogin);
 
   searchInput.addEventListener('input', Utils.debounce(filterSongs, 180));
   styleFilter.addEventListener('change', filterSongs);

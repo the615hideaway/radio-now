@@ -1,7 +1,8 @@
 const CONFIG = {
   siteName: 'Radio Now — (615) Hideaway Entertainment',
-  password: '615bluegrass',
+  // Legacy shared-password key (no longer used for sign-in).
   authKey: 'radio_now_auth',
+  djSessionKey: 'radio_now_dj_session',
 
   // Catalog loads from this JSON file (synced from Google Sheets).
   songsDataUrl: 'data/songs.json',

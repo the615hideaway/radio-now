@@ -23,14 +23,40 @@
           <p>(615) Hideaway Entertainment</p>
         </div>
       </div>
-      <p class="login-copy">Authorized radio programmers only. Enter the access password to browse artist profiles.</p>
-      <form id="login-form">
-        <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
-        <label for="password">Access Password</label>
-        <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" required>
+      <p class="login-copy">Radio programmer sign-in. Create a DJ account to browse the catalog, preview tracks, and download music.</p>
+
+      <div class="auth-tabs" role="tablist" aria-label="DJ account">
+        <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">Sign In</button>
+        <button type="button" class="auth-tab" data-auth-tab="signup" role="tab" aria-selected="false">Create Account</button>
+      </div>
+
+      <form id="login-form" class="auth-panel" data-auth-panel="login">
+        <div class="login-error" id="login-error"></div>
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="you@station.com" autocomplete="email" required>
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" required>
         <button type="submit" class="btn btn-primary btn-full">
           <i class="fa-solid fa-right-to-bracket"></i>
-          Enter Catalog
+          Sign In
+        </button>
+      </form>
+
+      <form id="signup-form" class="auth-panel hidden" data-auth-panel="signup">
+        <div class="login-error" id="signup-error"></div>
+        <label for="signup-name">Your Name</label>
+        <input type="text" id="signup-name" placeholder="DJ or host name" autocomplete="name" required>
+        <label for="signup-station">Station / Program</label>
+        <input type="text" id="signup-station" placeholder="Station call letters or show" required>
+        <label for="signup-show">Show Name <span class="label-optional">(optional)</span></label>
+        <input type="text" id="signup-show" placeholder="On-air show name">
+        <label for="signup-email">Email</label>
+        <input type="email" id="signup-email" placeholder="you@station.com" autocomplete="email" required>
+        <label for="signup-password">Password</label>
+        <input type="password" id="signup-password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required>
+        <button type="submit" class="btn btn-primary btn-full">
+          <i class="fa-solid fa-user-plus"></i>
+          Create DJ Account
         </button>
       </form>
     </div>
@@ -51,6 +77,7 @@
           <a href="artists.html" class="nav-link active">Artists</a>
         </nav>
         <div class="header-actions">
+          <span id="dj-welcome" class="dj-welcome hidden"></span>
           <button class="btn btn-ghost" id="logout-btn">
             <i class="fa-solid fa-right-from-bracket"></i>
             Log Out
@@ -133,6 +160,8 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/dj-auth.js"></script>
+  <script src="js/dj-auth-ui.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/audio-player.js"></script>
   <script src="js/one-sheet.js"></script>
