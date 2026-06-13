@@ -1,5 +1,5 @@
 const TurnkeyPitch = {
-  namingExample: 'Song – Artist',
+  namingExample: 'Song Title - Artist Name',
 
   loginHeroHtml() {
     return `

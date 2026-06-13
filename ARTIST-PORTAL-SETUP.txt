@@ -1,61 +1,42 @@
 ARTIST PORTAL SETUP
 ===================
 
-Gives invited artists a dashboard: download counts, activity history,
-and DJ contact email when the DJ opted to share it.
+Artists can self-register at artist-dashboard.html (Artist Sign Up).
+DJs use index.html (DJ Sign Up). The login pages have a clear DJ vs Artist picker.
 
 1. REDEPLOY APPS SCRIPT
 -----------------------
-Open your Radio Now Google Sheet → Extensions → Apps Script
-Paste the latest google-apps-script/Code.gs
-Deploy → Manage deployments → Edit → New version → Deploy
+Paste latest google-apps-script/Code.gs and deploy a new version.
 
-New endpoints: artist_login, artist_activate, artist_dashboard
+Endpoints: artist_login, artist_signup, artist_activate, artist_dashboard
 
-2. ARTIST ACCOUNTS SHEET (auto-created)
+2. ARTIST SIGN UP (self-service)
+--------------------------------
+Artist goes to artist-dashboard.html → Artist Sign Up:
+  - Artist Name — must match catalog "Artist Name" exactly (e.g. David Parmley)
+  - Email + password
+
+Dashboard shows DJ downloads for songs matching that artist name.
+
+3. ARTIST ACCOUNTS SHEET (auto-created)
 ---------------------------------------
-Tab name: Artist Accounts
-
-Columns:
+Tab: Artist Accounts
   artist_account_id | artist_name | email | password_hash | password_salt | status | created_at
 
-artist_name MUST match the catalog "Artist Name" in Sheet1 exactly
-(case-insensitive). Example: David Parmley
+Rows are created automatically on sign up.
 
-3. INVITE AN ARTIST (you do this in the sheet)
-----------------------------------------------
-Add a row:
-
-  artist_account_id: art-xxxxxxxx  (any unique id, e.g. art-david01)
-  artist_name:       David Parmley  (must match catalog)
-  email:             artist@example.com
-  password_hash:     (leave blank)
-  password_salt:     (leave blank)
-  status:            invited
-  created_at:        2026-06-13
-
-Tell the artist:
-  1. Go to …/artist-dashboard.html
-  2. Click "Activate Invite"
-  3. Enter the invited email + choose a password
-
-4. ARTIST SIGN-IN (after activate)
+4. OPTIONAL: INVITE FIRST (legacy)
 ----------------------------------
-Sign In tab with email + password.
+You can still pre-add a row with status=invited and blank password.
+artist_activate still works if you need that flow.
 
 5. WHAT ARTISTS SEE
 -------------------
-- Total / week / month download counts for their songs
-- Charts for their songs only
-- Each download: song, DJ name/station/show, format
-- DJ email only if that DJ turned on "share my email with artists"
+- Download stats and charts for their songs
+- Each download: song, DJ info, email if DJ opted to share
 
-6. TEST WITH SAMMY'S DOWNLOADS
-------------------------------
-Invite row for David Parmley with your email, activate, dashboard
-should show Sammy's logged downloads for David Parmley songs.
-
-7. NO PUBLIC SIGNUP
--------------------
-Artists cannot self-register. Only rows with status=invited and no
-password can use Activate Invite.
+6. TURN-KEY FILE NAMING (marketing + actual downloads)
+------------------------------------------------------
+Song Title - Artist Name.mp3
+Song Title - Artist Name.jpg
+Song Title - Artist Name OneSheet.pdf

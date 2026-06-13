@@ -70,6 +70,16 @@ const ArtistAuth = {
     return data.artist;
   },
 
+  async signup(fields) {
+    const data = await this.request('artist_signup', {
+      artistName: String(fields.artistName || '').trim(),
+      email: String(fields.email || '').trim(),
+      password: String(fields.password || ''),
+    });
+    this.saveSession(data);
+    return data.artist;
+  },
+
   async activate(email, password) {
     const data = await this.request('artist_activate', {
       email: String(email || '').trim(),

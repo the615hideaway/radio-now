@@ -15,7 +15,20 @@
 <body>
 
   <div id="login-gate" class="login-gate">
-    <div class="login-card">
+    <nav class="account-role-picker" aria-label="Choose account type">
+      <a href="index.html" class="account-role-card is-active" aria-current="page">
+        <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
+        <span class="account-role-title">DJ Account</span>
+        <span class="account-role-desc">Browse &amp; download music</span>
+      </a>
+      <a href="artist-dashboard.html" class="account-role-card">
+        <i class="fa-solid fa-microphone" aria-hidden="true"></i>
+        <span class="account-role-title">Artist Account</span>
+        <span class="account-role-desc">Track radio downloads</span>
+      </a>
+    </nav>
+
+    <div class="login-card login-card--dj">
       <div class="brand-lockup brand-lockup--centered">
         <img src="assets/logo.jpg" alt="(615) Hideaway Entertainment" class="brand-logo brand-logo--large">
         <div class="brand-text">
@@ -23,16 +36,19 @@
           <p>(615) Hideaway Entertainment</p>
         </div>
       </div>
-      <p class="login-copy">Sign in to track downloads and grab turn-key promo folders — audio, cover &amp; one-sheet, all named for your library.</p>
+      <p class="login-account-badge"><i class="fa-solid fa-tower-broadcast"></i> DJ account</p>
+      <p class="login-copy">Sign in or create a <strong>DJ account</strong> to track downloads and grab turn-key promo folders.</p>
       <p class="login-demo-links">
         <a href="index.html?demo=1"><i class="fa-solid fa-compact-disc"></i> Try demo catalog</a>
         <span aria-hidden="true">·</span>
         <a href="dj-dashboard.html?demo=1"><i class="fa-solid fa-chart-line"></i> Preview DJ dashboard</a>
+        <span aria-hidden="true">·</span>
+        <a href="artist-dashboard.html"><i class="fa-solid fa-microphone"></i> Artist sign up</a>
       </p>
 
       <div class="auth-tabs" role="tablist" aria-label="DJ account">
-        <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">Sign In</button>
-        <button type="button" class="auth-tab" data-auth-tab="signup" role="tab" aria-selected="false">Create Account</button>
+        <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">DJ Sign In</button>
+        <button type="button" class="auth-tab" data-auth-tab="signup" role="tab" aria-selected="false">DJ Sign Up</button>
       </div>
 
       <form id="login-form" class="auth-panel" data-auth-panel="login">
@@ -43,7 +59,7 @@
         <input type="password" id="login-password" placeholder="Enter password" autocomplete="current-password" required>
         <button type="submit" class="btn btn-primary btn-full">
           <i class="fa-solid fa-right-to-bracket"></i>
-          Sign In
+          DJ Sign In
         </button>
       </form>
 

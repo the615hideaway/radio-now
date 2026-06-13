@@ -156,6 +156,79 @@ a:hover { color: var(--white); }
   width: min(920px, 100%);
 }
 
+.account-role-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  width: min(460px, 100%);
+}
+
+.account-role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 12px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.account-role-card:hover {
+  border-color: var(--border-light);
+  color: var(--text);
+}
+
+.account-role-card.is-active {
+  border-color: var(--gold);
+  background: rgba(244, 196, 48, 0.08);
+  color: var(--text);
+}
+
+.account-role-card i {
+  color: var(--gold-bright);
+  font-size: 1.1rem;
+}
+
+.account-role-title {
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--white);
+}
+
+.account-role-desc {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.login-account-badge {
+  margin: 0 0 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(244, 196, 48, 0.12);
+  border: 1px solid rgba(244, 196, 48, 0.35);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.login-account-badge--artist {
+  background: rgba(230, 57, 57, 0.1);
+  border-color: rgba(230, 57, 57, 0.35);
+  color: #ff8a8a;
+}
+
 .login-card {
   width: min(460px, 100%);
   background: var(--bg-card);

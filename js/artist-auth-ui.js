@@ -2,9 +2,9 @@ const ArtistAuthUI = {
   init(options = {}) {
     const gate = document.getElementById('login-gate');
     const loginForm = document.getElementById('login-form');
-    const activateForm = document.getElementById('activate-form');
+    const signupForm = document.getElementById('signup-form');
     const loginError = document.getElementById('login-error');
-    const activateError = document.getElementById('activate-error');
+    const signupError = document.getElementById('signup-error');
     const tabs = gate ? gate.querySelectorAll('[data-auth-tab]') : [];
     const panels = gate ? gate.querySelectorAll('[data-auth-panel]') : [];
     const onAuthenticated = options.onAuthenticated || (() => {});
@@ -17,7 +17,7 @@ const ArtistAuthUI = {
 
     const clearErrors = () => {
       loginError?.classList.remove('show');
-      activateError?.classList.remove('show');
+      signupError?.classList.remove('show');
     };
 
     const switchTab = (tabName) => {
@@ -59,31 +59,34 @@ const ArtistAuthUI = {
       }
     });
 
-    activateForm?.addEventListener('submit', async (event) => {
+    signupForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
       clearErrors();
 
-      const email = document.getElementById('activate-email')?.value || '';
-      const password = document.getElementById('activate-password')?.value || '';
-      const confirm = document.getElementById('activate-password-confirm')?.value || '';
-      const submitBtn = activateForm.querySelector('button[type="submit"]');
+      const password = document.getElementById('signup-password')?.value || '';
+      const confirm = document.getElementById('signup-password-confirm')?.value || '';
+      const submitBtn = signupForm.querySelector('button[type="submit"]');
 
       if (password !== confirm) {
-        showError(activateError, 'Passwords do not match.');
+        showError(signupError, 'Passwords do not match.');
         return;
       }
 
       submitBtn.disabled = true;
       const originalHtml = submitBtn.innerHTML;
-      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Activating…';
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating account…';
 
       try {
-        await ArtistAuth.activate(email, password);
-        activateForm.reset();
+        await ArtistAuth.signup({
+          artistName: document.getElementById('signup-artist-name')?.value || '',
+          email: document.getElementById('signup-email')?.value || '',
+          password,
+        });
+        signupForm.reset();
         ArtistAuthUI.updateWelcome();
         onAuthenticated();
       } catch (err) {
-        showError(activateError, err.message);
+        showError(signupError, err.message);
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalHtml;

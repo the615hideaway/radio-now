@@ -1083,6 +1083,38 @@ function findArtistByEmail_(email) {
   return null;
 }
 
+function findArtistByName_(name) {
+  var target = normalizeArtistName_(name);
+  if (!target) return null;
+
+  var sheet = getArtistSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var artist = artistRowToObject_(rows[i], headerMap);
+    if (normalizeArtistName_(artist.artist_name) === target) {
+      return { rowIndex: i + 1, artist: artist };
+    }
+  }
+
+  return null;
+}
+
+function artistNameExistsInCatalog_(artistName) {
+  var target = normalizeArtistName_(artistName);
+  if (!target) return false;
+
+  var result = listSongs_();
+  var songs = result.songs || [];
+
+  for (var i = 0; i < songs.length; i++) {
+    if (normalizeArtistName_(songs[i].artistName) === target) return true;
+  }
+
+  return false;
+}
+
 function publicArtist_(artist) {
   return {
     id: artist.artist_account_id,
@@ -1128,6 +1160,62 @@ function artistLogin_(email, password) {
   if (!verifyPassword_(password, artist.password_salt, artist.password_hash)) {
     throw new Error('Invalid email or password.');
   }
+
+  return {
+    success: true,
+    token: createArtistSessionToken_(artist),
+    artist: publicArtist_(artist),
+  };
+}
+
+function artistSignup_(payload) {
+  var artistName = String(payload.artistName || '').trim();
+  var email = normalizeEmail_(payload.email);
+  var password = String(payload.password || '');
+
+  if (!artistName || !email || !password) {
+    throw new Error('Artist name, email, and password are required.');
+  }
+
+  if (password.length < 8) {
+    throw new Error('Password must be at least 8 characters.');
+  }
+
+  if (findArtistByEmail_(email)) {
+    throw new Error('An account with this email already exists. Try signing in instead.');
+  }
+
+  var existingName = findArtistByName_(artistName);
+  if (existingName && String(existingName.artist.status).toLowerCase() === 'active') {
+    throw new Error('An artist account already exists for this name. Contact Radio Now if you need access.');
+  }
+
+  if (!artistNameExistsInCatalog_(artistName)) {
+    throw new Error('Artist name must match your catalog listing on Radio Now exactly (e.g. David Parmley).');
+  }
+
+  var sheet = getArtistSheet_();
+  var hashed = hashPassword_(password);
+  var artistId = 'art-' + Utilities.getUuid().slice(0, 8);
+  var createdAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+
+  sheet.appendRow([
+    artistId,
+    artistName,
+    email,
+    hashed.hash,
+    hashed.salt,
+    'active',
+    createdAt,
+  ]);
+
+  var artist = {
+    artist_account_id: artistId,
+    artist_name: artistName,
+    email: email,
+    status: 'active',
+    created_at: createdAt,
+  };
 
   return {
     success: true,
@@ -1348,6 +1436,10 @@ function doPost(e) {
 
     if (action === 'artist_login') {
       return jsonResponse_(artistLogin_(body.email, body.password));
+    }
+
+    if (action === 'artist_signup') {
+      return jsonResponse_(artistSignup_(body));
     }
 
     if (action === 'artist_activate') {
