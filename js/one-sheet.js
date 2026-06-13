@@ -447,12 +447,92 @@ const OneSheet = {
     };
   },
 
-  ensurePdfSpace(doc, y, needed, margin, bottom) {
-    if (y + needed > bottom) {
-      doc.addPage();
-      return margin + 0.15;
+  createPdfLayout(doc, theme, songInfo = {}) {
+    const pageWidth = 8.5;
+    const pageHeight = 11;
+    const margin = 0.68;
+    const contentWidth = pageWidth - (margin * 2);
+    const contentBottom = pageHeight - 0.62;
+
+    const layout = {
+      doc,
+      theme,
+      pageWidth,
+      pageHeight,
+      margin,
+      contentWidth,
+      contentBottom,
+      y: margin,
+      songTitle: songInfo.title || '',
+      songArtist: songInfo.artist || '',
+
+      ensureSpace(needed) {
+        if (this.y + needed > this.contentBottom) {
+          this.newPage();
+        }
+        return this.y;
+      },
+
+      newPage() {
+        doc.addPage();
+        this.y = OneSheet.addPdfContinuationHeader(doc, this);
+        return this.y;
+      },
+
+      gap(size = 0.2) {
+        this.y += size;
+        return this.y;
+      },
+    };
+
+    return layout;
+  },
+
+  addPdfContinuationHeader(doc, layout) {
+    const { margin, pageWidth, theme, songTitle, songArtist } = layout;
+    let y = margin + 0.08;
+
+    doc.setFillColor(...theme.gold);
+    doc.rect(0, 0, pageWidth, 0.05, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...theme.goldDeep);
+    doc.text('RADIO NOW', margin, y);
+
+    if (songTitle) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...theme.inkSoft);
+      const subtitle = songArtist ? `${songTitle} · ${songArtist}` : songTitle;
+      doc.text(subtitle, pageWidth - margin, y, { align: 'right' });
     }
-    return y;
+
+    y += 0.12;
+    doc.setDrawColor(...theme.gold);
+    doc.setLineWidth(0.015);
+    doc.line(margin, y, pageWidth - margin, y);
+
+    return y + 0.28;
+  },
+
+  finalizePdfFooters(doc, layout) {
+    const totalPages = doc.getNumberOfPages();
+    const footerLineY = layout.pageHeight - 0.42;
+
+    for (let page = 1; page <= totalPages; page += 1) {
+      doc.setPage(page);
+      doc.setDrawColor(...layout.theme.gold);
+      doc.setLineWidth(0.015);
+      doc.line(layout.margin, footerLineY, layout.pageWidth - layout.margin, footerLineY);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...layout.theme.label);
+      const footerText = totalPages > 1
+        ? `Radio Now DJ One-Sheet — For radio programmer use only · Page ${page} of ${totalPages}`
+        : 'Radio Now DJ One-Sheet — For radio programmer use only';
+      doc.text(footerText, layout.pageWidth / 2, layout.pageHeight - 0.22, { align: 'center' });
+    }
   },
 
   addPdfSection(doc, label, y, margin, theme) {
@@ -546,66 +626,120 @@ const OneSheet = {
     doc.roundedRect(x - 0.02, y - 0.02, size + 0.04, size + 0.04, 0.1, 0.1, 'S');
   },
 
-  addPdfDescriptionBlock(doc, description, y, margin, contentWidth, pageWidth, bottom, theme) {
-    const textX = margin + 0.2;
-    const textWidth = contentWidth - 0.28;
+  drawPdfDescriptionBox(doc, layout, lines, options = {}) {
+    const { isFirst = true, continued = false } = options;
+    const textX = layout.margin + 0.2;
     const lineHeight = 0.21;
     const fontSize = 12;
+    const paddingTop = 0.1;
+    const paddingBottom = 0.18;
+    const boxHeight = (lines.length * lineHeight) + paddingTop + paddingBottom;
+    const headerSpace = isFirst ? 0.35 : (continued ? 0.3 : 0.08);
+
+    layout.ensureSpace(headerSpace + boxHeight);
+
+    if (isFirst) {
+      layout.y = this.addPdfSection(doc, 'Description', layout.y, layout.margin, layout.theme);
+    } else if (continued) {
+      layout.y += 0.04;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(...layout.theme.label);
+      doc.text('DESCRIPTION (CONTINUED)', layout.margin + 0.14, layout.y);
+      layout.y += 0.22;
+    }
+
+    const boxY = layout.y - (isFirst ? 0.1 : 0.02);
+    doc.setFillColor(...layout.theme.surface);
+    doc.setDrawColor(...layout.theme.surfaceLine);
+    doc.setLineWidth(0.01);
+    doc.roundedRect(layout.margin, boxY, layout.contentWidth, boxHeight, 0.06, 0.06, 'FD');
+    doc.setFillColor(...layout.theme.gold);
+    doc.rect(layout.margin, boxY, 0.05, boxHeight, 'F');
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(fontSize);
-    const lines = doc.splitTextToSize(description, textWidth);
-    const boxHeight = (lines.length * lineHeight) + 0.28;
+    doc.setTextColor(...layout.theme.inkSoft);
+    doc.text(lines, textX, layout.y + paddingTop);
 
-    y = this.ensurePdfSpace(doc, y, boxHeight + 0.45, margin, bottom);
-    y = this.addPdfSection(doc, 'Description', y, margin, theme);
-
-    const boxY = y - 0.1;
-    doc.setFillColor(...theme.surface);
-    doc.setDrawColor(...theme.surfaceLine);
-    doc.setLineWidth(0.01);
-    doc.roundedRect(margin, boxY, contentWidth, boxHeight, 0.06, 0.06, 'FD');
-    doc.setFillColor(...theme.gold);
-    doc.rect(margin, boxY, 0.05, boxHeight, 'F');
-
-    doc.setTextColor(...theme.inkSoft);
-    doc.text(lines, textX, y + 0.08);
-
-    return boxY + boxHeight + 0.28;
+    layout.y = boxY + boxHeight + 0.24;
+    return layout.y;
   },
 
-  addPdfMetaCards(doc, meta, y, margin, contentWidth, pageWidth, bottom, theme) {
+  addPdfDescriptionBlock(layout, description) {
+    const textWidth = layout.contentWidth - 0.28;
+    const lineHeight = 0.21;
+    const fontSize = 12;
+    const paddingY = 0.28;
+
+    layout.doc.setFont('helvetica', 'normal');
+    layout.doc.setFontSize(fontSize);
+    const allLines = layout.doc.splitTextToSize(description, textWidth);
+
+    let lineIndex = 0;
+    let isFirst = true;
+
+    while (lineIndex < allLines.length) {
+      const headerAllowance = isFirst ? 0.42 : 0.3;
+      layout.ensureSpace(headerAllowance + paddingY + lineHeight);
+
+      const available = layout.contentBottom - layout.y - headerAllowance - paddingY;
+      let maxLines = Math.max(1, Math.floor(available / lineHeight));
+      maxLines = Math.min(maxLines, allLines.length - lineIndex);
+
+      if (maxLines < 1) {
+        layout.newPage();
+        continue;
+      }
+
+      const chunk = allLines.slice(lineIndex, lineIndex + maxLines);
+      this.drawPdfDescriptionBox(layout.doc, layout, chunk, {
+        isFirst,
+        continued: !isFirst,
+      });
+
+      lineIndex += chunk.length;
+      isFirst = false;
+    }
+
+    return layout.y;
+  },
+
+  addPdfMetaCards(layout, meta) {
     const cardGap = 0.1;
-    const cardWidth = (contentWidth - (cardGap * (meta.length - 1))) / meta.length;
+    const cardWidth = (layout.contentWidth - (cardGap * (meta.length - 1))) / meta.length;
     const cardHeight = 0.58;
 
-    y = this.ensurePdfSpace(doc, y, cardHeight + 0.2, margin, bottom);
-    y += 0.08;
+    layout.ensureSpace(cardHeight + 0.2);
+    layout.y += 0.08;
 
     meta.forEach((item, index) => {
-      const x = margin + ((cardWidth + cardGap) * index);
+      const x = layout.margin + ((cardWidth + cardGap) * index);
+      const doc = layout.doc;
+      const theme = layout.theme;
 
       doc.setFillColor(...theme.surface);
       doc.setDrawColor(...theme.surfaceLine);
       doc.setLineWidth(0.01);
-      doc.roundedRect(x, y, cardWidth, cardHeight, 0.06, 0.06, 'FD');
+      doc.roundedRect(x, layout.y, cardWidth, cardHeight, 0.06, 0.06, 'FD');
 
       doc.setFillColor(...theme.gold);
-      doc.rect(x, y, cardWidth, 0.05, 'F');
+      doc.rect(x, layout.y, cardWidth, 0.05, 'F');
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7);
       doc.setTextColor(...theme.label);
-      doc.text(item.label.toUpperCase(), x + 0.12, y + 0.22);
+      doc.text(item.label.toUpperCase(), x + 0.12, layout.y + 0.22);
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(11.5);
       doc.setTextColor(...theme.ink);
       const valueLines = doc.splitTextToSize(item.value, cardWidth - 0.24);
-      doc.text(valueLines, x + 0.12, y + 0.4);
+      doc.text(valueLines, x + 0.12, layout.y + 0.4);
     });
 
-    return y + cardHeight + 0.28;
+    layout.y += cardHeight + 0.28;
+    return layout.y;
   },
 
   drawPdfBandLine(doc, line, x, y, maxWidth, theme) {
@@ -632,83 +766,112 @@ const OneSheet = {
     return y + (lines.length * 0.19);
   },
 
-  addPdfBandMembers(doc, bandGroups, y, margin, contentWidth, bottom, theme) {
-    if (!bandGroups.vocals.length && !bandGroups.instruments.length) return y;
+  estimatePdfFieldHeight(doc, value, colWidth) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    const lines = doc.splitTextToSize(value, colWidth);
+    return 0.15 + (lines.length * 0.17) + 0.14;
+  },
 
-    y = this.ensurePdfSpace(doc, y, 0.5, margin, bottom);
-    y = this.addPdfSection(doc, 'Band Members', y, margin, theme);
+  addPdfBandMembers(layout, bandGroups) {
+    if (!bandGroups.vocals.length && !bandGroups.instruments.length) return layout.y;
 
+    const doc = layout.doc;
+    const theme = layout.theme;
     const colGap = 0.28;
-    const colWidth = (contentWidth - colGap) / 2;
-    const rightX = margin + colWidth + colGap;
+    const colWidth = (layout.contentWidth - colGap) / 2;
+    const rightX = layout.margin + colWidth + colGap;
+
+    layout.ensureSpace(0.5);
+    layout.y = this.addPdfSection(doc, 'Band Members', layout.y, layout.margin, theme);
 
     bandGroups.vocals.forEach((line) => {
-      y = this.ensurePdfSpace(doc, y, 0.24, margin, bottom);
-      y = this.drawPdfBandLine(doc, line, margin, y, contentWidth, theme) + 0.04;
+      layout.ensureSpace(0.24);
+      layout.y = this.drawPdfBandLine(doc, line, layout.margin, layout.y, layout.contentWidth, theme) + 0.04;
     });
 
     if (bandGroups.vocals.length && bandGroups.instruments.length) {
-      y += 0.1;
+      layout.y += 0.1;
     }
 
-    let leftY = y;
-    let rightY = y;
+    let leftY = layout.y;
+    let rightY = layout.y;
     bandGroups.instruments.forEach((line, index) => {
-      const x = index % 2 === 0 ? margin : rightX;
+      const isLeft = index % 2 === 0;
+      const x = isLeft ? layout.margin : rightX;
       const maxWidth = colWidth;
-      const currentY = index % 2 === 0 ? leftY : rightY;
+      const currentY = isLeft ? leftY : rightY;
 
-      const nextY = this.ensurePdfSpace(doc, currentY, 0.24, margin, bottom);
-      if (nextY !== currentY) {
-        leftY = nextY;
-        rightY = nextY;
+      if (currentY + 0.24 > layout.contentBottom) {
+        layout.newPage();
+        leftY = layout.y;
+        rightY = layout.y;
       }
 
-      const placedY = index % 2 === 0 ? leftY : rightY;
+      const placedY = isLeft ? leftY : rightY;
       const lineEnd = this.drawPdfBandLine(doc, line, x, placedY, maxWidth, theme) + 0.04;
 
-      if (index % 2 === 0) leftY = lineEnd;
+      if (isLeft) leftY = lineEnd;
       else rightY = lineEnd;
     });
 
-    return Math.max(leftY, rightY) + 0.12;
+    layout.y = Math.max(leftY, rightY) + 0.12;
+    return layout.y;
   },
 
-  addPdfCredits(doc, credits, y, margin, contentWidth, pageWidth, bottom, theme) {
-    if (!credits.length) return y;
+  addPdfCredits(layout, credits) {
+    if (!credits.length) return layout.y;
 
-    y = this.ensurePdfSpace(doc, y, 0.8, margin, bottom);
-    y += 0.06;
-
-    doc.setDrawColor(...theme.border);
-    doc.setLineWidth(0.01);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 0.3;
-
+    const doc = layout.doc;
+    const theme = layout.theme;
     const colGap = 0.35;
-    const colWidth = (contentWidth - colGap) / 2;
-    let leftY = y;
-    let rightY = y;
+    const colWidth = (layout.contentWidth - colGap) / 2;
 
-    credits.forEach((item, index) => {
-      if (index % 2 === 0) {
-        leftY = this.addPdfField(doc, item.label, item.value, margin, leftY, colWidth, theme);
-      } else {
-        rightY = this.addPdfField(doc, item.label, item.value, margin + colWidth + colGap, rightY, colWidth, theme);
+    const drawCreditsDivider = () => {
+      layout.ensureSpace(0.42);
+      layout.y += 0.06;
+      doc.setDrawColor(...theme.border);
+      doc.setLineWidth(0.01);
+      doc.line(layout.margin, layout.y, layout.pageWidth - layout.margin, layout.y);
+      layout.y += 0.3;
+    };
+
+    drawCreditsDivider();
+
+    for (let i = 0; i < credits.length; i += 2) {
+      const leftItem = credits[i];
+      const rightItem = credits[i + 1];
+      const leftHeight = this.estimatePdfFieldHeight(doc, leftItem.value, colWidth);
+      const rightHeight = rightItem
+        ? this.estimatePdfFieldHeight(doc, rightItem.value, colWidth)
+        : 0;
+      const rowHeight = Math.max(leftHeight, rightHeight);
+
+      if (layout.y + rowHeight > layout.contentBottom) {
+        layout.newPage();
+        drawCreditsDivider();
       }
-    });
 
-    return Math.max(leftY, rightY) + 0.08;
-  },
+      const rowY = layout.y;
+      let leftEnd = this.addPdfField(doc, leftItem.label, leftItem.value, layout.margin, rowY, colWidth, theme);
+      let rightEnd = rowY;
+      if (rightItem) {
+        rightEnd = this.addPdfField(
+          doc,
+          rightItem.label,
+          rightItem.value,
+          layout.margin + colWidth + colGap,
+          rowY,
+          colWidth,
+          theme,
+        );
+      }
 
-  addPdfFooter(doc, pageWidth, margin, bottom, theme) {
-    doc.setDrawColor(...theme.gold);
-    doc.setLineWidth(0.015);
-    doc.line(margin, bottom - 0.28, pageWidth - margin, bottom - 0.28);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.setTextColor(...theme.label);
-    doc.text('Radio Now DJ One-Sheet — For radio programmer use only', pageWidth / 2, bottom - 0.08, { align: 'center' });
+      layout.y = Math.max(leftEnd, rightEnd);
+    }
+
+    layout.y += 0.08;
+    return layout.y;
   },
 
   async downloadOneSheet(song) {
@@ -716,37 +879,37 @@ const OneSheet = {
     const doc = new JsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
     const theme = this.pdfTheme();
 
-    const pageWidth = 8.5;
-    const margin = 0.68;
-    const contentWidth = pageWidth - (margin * 2);
-    const bottom = 10.2;
-    let y;
-
     const artist = this.decodeText(song.artistName) || 'Unknown Artist';
     const title = this.decodeText(song.songTitle) || 'Untitled';
     const description = this.decodeText(song.description);
     const bandGroups = this.buildBandMemberGroups(song);
 
-    y = this.addPdfHeader(doc, pageWidth, margin, theme);
+    const layout = this.createPdfLayout(doc, theme, { title, artist });
+    layout.y = this.addPdfHeader(doc, layout.pageWidth, layout.margin, theme);
 
     const coverData = await this.loadCoverDataUrl(song);
     const coverSize = 2.15;
-    const textX = margin + coverSize + 0.34;
-    const textWidth = contentWidth - coverSize - 0.34;
+    const textX = layout.margin + coverSize + 0.34;
+    const textWidth = layout.contentWidth - coverSize - 0.34;
 
-    this.drawPdfCover(doc, coverData, margin, y, coverSize, theme);
+    this.drawPdfCover(doc, coverData, layout.margin, layout.y, coverSize, theme);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(27);
     doc.setTextColor(...theme.ink);
     const titleLines = doc.splitTextToSize(title, textWidth);
-    const titleStartY = y + 0.42;
+    const titleStartY = layout.y + 0.42;
     doc.text(titleLines, textX, titleStartY);
 
     const titleBlockHeight = titleLines.length * 0.33;
     doc.setDrawColor(...theme.gold);
     doc.setLineWidth(0.02);
-    doc.line(textX, titleStartY + titleBlockHeight + 0.08, textX + Math.min(textWidth * 0.42, 1.8), titleStartY + titleBlockHeight + 0.08);
+    doc.line(
+      textX,
+      titleStartY + titleBlockHeight + 0.08,
+      textX + Math.min(textWidth * 0.42, 1.8),
+      titleStartY + titleBlockHeight + 0.08,
+    );
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(16);
@@ -754,15 +917,15 @@ const OneSheet = {
     const artistLines = doc.splitTextToSize(artist, textWidth);
     doc.text(artistLines, textX, titleStartY + titleBlockHeight + 0.28);
 
-    y += coverSize + 0.46;
+    layout.y += coverSize + 0.46;
 
     doc.setDrawColor(...theme.border);
     doc.setLineWidth(0.01);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 0.34;
+    doc.line(layout.margin, layout.y, layout.pageWidth - layout.margin, layout.y);
+    layout.y += 0.34;
 
     if (description) {
-      y = this.addPdfDescriptionBlock(doc, description, y, margin, contentWidth, pageWidth, bottom, theme);
+      this.addPdfDescriptionBlock(layout, description);
     }
 
     const meta = [
@@ -772,10 +935,10 @@ const OneSheet = {
     ].filter((item) => item.value);
 
     if (meta.length) {
-      y = this.addPdfMetaCards(doc, meta, y, margin, contentWidth, pageWidth, bottom, theme);
+      this.addPdfMetaCards(layout, meta);
     }
 
-    y = this.addPdfBandMembers(doc, bandGroups, y, margin, contentWidth, bottom, theme);
+    this.addPdfBandMembers(layout, bandGroups);
 
     const credits = [
       { label: 'Songwriter', value: this.decodeText(song.songwriter) },
@@ -784,8 +947,8 @@ const OneSheet = {
       { label: 'Contact Email', value: this.decodeText(song.contactEmail) },
     ].filter((item) => item.value);
 
-    y = this.addPdfCredits(doc, credits, y, margin, contentWidth, pageWidth, bottom, theme);
-    this.addPdfFooter(doc, pageWidth, margin, bottom, theme);
+    this.addPdfCredits(layout, credits);
+    this.finalizePdfFooters(doc, layout);
 
     doc.save(this.pdfFilename(song));
   },
