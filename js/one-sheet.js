@@ -54,6 +54,24 @@ const OneSheet = {
     return { vocals, instruments };
   },
 
+  renderBandMembersHtml(song) {
+    const groups = this.buildBandMemberGroups(song);
+    if (!groups.vocals.length && !groups.instruments.length) {
+      return '<p>—</p>';
+    }
+
+    const line = (value) => this.escapeHtml(value);
+    const vocals = groups.vocals.map(line).join('<br>');
+    const instruments = groups.instruments.map(line).join('<br>');
+
+    let html = '<div class="detail-band-members">';
+    if (vocals) html += `<p>${vocals}</p>`;
+    if (vocals && instruments) html += '<div class="band-group-spacer" aria-hidden="true"></div>';
+    if (instruments) html += `<p>${instruments}</p>`;
+    html += '</div>';
+    return html;
+  },
+
   promoStyles() {
     return `
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -531,8 +549,8 @@ const OneSheet = {
   addPdfDescriptionBlock(doc, description, y, margin, contentWidth, pageWidth, bottom, theme) {
     const textX = margin + 0.2;
     const textWidth = contentWidth - 0.28;
-    const lineHeight = 0.19;
-    const fontSize = 10.5;
+    const lineHeight = 0.21;
+    const fontSize = 12;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(fontSize);

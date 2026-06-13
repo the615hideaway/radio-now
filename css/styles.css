@@ -1086,6 +1086,10 @@ select { min-width: 130px; width: auto; }
   line-height: 1.6;
 }
 
+.detail-band-members .band-group-spacer {
+  height: 14px;
+}
+
 .detail-downloads {
   display: flex;
   flex-wrap: wrap;

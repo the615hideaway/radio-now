@@ -227,7 +227,7 @@
           <p>${Utils.escapeHtml(song.description || '—')}</p>
         </div>
         <div class="detail-grid">
-          <div><label>Band Members</label><p>${(OneSheet.buildBandMemberLines(song).map((line) => Utils.escapeHtml(line)).join('<br>') || '—')}</p></div>
+          <div><label>Band Members</label>${OneSheet.renderBandMembersHtml(song)}</div>
           <div><label>Songwriter</label><p>${Utils.escapeHtml(song.songwriter || '—')}</p></div>
           <div><label>Featured Artist</label><p>${Utils.escapeHtml(song.featuredArtist || '—')}</p></div>
           <div><label>Record Label</label><p>${Utils.escapeHtml(song.recordLabel || '—')}</p></div>
