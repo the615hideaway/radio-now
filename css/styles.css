@@ -962,6 +962,11 @@ select { min-width: 130px; width: auto; }
   font-size: 0.9rem;
 }
 
+.preview-loading {
+  color: var(--text-muted);
+  min-width: 220px;
+}
+
 .song-preview .preview-audio,
 .preview-audio {
   width: 100%;

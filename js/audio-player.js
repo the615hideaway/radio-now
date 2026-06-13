@@ -1,11 +1,17 @@
 const AudioPlayer = {
   audioEl: null,
+  objectUrl: '',
 
   getDriveId(song) {
     return song.previewDriveId || Utils.extractDriveId(song.mp3) || Utils.extractDriveId(song.previewLink) || '';
   },
 
+  canUseScriptProxy() {
+    return typeof RadioDB !== 'undefined' && RadioDB.isScriptConfigured();
+  },
+
   hasPreview(song) {
+    if (this.getDriveId(song) && this.canUseScriptProxy()) return true;
     return this.getPreviewSources(song).length > 0;
   },
 
@@ -35,13 +41,31 @@ const AudioPlayer = {
     return [...new Set(urls.filter(Boolean))];
   },
 
+  revokeObjectUrl() {
+    if (this.objectUrl) {
+      URL.revokeObjectURL(this.objectUrl);
+      this.objectUrl = '';
+    }
+  },
+
+  showLoading(message = 'Loading preview…') {
+    const container = document.getElementById('now-playing-player');
+    if (!container) return;
+    this.audioEl = null;
+    container.innerHTML = `
+      <div class="now-playing-fallback preview-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <span>${Utils.escapeHtml(message)}</span>
+      </div>`;
+  },
+
   getPlayerElement() {
     const container = document.getElementById('now-playing-player');
     if (!container) return null;
 
     if (!this.audioEl || !container.contains(this.audioEl)) {
       container.innerHTML = `
-        <audio class="preview-audio preview-audio--now-playing" controls playsinline preload="metadata"
+        <audio class="preview-audio preview-audio--now-playing" controls playsinline preload="auto"
           title="Radio Now preview player"></audio>`;
       this.audioEl = container.querySelector('audio');
     }
@@ -49,26 +73,69 @@ const AudioPlayer = {
     return this.audioEl;
   },
 
-  async playSong(song) {
-    const audio = this.getPlayerElement();
-    const sources = this.getPreviewSources(song);
-    if (!audio || !sources.length) return false;
+  async playBlob(audio, blob) {
+    this.revokeObjectUrl();
+    this.objectUrl = URL.createObjectURL(blob);
+    audio.src = this.objectUrl;
 
-    audio.pause();
-    audio.currentTime = 0;
+    try {
+      await audio.play();
+      return true;
+    } catch (err) {
+      if (err.name === 'NotAllowedError') {
+        audio.load();
+        return true;
+      }
+      throw err;
+    }
+  },
 
+  async playFromScript(song) {
+    const driveId = this.getDriveId(song);
+    if (!driveId || !this.canUseScriptProxy()) return false;
+
+    this.showLoading('Loading preview…');
+    const blob = await RadioDB.fetchAudioViaScript(driveId);
+    if (!(await Utils.isAudioBlob(blob))) {
+      throw new Error('Preview stream did not return audio');
+    }
+
+    const player = this.getPlayerElement();
+    return this.playBlob(player, blob);
+  },
+
+  async playFromUrls(audio, sources) {
     for (let i = 0; i < sources.length; i++) {
       audio.src = sources[i];
       try {
         await audio.play();
         return true;
       } catch (err) {
-        if (i === sources.length - 1) {
-          console.warn('Preview failed for', song.songTitle, err.message);
-        }
+        if (i === sources.length - 1) throw err;
       }
     }
-
     return false;
+  },
+
+  async playSong(song) {
+    if (!this.hasPreview(song)) return false;
+
+    try {
+      if (this.canUseScriptProxy() && this.getDriveId(song)) {
+        return await this.playFromScript(song);
+      }
+
+      const audio = this.getPlayerElement();
+      const sources = this.getPreviewSources(song);
+      if (!audio || !sources.length) return false;
+
+      audio.pause();
+      audio.currentTime = 0;
+      return await this.playFromUrls(audio, sources);
+    } catch (err) {
+      console.warn('Preview failed for', song.songTitle, err.message);
+      this.showLoading('Preview unavailable — try again or use MP3 download.');
+      return false;
+    }
   },
 };
