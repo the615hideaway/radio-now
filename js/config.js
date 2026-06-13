@@ -9,7 +9,7 @@ const CONFIG = {
 
   // Required for ZIP downloads: deploy google-apps-script/Code.gs from your sheet
   // (Extensions → Apps Script → Deploy as Web app → Anyone). See AUDIO-FIX-STEPS.txt.
-  googleScriptUrl: 'https://script.google.com/macros/s/AKfycbwAhbh2k467duQanEnn6s34kngP8grcrV095j4qJkEweCjrH_67H940Px8IiZDWxEnRvg/exec',
+  googleScriptUrl: 'https://script.google.com/macros/s/AKfycbxhREXi6EDdwIfIunoXbZfuBjbHPIDCoFLye-o51dJss4bvhOQQjMH23WHraY1Af2JRVw/exec',
 
   // Optional fallback: Google Cloud API key with Drive API enabled (public files only).
   googleApiKey: '',
