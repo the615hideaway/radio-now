@@ -405,7 +405,7 @@
         }
         downloadZipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing ${progress.current}/${progress.total}…`;
       });
-      DjActivity.logMany(downloadQueue, 'download_zip', zipFormat);
+      DjActivity.logZipDownload(downloadQueue, zipFormat);
     } catch (err) {
       alert(err.message);
     } finally {
