@@ -223,7 +223,7 @@ const RadioDB = {
 
     const coverBlob = await this.fetchCoverBlob(song);
     if (coverBlob) {
-      target.file(`cover.${this.coverExtension(coverBlob)}`, coverBlob);
+      target.file(`${baseName}.${this.coverExtension(coverBlob)}`, coverBlob);
     }
 
     const pdfBlob = await OneSheet.generatePdfBlob(song);
