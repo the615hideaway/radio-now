@@ -1,31 +1,51 @@
 const TurnkeyPitch = {
   namingExample: 'Song Title - Artist Name',
 
-  loginHeroHtml() {
+  demoPickerHtml(page) {
+    if (page === 'artist') {
+      return `
+        <div class="pitch-action-picker" aria-label="Try turn-key promo">
+          <a href="index.html?demo=1" class="pitch-action-card pitch-action-card--primary">
+            <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+            <span class="pitch-action-title">Try free one-sheet demo</span>
+            <span class="pitch-action-desc">Play previews &amp; download a sample PDF — see what DJs get</span>
+          </a>
+          <a href="index.html" class="pitch-action-card">
+            <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
+            <span class="pitch-action-title">DJ account</span>
+            <span class="pitch-action-desc">Browse the catalog &amp; download turn-key folders</span>
+          </a>
+        </div>`;
+    }
+
     return `
-      <section class="turnkey-pitch turnkey-pitch--hero" aria-label="Turn-key radio promo">
-        <div class="turnkey-pitch-inner">
-          <p class="turnkey-eyebrow"><i class="fa-solid fa-bolt"></i> Turn-key radio promo</p>
-          <h2 class="turnkey-headline">Every folder named, packed &amp; ready for air</h2>
-          <p class="turnkey-lead">
-            No renaming. No missing art. No wrestling with one-sheet layouts.
-            Radio Now builds each download folder with <strong>audio, cover art, and a radio one-sheet PDF</strong> —
-            all labeled <em>${this.namingExample}</em> so DJs can drop straight into their library.
-          </p>
-          <ul class="turnkey-file-list">
-            <li><i class="fa-solid fa-music"></i><span><strong>${this.namingExample}.mp3</strong> — broadcast-ready audio</span></li>
-            <li><i class="fa-solid fa-image"></i><span><strong>${this.namingExample}.jpg</strong> — cover art</span></li>
-            <li><i class="fa-solid fa-file-pdf"></i><span><strong>${this.namingExample} OneSheet.pdf</strong> — pro radio promo</span></li>
-          </ul>
-          <p class="turnkey-artist-callout">
-            <i class="fa-solid fa-star"></i>
-            <span><strong>Artists:</strong> hate tech? Full turn-key setup from <strong class="turnkey-price">$5</strong>. <a href="artist-dashboard.html">Artist dashboard</a> — download your ZIP folders and send them to any DJ, plus see who downloaded on Radio Now.</span>
-          </p>
-          <p class="turnkey-dj-callout">
-            <i class="fa-solid fa-tower-broadcast"></i>
-            <span><strong>DJs:</strong> queue tracks, download one ZIP — every song in its own folder, show-prep done.</span>
-          </p>
+      <div class="pitch-action-picker" aria-label="Try turn-key promo">
+        <a href="index.html?demo=1" class="pitch-action-card pitch-action-card--primary">
+          <i class="fa-solid fa-compact-disc" aria-hidden="true"></i>
+          <span class="pitch-action-title">Try demo catalog</span>
+          <span class="pitch-action-desc">Play previews &amp; free one-sheet PDF — no sign-in</span>
+        </a>
+        <a href="dj-dashboard.html?demo=1" class="pitch-action-card">
+          <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+          <span class="pitch-action-title">Preview DJ dashboard</span>
+          <span class="pitch-action-desc">See download history &amp; charts — real sample data</span>
+        </a>
+      </div>`;
+  },
+
+  loginPitchHtml(page = 'dj') {
+    return `
+      <section class="turnkey-pitch turnkey-pitch--login" aria-label="Turn-key radio promo">
+        <p class="turnkey-eyebrow"><i class="fa-solid fa-bolt"></i> Turn-key radio promo</p>
+        <h2 class="turnkey-headline turnkey-headline--login">Named, packed &amp; ready for air</h2>
+        <p class="turnkey-lead-short">Every folder: <strong>MP3</strong>, <strong>cover art</strong>, <strong>PDF one-sheet</strong> — labeled <em>${this.namingExample}</em>.</p>
+        <div class="turnkey-file-chips">
+          <span><i class="fa-solid fa-music"></i> .mp3</span>
+          <span><i class="fa-solid fa-image"></i> .jpg</span>
+          <span><i class="fa-solid fa-file-pdf"></i> OneSheet.pdf</span>
         </div>
+        <p class="turnkey-price-line">Artists: full setup from <strong class="turnkey-price">$5</strong> · no layout struggle</p>
+        ${this.demoPickerHtml(page)}
       </section>`;
   },
 
@@ -68,7 +88,10 @@ const TurnkeyPitch = {
 
   mount() {
     const loginSlot = document.getElementById('turnkey-pitch-login');
-    if (loginSlot) loginSlot.innerHTML = this.loginHeroHtml();
+    if (loginSlot) {
+      const page = loginSlot.dataset.page || 'dj';
+      loginSlot.innerHTML = this.loginPitchHtml(page);
+    }
 
     const catalogSlot = document.getElementById('turnkey-pitch-catalog');
     if (catalogSlot) catalogSlot.innerHTML = this.catalogStripHtml();
