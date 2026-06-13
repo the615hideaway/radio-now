@@ -3,6 +3,7 @@ const CONFIG = {
   // Legacy shared-password key (no longer used for sign-in).
   authKey: 'radio_now_auth',
   djSessionKey: 'radio_now_dj_session',
+  artistSessionKey: 'radio_now_artist_session',
 
   // Catalog loads from this JSON file (synced from Google Sheets).
   songsDataUrl: 'data/songs.json',

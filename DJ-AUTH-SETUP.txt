@@ -90,7 +90,7 @@ New sheet tab created automatically:
   DJ Activity
 
 
-STILL COMING LATER
-------------------
-- Weekly / monthly top song charts (site-wide)
-- Artist-facing download reports
+ARTIST PORTAL (NEW)
+-------------------
+See ARTIST-PORTAL-SETUP.txt — invite-only artist dashboard at
+artist-dashboard.html (download stats + DJ contact when shared).

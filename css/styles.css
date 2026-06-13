@@ -438,6 +438,37 @@ a:hover { color: var(--white); }
   white-space: nowrap;
 }
 
+.auth-panel-note {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.artist-panel--full {
+  grid-column: 1 / -1;
+}
+
+.artist-dj-line {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.artist-dj-line i {
+  color: var(--gold-bright);
+  margin-right: 0.35rem;
+}
+
+.artist-dj-email {
+  margin: 0.2rem 0 0;
+  font-size: 0.86rem;
+}
+
+.artist-history-item .dj-history-main p {
+  margin: 0.15rem 0 0;
+}
+
 .charts-panel {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

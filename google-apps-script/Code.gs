@@ -1006,6 +1006,272 @@ function djProfileUpdate_(token, shareEmail) {
   };
 }
 
+var ARTIST_SHEET_NAME = 'Artist Accounts';
+var ARTIST_HEADERS = [
+  'artist_account_id', 'artist_name', 'email', 'password_hash', 'password_salt', 'status', 'created_at',
+];
+
+function normalizeArtistName_(name) {
+  return String(name || '').trim().toLowerCase();
+}
+
+function getArtistSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(ARTIST_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(ARTIST_SHEET_NAME);
+    sheet.getRange(1, 1, 1, ARTIST_HEADERS.length).setValues([ARTIST_HEADERS]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  ensureSheetHeaders_(sheet, ARTIST_HEADERS);
+  return sheet;
+}
+
+function artistRowToObject_(row, headerMap) {
+  function pick(key) {
+    var idx = headerMap[key];
+    if (idx === undefined) return '';
+    return String(row[idx] || '').trim();
+  }
+
+  return {
+    artist_account_id: pick('artist_account_id'),
+    artist_name: pick('artist_name'),
+    email: pick('email'),
+    password_hash: pick('password_hash'),
+    password_salt: pick('password_salt'),
+    status: pick('status') || 'invited',
+    created_at: pick('created_at'),
+  };
+}
+
+function findArtistById_(artistId) {
+  var targetId = String(artistId || '').trim();
+  if (!targetId) return null;
+
+  var sheet = getArtistSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var artist = artistRowToObject_(rows[i], headerMap);
+    if (artist.artist_account_id === targetId) {
+      return { rowIndex: i + 1, artist: artist };
+    }
+  }
+
+  return null;
+}
+
+function findArtistByEmail_(email) {
+  email = normalizeEmail_(email);
+  if (!email) return null;
+
+  var sheet = getArtistSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var artist = artistRowToObject_(rows[i], headerMap);
+    if (normalizeEmail_(artist.email) === email) {
+      return { rowIndex: i + 1, artist: artist };
+    }
+  }
+
+  return null;
+}
+
+function publicArtist_(artist) {
+  return {
+    id: artist.artist_account_id,
+    artistName: artist.artist_name,
+    email: artist.email,
+    status: artist.status,
+  };
+}
+
+function createArtistSessionToken_(artist) {
+  var exp = Date.now() + (7 * 24 * 60 * 60 * 1000);
+  var body = artist.artist_account_id + '|' + normalizeEmail_(artist.email) + '|' + exp;
+  return Utilities.base64EncodeWebSafe(body + '|' + hmacHex_(body));
+}
+
+function requireArtistSession_(token) {
+  var session = parseSessionToken_(token);
+  var found = findArtistById_(session.djId);
+  if (!found || String(found.artist.status).toLowerCase() !== 'active') {
+    throw new Error('Artist account not found or inactive.');
+  }
+  return found;
+}
+
+function artistLogin_(email, password) {
+  email = normalizeEmail_(email);
+  password = String(password || '');
+
+  if (!email || !password) {
+    throw new Error('Email and password are required.');
+  }
+
+  var found = findArtistByEmail_(email);
+  var artist = found ? found.artist : null;
+  if (!artist || !artist.password_hash || !artist.password_salt) {
+    throw new Error('Invalid email or password.');
+  }
+
+  if (String(artist.status).toLowerCase() !== 'active') {
+    throw new Error('This artist account is not active yet. Contact Radio Now if you need access.');
+  }
+
+  if (!verifyPassword_(password, artist.password_salt, artist.password_hash)) {
+    throw new Error('Invalid email or password.');
+  }
+
+  return {
+    success: true,
+    token: createArtistSessionToken_(artist),
+    artist: publicArtist_(artist),
+  };
+}
+
+function artistActivate_(email, password) {
+  email = normalizeEmail_(email);
+  password = String(password || '');
+
+  if (!email || !password) {
+    throw new Error('Email and password are required.');
+  }
+
+  if (password.length < 8) {
+    throw new Error('Password must be at least 8 characters.');
+  }
+
+  var found = findArtistByEmail_(email);
+  if (!found) {
+    throw new Error('No invitation found for this email. Contact Radio Now to get artist dashboard access.');
+  }
+
+  var artist = found.artist;
+  var status = String(artist.status).toLowerCase();
+
+  if (artist.password_hash) {
+    throw new Error('This account is already activated. Sign in instead.');
+  }
+
+  if (status !== 'invited') {
+    throw new Error('This artist account cannot be activated online. Contact Radio Now.');
+  }
+
+  if (!artist.artist_name) {
+    throw new Error('Artist account is missing a catalog artist name. Contact Radio Now.');
+  }
+
+  var sheet = getArtistSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var hashed = hashPassword_(password);
+
+  sheet.getRange(found.rowIndex, headerMap.password_hash + 1).setValue(hashed.hash);
+  sheet.getRange(found.rowIndex, headerMap.password_salt + 1).setValue(hashed.salt);
+  sheet.getRange(found.rowIndex, headerMap.status + 1).setValue('active');
+
+  artist.password_hash = hashed.hash;
+  artist.password_salt = hashed.salt;
+  artist.status = 'active';
+
+  return {
+    success: true,
+    token: createArtistSessionToken_(artist),
+    artist: publicArtist_(artist),
+  };
+}
+
+function listArtistActivity_(artistName, limit) {
+  var targetArtist = normalizeArtistName_(artistName);
+  if (!targetArtist) return [];
+
+  var sheet = getActivitySheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var items = [];
+
+  for (var i = rows.length - 1; i >= 1; i--) {
+    var row = rows[i];
+    function pick(key) {
+      var idx = headerMap[key];
+      if (idx === undefined) return '';
+      return String(row[idx] || '').trim();
+    }
+
+    if (normalizeArtistName_(pick('artist_name')) !== targetArtist) continue;
+    if (!isDownloadEvent_(pick('event_type'))) continue;
+
+    var sharedEmail = shareEmailFlag_(pick('share_email'));
+    items.push({
+      id: pick('activity_id'),
+      timestamp: pick('timestamp'),
+      eventType: pick('event_type'),
+      songId: pick('song_id'),
+      songTitle: pick('song_title'),
+      artistName: pick('artist_name'),
+      musicStyle: pick('music_style'),
+      format: pick('format'),
+      djName: pick('dj_name'),
+      djStation: pick('dj_station'),
+      djShowName: pick('dj_show_name'),
+      djEmail: sharedEmail ? pick('contact_email') : '',
+    });
+
+    if (items.length >= limit) break;
+  }
+
+  return items;
+}
+
+function computeArtistCharts_(artistName, limit) {
+  var activity = listArtistActivity_(artistName, 10000);
+  var now = Date.now();
+  var weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+  var monthAgo = now - (30 * 24 * 60 * 60 * 1000);
+  var weekCounts = {};
+  var monthCounts = {};
+
+  activity.forEach(function (item) {
+    var ts = Date.parse(item.timestamp);
+    if (isNaN(ts) || !item.songId) return;
+
+    var meta = {
+      songTitle: item.songTitle,
+      artistName: item.artistName,
+      musicStyle: item.musicStyle,
+    };
+
+    if (ts >= weekAgo) bumpChartCount_(weekCounts, item.songId, meta, ts);
+    if (ts >= monthAgo) bumpChartCount_(monthCounts, item.songId, meta, ts);
+  });
+
+  return {
+    week: sortChartEntries_(weekCounts, limit),
+    month: sortChartEntries_(monthCounts, limit),
+  };
+}
+
+function artistDashboard_(token) {
+  var found = requireArtistSession_(token);
+  var artistName = found.artist.artist_name;
+  var activity = listArtistActivity_(artistName, 250);
+  var charts = computeArtistCharts_(artistName, 10);
+
+  return {
+    success: true,
+    artist: publicArtist_(found.artist),
+    stats: computeDjStats_(activity),
+    activity: activity,
+    charts: charts,
+  };
+}
+
 function doGet(e) {
   try {
     const action = (e.parameter.action || 'list').toLowerCase();
@@ -1078,6 +1344,18 @@ function doPost(e) {
 
     if (action === 'dj_profile_update') {
       return jsonResponse_(djProfileUpdate_(body.token, body.shareEmail));
+    }
+
+    if (action === 'artist_login') {
+      return jsonResponse_(artistLogin_(body.email, body.password));
+    }
+
+    if (action === 'artist_activate') {
+      return jsonResponse_(artistActivate_(body.email, body.password));
+    }
+
+    if (action === 'artist_dashboard') {
+      return jsonResponse_(artistDashboard_(body.token));
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });
