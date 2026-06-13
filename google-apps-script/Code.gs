@@ -410,14 +410,6 @@ function streamDriveFile_(driveId) {
   });
 }
 
-function streamMedia_(driveId) {
-  if (!driveId) throw new Error('Missing Drive file id');
-
-  const blob = fetchDriveBlobById_(driveId);
-  // Apps Script MimeType enum does not include audio/* — serve raw bytes and let the browser sniff MP3.
-  return ContentService.createTextOutput(blob.getBytes());
-}
-
 function createZip_(songs, format) {
   const blobs = [];
   const skipped = [];

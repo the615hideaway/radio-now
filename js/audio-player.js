@@ -22,11 +22,6 @@ const AudioPlayer = {
     const urls = [];
     const driveId = this.getDriveId(song);
 
-    if (driveId) {
-      const media = Utils.scriptMediaUrl(driveId);
-      if (media) urls.push(media);
-    }
-
     if (song.previewStreamUrl) urls.push(song.previewStreamUrl);
 
     if (driveId) {
@@ -40,8 +35,6 @@ const AudioPlayer = {
       urls.push(url);
       const id = Utils.extractDriveId(url);
       if (id) {
-        const media = Utils.scriptMediaUrl(id);
-        if (media) urls.push(media);
         urls.push(...Utils.getDriveDownloadUrls(id));
         const stream = Utils.toPreviewStreamUrl(url);
         if (stream) urls.push(stream);
@@ -127,48 +120,6 @@ const AudioPlayer = {
     }
   },
 
-  waitForCanPlay(audio, timeoutMs = 5000) {
-    if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve, reject) => {
-      const timeout = window.setTimeout(() => {
-        cleanup();
-        reject(new Error('Preview stream timed out'));
-      }, timeoutMs);
-
-      const onReady = () => {
-        cleanup();
-        resolve();
-      };
-
-      const onError = () => {
-        cleanup();
-        reject(new Error('Preview stream failed'));
-      };
-
-      const cleanup = () => {
-        window.clearTimeout(timeout);
-        audio.removeEventListener('canplay', onReady);
-        audio.removeEventListener('error', onError);
-      };
-
-      audio.addEventListener('canplay', onReady, { once: true });
-      audio.addEventListener('error', onError, { once: true });
-    });
-  },
-
-  async tryMediaStream(audio, url) {
-    audio.pause();
-    audio.currentTime = 0;
-    audio.src = url;
-    audio.load();
-    await this.waitForCanPlay(audio);
-    await audio.play();
-    return true;
-  },
-
   async fetchAndCacheBlob(driveId) {
     const blob = await RadioDB.fetchAudioViaScript(driveId);
     if (!(await Utils.isAudioBlob(blob))) {
@@ -187,16 +138,6 @@ const AudioPlayer = {
       return this.playBlob(this.getPlayerElement(), cached);
     }
 
-    const mediaUrl = Utils.scriptMediaUrl(driveId);
-    if (mediaUrl) {
-      const audio = this.getPlayerElement();
-      try {
-        return await this.tryMediaStream(audio, mediaUrl);
-      } catch (err) {
-        console.warn('Media stream preview failed, using cached fetch:', err.message);
-      }
-    }
-
     const pending = this.prefetchJobs.get(driveId);
     if (pending) {
       this.showLoading('Loading preview…');
@@ -213,14 +154,9 @@ const AudioPlayer = {
 
   async playFromUrls(audio, sources) {
     for (let i = 0; i < sources.length; i++) {
-      const url = sources[i];
+      audio.src = sources[i];
       try {
-        if (Utils.isScriptMediaUrl(url)) {
-          await this.tryMediaStream(audio, url);
-        } else {
-          audio.src = url;
-          await audio.play();
-        }
+        await audio.play();
         return true;
       } catch (err) {
         if (i === sources.length - 1) throw err;
