@@ -78,6 +78,11 @@ const Utils = {
     return `${scriptUrl.replace(/\/$/, '')}?action=stream&id=${encodeURIComponent(id)}`;
   },
 
+  isScriptStreamUrl(url) {
+    const value = String(url || '');
+    return value.includes('script.google.com') && value.includes('action=stream');
+  },
+
   driveApiMediaUrl(driveId) {
     const id = String(driveId || '').trim();
     const apiKey = String(CONFIG.googleApiKey || '').trim();

@@ -594,6 +594,10 @@
     try {
       const zipFormat = downloadFormat.value;
       await RadioDB.downloadZip(downloadQueue, zipFormat, (progress) => {
+        if (progress.status === 'browser-zip') {
+          downloadZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Building ZIP in browser (WAV files are large)…';
+          return;
+        }
         if (progress.status === 'zipping') {
           downloadZipBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating ZIP…';
           return;
