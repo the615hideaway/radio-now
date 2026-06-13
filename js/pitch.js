@@ -1,61 +1,93 @@
 const TurnkeyPitch = {
   namingExample: 'Song Title - Artist Name',
 
-  demoPickerHtml(page) {
-    if (page === 'artist') {
+  benefitItem(icon, text) {
+    return `<li><i class="fa-solid ${icon}" aria-hidden="true"></i><span>${text}</span></li>`;
+  },
+
+  infographicCard(type, page) {
+    const isDj = type === 'dj';
+    const isActive = (isDj && page === 'dj') || (!isDj && page === 'artist');
+    const activeClass = isActive ? ' is-highlighted' : '';
+
+    if (isDj) {
       return `
-        <a href="index.html?demo=1" class="pitch-action-card pitch-action-card--primary">
-          <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
-          <span class="pitch-action-title">Try free one-sheet demo</span>
-          <span class="pitch-action-desc">Play previews &amp; download a sample PDF — see what DJs get</span>
-        </a>
-        <a href="index.html" class="pitch-action-card">
-          <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
-          <span class="pitch-action-title">DJ account</span>
-          <span class="pitch-action-desc">Browse the catalog &amp; download turn-key folders</span>
-        </a>`;
+        <article class="pitch-infographic-card pitch-infographic-card--dj${activeClass}">
+          <header class="pitch-infographic-card-head">
+            <span class="pitch-infographic-icon" aria-hidden="true"><i class="fa-solid fa-tower-broadcast"></i></span>
+            <div>
+              <p class="pitch-infographic-kicker">For radio programmers</p>
+              <h3 class="pitch-infographic-title">DJs get this</h3>
+            </div>
+          </header>
+          <ul class="pitch-benefit-list">
+            ${this.benefitItem('fa-compact-disc', '<strong>Free DJ account</strong> — browse the full catalog')}
+            ${this.benefitItem('fa-headphones', '<strong>Preview tracks</strong> before you commit')}
+            ${this.benefitItem('fa-folder-open', '<strong>Turn-key ZIP</strong> per song — MP3, cover &amp; one-sheet PDF')}
+            ${this.benefitItem('fa-file-zipper', 'Named <em>' + this.namingExample + '</em> — drop straight into your library')}
+            ${this.benefitItem('fa-chart-line', '<strong>Dashboard</strong> — track what you already downloaded')}
+          </ul>
+          <div class="pitch-infographic-ctas">
+            <a href="index.html?demo=1" class="pitch-cta-btn pitch-cta-btn--primary">
+              <i class="fa-solid fa-play" aria-hidden="true"></i>
+              <span>Try demo catalog</span>
+              <small>No sign-in — play &amp; preview one-sheet</small>
+            </a>
+            <a href="dj-dashboard.html?demo=1" class="pitch-cta-btn">
+              <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+              <span>Preview DJ dashboard</span>
+              <small>Real sample stats &amp; history</small>
+            </a>
+          </div>
+        </article>`;
     }
 
     return `
-      <a href="index.html?demo=1" class="pitch-action-card pitch-action-card--primary">
-        <i class="fa-solid fa-compact-disc" aria-hidden="true"></i>
-        <span class="pitch-action-title">Try demo catalog</span>
-        <span class="pitch-action-desc">Play previews &amp; free one-sheet PDF — no sign-in</span>
-      </a>
-      <a href="dj-dashboard.html?demo=1" class="pitch-action-card">
-        <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
-        <span class="pitch-action-title">Preview DJ dashboard</span>
-        <span class="pitch-action-desc">See download history &amp; charts — real sample data</span>
-      </a>`;
+      <article class="pitch-infographic-card pitch-infographic-card--artist${activeClass}">
+        <header class="pitch-infographic-card-head">
+          <span class="pitch-infographic-icon pitch-infographic-icon--artist" aria-hidden="true"><i class="fa-solid fa-microphone"></i></span>
+          <div>
+            <p class="pitch-infographic-kicker">For artists &amp; labels</p>
+            <h3 class="pitch-infographic-title">Artists get this</h3>
+          </div>
+        </header>
+        <ul class="pitch-benefit-list">
+          ${this.benefitItem('fa-wand-magic-sparkles', '<strong>We build your promo</strong> — turn-key from <strong class="turnkey-price">$5</strong>')}
+          ${this.benefitItem('fa-file-zipper', '<strong>Download your ZIP folders</strong> — same package DJs get')}
+          ${this.benefitItem('fa-paper-plane', '<strong>Email or share</strong> with DJs not on Radio Now')}
+          ${this.benefitItem('fa-tower-broadcast', '<strong>See who downloaded</strong> — station &amp; DJ info when shared')}
+          ${this.benefitItem('fa-share-nodes', '<strong>Charts to screenshot</strong> — post your radio momentum')}
+        </ul>
+        <div class="pitch-infographic-ctas">
+          <a href="index.html?demo=1" class="pitch-cta-btn pitch-cta-btn--primary pitch-cta-btn--artist">
+            <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+            <span>Try free one-sheet demo</span>
+            <small>See the PDF DJs receive — no sign-in</small>
+          </a>
+          <a href="artist-dashboard.html" class="pitch-cta-btn pitch-cta-btn--artist-outline">
+            <i class="fa-solid fa-microphone" aria-hidden="true"></i>
+            <span>Artist dashboard</span>
+            <small>ZIP downloads + download stats</small>
+          </a>
+        </div>
+      </article>`;
   },
 
   loginHeroHtml(page = 'dj') {
     return `
-      <section class="turnkey-pitch turnkey-pitch--hero" aria-label="Turn-key radio promo">
+      <section class="turnkey-pitch turnkey-pitch--hero" aria-label="Radio Now for DJs and artists">
         <div class="turnkey-pitch-inner">
-          <p class="turnkey-eyebrow"><i class="fa-solid fa-bolt"></i> Turn-key radio promo</p>
-          <h2 class="turnkey-headline">Every folder named, packed &amp; ready for air</h2>
-          <p class="turnkey-lead">
-            No renaming. No missing art. No wrestling with one-sheet layouts.
-            Radio Now builds each download folder with <strong>audio, cover art, and a radio one-sheet PDF</strong> —
-            all labeled <em>${this.namingExample}</em> so DJs can drop straight into their library.
+          <p class="turnkey-eyebrow"><i class="fa-solid fa-bolt"></i> One platform · Two audiences</p>
+          <h2 class="turnkey-headline">Turn-key radio promo — built for DJs &amp; artists</h2>
+          <p class="turnkey-lead turnkey-lead--center">
+            Every song = one folder with <strong>MP3, cover art &amp; PDF one-sheet</strong>, labeled <em>${this.namingExample}</em>.
+            DJs download for airplay. Artists download to share anywhere.
           </p>
-          <ul class="turnkey-file-list">
-            <li><i class="fa-solid fa-music"></i><span><strong>${this.namingExample}.mp3</strong> — broadcast-ready audio</span></li>
-            <li><i class="fa-solid fa-image"></i><span><strong>${this.namingExample}.jpg</strong> — cover art</span></li>
-            <li><i class="fa-solid fa-file-pdf"></i><span><strong>${this.namingExample} OneSheet.pdf</strong> — pro radio promo</span></li>
-          </ul>
-          <p class="turnkey-artist-callout">
-            <i class="fa-solid fa-star"></i>
-            <span><strong>Artists:</strong> hate tech? Full turn-key setup from <strong class="turnkey-price">$5</strong>. Download ZIP folders, send to any DJ, and screenshot your download charts for social.</span>
-          </p>
-          <p class="turnkey-dj-callout">
-            <i class="fa-solid fa-tower-broadcast"></i>
-            <span><strong>DJs:</strong> queue tracks, download one ZIP — every song in its own folder, show-prep done.</span>
-          </p>
-          <div class="pitch-action-picker pitch-action-picker--wide" aria-label="Try turn-key promo">
-            ${this.demoPickerHtml(page)}
+          <div class="pitch-infographic-grid">
+            ${this.infographicCard('dj', page)}
+            ${this.infographicCard('artist', page)}
           </div>
+          <p class="pitch-infographic-footer">Pick your account type below to sign in or create a free account.</p>
         </div>
       </section>`;
   },
