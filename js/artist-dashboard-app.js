@@ -6,11 +6,163 @@
   const dashboardStats = document.getElementById('dashboard-stats');
   const dashboardHistory = document.getElementById('dashboard-history');
   const historyCount = document.getElementById('history-count');
+  const artistPromoContent = document.getElementById('artist-promo-content');
+  const artistPromoSetupNotice = document.getElementById('artist-promo-setup-notice');
+
+  let mySongs = [];
+
+  function normalizeArtistName(name) {
+    return String(name || '').trim().toLowerCase();
+  }
+
+  function songsForArtist(artistName, songs) {
+    const target = normalizeArtistName(artistName);
+    if (!target) return [];
+    return songs.filter((song) => normalizeArtistName(song.artistName) === target);
+  }
+
+  function renderCover(song) {
+    const url = Utils.resolveCoverUrl(song);
+    if (url) {
+      return `<img src="${Utils.escapeHtml(url)}" alt="" loading="lazy" onerror="this.classList.add('broken')">`;
+    }
+    return '<div class="cover-fallback"><i class="fa-solid fa-compact-disc"></i></div>';
+  }
+
+  function updatePromoSetupNotice() {
+    if (!artistPromoSetupNotice) return;
+    artistPromoSetupNotice.classList.toggle('hidden', RadioDB.isScriptConfigured());
+  }
+
+  function renderPromoFolders(artistName) {
+    if (!artistPromoContent) return;
+
+    if (!mySongs.length) {
+      artistPromoContent.innerHTML = `
+        <div class="empty-state dj-empty-state">
+          <i class="fa-solid fa-folder-open"></i>
+          <p>No promo folders yet for <strong>${Utils.escapeHtml(artistName)}</strong>. After you pay and Radio Now adds your song to the catalog, your turn-key ZIP downloads will show up here.</p>
+        </div>`;
+      return;
+    }
+
+    artistPromoContent.innerHTML = `
+      <div class="artist-promo-actions">
+        <button type="button" class="btn btn-primary" id="download-all-promo-btn">
+          <i class="fa-solid fa-file-zipper"></i>
+          Download All (${mySongs.length} song${mySongs.length === 1 ? '' : 's'})
+        </button>
+      </div>
+      <div class="artist-promo-list">
+        ${mySongs.map((song) => `
+          <article class="artist-promo-item" data-id="${Utils.escapeHtml(song.id)}">
+            <div class="artist-promo-cover">${renderCover(song)}</div>
+            <div class="artist-promo-copy">
+              <h3>${Utils.escapeHtml(song.songTitle || 'Untitled')}</h3>
+              <p>${Utils.escapeHtml(song.year || '')}${song.musicStyle ? ` · ${Utils.escapeHtml(song.musicStyle)}` : ''}</p>
+              <p class="artist-promo-files muted">Song Title - Artist Name.mp3 · .jpg · OneSheet.pdf</p>
+            </div>
+            <div class="artist-promo-buttons">
+              <button type="button" class="btn btn-secondary btn-sm download-promo-btn" data-id="${Utils.escapeHtml(song.id)}">
+                <i class="fa-solid fa-file-zipper"></i> ZIP
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm download-onesheet-btn" data-id="${Utils.escapeHtml(song.id)}">
+                <i class="fa-solid fa-file-pdf"></i> One-sheet
+              </button>
+            </div>
+          </article>
+        `).join('')}
+      </div>`;
+
+    artistPromoContent.querySelector('#download-all-promo-btn')?.addEventListener('click', () => {
+      downloadPromoZip(mySongs, document.getElementById('download-all-promo-btn'));
+    });
+
+    artistPromoContent.querySelectorAll('.download-promo-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const song = mySongs.find((s) => s.id === btn.dataset.id);
+        if (song) downloadPromoZip([song], btn);
+      });
+    });
+
+    artistPromoContent.querySelectorAll('.download-onesheet-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const song = mySongs.find((s) => s.id === btn.dataset.id);
+        if (!song) return;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        try {
+          await OneSheet.downloadOneSheet(song);
+        } catch (err) {
+          alert(err.message || 'Could not download one-sheet PDF.');
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+        }
+      });
+    });
+  }
+
+  async function downloadPromoZip(songs, button) {
+    if (!songs.length || !button) return;
+
+    const total = songs.length;
+    const originalHtml = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing 0/${total}…`;
+
+    try {
+      await RadioDB.downloadZip(songs, 'mp3', (progress) => {
+        if (progress.status === 'onesheet') {
+          button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> One-sheets ${progress.current}/${progress.total}…`;
+          return;
+        }
+        if (progress.status === 'zipping') {
+          button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating ZIP…';
+          return;
+        }
+        if (progress.status === 'done') {
+          button.innerHTML = '<i class="fa-solid fa-check"></i> ZIP ready';
+          return;
+        }
+        button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing ${progress.current}/${progress.total}…`;
+      });
+    } catch (err) {
+      alert(err.message || 'Could not download promo ZIP.');
+    } finally {
+      button.disabled = false;
+      button.innerHTML = originalHtml;
+    }
+  }
+
+  async function loadPromoFolders(artistName) {
+    if (!artistPromoContent) return;
+
+    artistPromoContent.innerHTML = `
+      <div class="empty-state dj-empty-state">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <p>Loading your promo folders…</p>
+      </div>`;
+
+    try {
+      const allSongs = await RadioDB.getAllSongs();
+      mySongs = songsForArtist(artistName, allSongs);
+      renderPromoFolders(artistName);
+    } catch (err) {
+      artistPromoContent.innerHTML = `
+        <div class="empty-state dj-empty-state">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <p>${Utils.escapeHtml(err.message)}</p>
+        </div>`;
+    }
+  }
 
   function showApp() {
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
     ArtistAuthUI.updateWelcome();
+    updatePromoSetupNotice();
     loadDashboard();
   }
 
@@ -41,7 +193,7 @@
       dashboardHistory.innerHTML = `
         <div class="empty-state dj-empty-state">
           <i class="fa-solid fa-tower-broadcast"></i>
-          <p>No DJ downloads logged yet for your catalog artist name. Activity appears when DJs download your music from Radio Now.</p>
+          <p>No DJ downloads logged yet on Radio Now. Share your turn-key ZIP folders above with programmers — activity shows up when DJs download from the catalog.</p>
         </div>`;
       return;
     }
@@ -73,9 +225,11 @@
 
   async function loadDashboard() {
     const artist = ArtistAuth.getArtist();
-    dashboardTitle.textContent = artist?.artistName
-      ? `${artist.artistName} — radio activity`
-      : 'Your radio activity';
+    const artistName = artist?.artistName || '';
+
+    dashboardTitle.textContent = artistName
+      ? `${artistName} — artist dashboard`
+      : 'Your artist dashboard';
 
     dashboardStats.innerHTML = `
       <div class="dj-stat-card">
@@ -88,12 +242,17 @@
         <p>Loading your dashboard…</p>
       </div>`;
 
+    loadPromoFolders(artistName);
+
     try {
       const data = await ArtistActivity.fetchDashboard();
       if (data.artist?.artistName) {
-        dashboardTitle.textContent = `${data.artist.artistName} — radio activity`;
+        dashboardTitle.textContent = `${data.artist.artistName} — artist dashboard`;
         ArtistAuth.updateArtistProfile(data.artist);
         ArtistAuthUI.updateWelcome();
+        if (!mySongs.length && normalizeArtistName(data.artist.artistName) !== normalizeArtistName(artistName)) {
+          loadPromoFolders(data.artist.artistName);
+        }
       }
 
       renderStats(data.stats || {});

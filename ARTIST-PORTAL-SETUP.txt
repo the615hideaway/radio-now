@@ -32,8 +32,14 @@ artist_activate still works if you need that flow.
 
 5. WHAT ARTISTS SEE
 -------------------
-- Download stats and charts for their songs
-- Each download: song, DJ info, email if DJ opted to share
+- Turn-key promo ZIP downloads for every song under their artist name
+  (MP3 + cover + PDF one-sheet — same package DJs get)
+- "Download All" or per-song ZIP — share with DJs not on Radio Now
+- Download stats and charts for Radio Now DJ activity
+- Each logged download: song, DJ info, email if DJ opted to share
+
+WORKFLOW: Artist pays → you add song to Sheet1 → sync catalog →
+artist sees new folder on dashboard and can download/send the ZIP.
 
 6. TURN-KEY FILE NAMING (marketing + actual downloads)
 ------------------------------------------------------

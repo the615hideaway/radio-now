@@ -19,7 +19,7 @@ const TurnkeyPitch = {
           </ul>
           <p class="turnkey-artist-callout">
             <i class="fa-solid fa-star"></i>
-            <span><strong>Artists:</strong> hate tech? This is a game-changer. Full turn-key setup from <strong class="turnkey-price">$5</strong> — cheaper than one hour of promo headaches. <a href="artist-dashboard.html">Artist dashboard</a> shows who downloaded your music.</span>
+            <span><strong>Artists:</strong> hate tech? Full turn-key setup from <strong class="turnkey-price">$5</strong>. <a href="artist-dashboard.html">Artist dashboard</a> — download your ZIP folders and send them to any DJ, plus see who downloaded on Radio Now.</span>
           </p>
           <p class="turnkey-dj-callout">
             <i class="fa-solid fa-tower-broadcast"></i>
