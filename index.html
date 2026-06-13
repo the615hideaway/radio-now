@@ -15,17 +15,9 @@
 <body>
 
   <div id="login-gate" class="login-gate">
-    <div class="login-stack">
-      <header class="login-brand-bar">
-        <img src="assets/logo.jpg" alt="(615) Hideaway Entertainment" class="login-brand-logo">
-        <div class="login-brand-text">
-          <span class="login-brand-name">Radio Now</span>
-          <span class="login-brand-tag">(615) Hideaway Entertainment</span>
-        </div>
-      </header>
+    <div id="turnkey-pitch-login" class="turnkey-pitch-login-wrap" data-page="dj"></div>
 
-      <div id="turnkey-pitch-login" data-page="dj"></div>
-
+    <div class="login-auth-column">
       <nav class="account-role-picker" aria-label="Choose account type">
         <a href="index.html" class="account-role-card is-active" aria-current="page">
           <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
@@ -40,9 +32,16 @@
       </nav>
 
       <div class="login-card login-card--dj">
+        <div class="brand-lockup brand-lockup--centered">
+          <img src="assets/logo.jpg" alt="(615) Hideaway Entertainment" class="brand-logo brand-logo--large">
+          <div class="brand-text">
+            <h1>Radio Now</h1>
+            <p>(615) Hideaway Entertainment</p>
+          </div>
+        </div>
         <p class="login-account-badge"><i class="fa-solid fa-tower-broadcast"></i> DJ sign in</p>
 
-      <div class="auth-tabs" role="tablist" aria-label="DJ account">
+        <div class="auth-tabs" role="tablist" aria-label="DJ account">
         <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">DJ Sign In</button>
         <button type="button" class="auth-tab" data-auth-tab="signup" role="tab" aria-selected="false">DJ Sign Up</button>
       </div>

@@ -145,55 +145,22 @@ a:hover { color: var(--white); }
 .login-gate {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.75rem 1.25rem 2.5rem;
+  padding: 2rem 1.5rem 2.5rem;
+  gap: 1.25rem;
 }
 
-.login-stack {
-  width: min(520px, 100%);
+.turnkey-pitch-login-wrap {
+  width: min(920px, 100%);
+}
+
+.login-auth-column {
+  width: min(460px, 100%);
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
-}
-
-.login-brand-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.85rem;
-  padding: 0.25rem 0 0.35rem;
-  text-align: left;
-}
-
-.login-brand-logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--gold);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
-  flex-shrink: 0;
-}
-
-.login-brand-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.login-brand-name {
-  font-family: 'Oswald', system-ui, sans-serif;
-  font-size: 1.35rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--white);
-  line-height: 1.1;
-}
-
-.login-brand-tag {
-  font-size: 0.82rem;
-  color: var(--text-muted);
+  gap: 0.75rem;
 }
 
 .account-role-picker {
@@ -274,10 +241,10 @@ a:hover { color: var(--white); }
 .login-card {
   width: 100%;
   background: var(--bg-card);
-  border: 2px solid var(--border);
+  border: 2px solid var(--gold);
   border-radius: var(--radius-lg);
-  padding: 1.35rem 1.4rem 1.5rem;
-  box-shadow: var(--shadow);
+  padding: 2rem;
+  box-shadow: var(--shadow), 0 0 0 1px rgba(0, 0, 0, 0.8);
 }
 
 .login-card--dj {
@@ -404,6 +371,10 @@ a:hover { color: var(--white); }
   max-width: 1100px;
   margin: 0 auto;
   padding: 1.25rem 1.25rem 4rem;
+}
+
+.artist-dashboard-page {
+  max-width: 1280px;
 }
 
 .dj-dashboard-hero {
@@ -680,6 +651,88 @@ a:hover { color: var(--white); }
   margin-bottom: 1.25rem;
 }
 
+.charts-panel--artist-share {
+  display: block;
+  padding: 1.35rem 1.5rem 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 2px solid rgba(244, 196, 48, 0.35);
+  background:
+    linear-gradient(135deg, rgba(244, 196, 48, 0.1) 0%, rgba(20, 20, 20, 0.95) 50%),
+    var(--bg-card);
+  box-shadow: var(--shadow);
+}
+
+.charts-share-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.charts-share-title {
+  margin: 0 0 0.35rem;
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 1.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--gold-bright);
+}
+
+.charts-share-copy {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  max-width: 42rem;
+  line-height: 1.5;
+}
+
+.charts-share-brand {
+  flex-shrink: 0;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(244, 196, 48, 0.35);
+  background: rgba(244, 196, 48, 0.1);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.charts-share-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.15rem;
+}
+
+.charts-block--share {
+  min-height: 300px;
+  padding: 1.2rem 1.35rem;
+}
+
+.charts-panel--artist-share .charts-block-header h2 {
+  font-size: 1.08rem;
+}
+
+.charts-panel--artist-share .charts-copy strong {
+  font-size: 1rem;
+}
+
+.charts-panel--artist-share .charts-copy span {
+  font-size: 0.88rem;
+}
+
+.charts-panel--artist-share .charts-rank {
+  font-size: 1rem;
+  min-width: 1.75rem;
+}
+
+.charts-panel--artist-share .charts-count {
+  font-size: 0.92rem;
+  padding: 0.2rem 0.6rem;
+}
+
 .charts-block {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -878,61 +931,21 @@ a:hover { color: var(--white); }
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
 }
 
-.turnkey-pitch--login {
-  padding: 1.15rem 1.2rem 1.2rem;
-}
-
-.turnkey-headline--login {
-  font-size: 1.35rem;
-  margin-bottom: 0.45rem;
-}
-
-.turnkey-lead-short {
-  margin: 0 0 0.65rem;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: var(--text-secondary);
-}
-
-.turnkey-lead-short strong {
-  color: var(--white);
-}
-
-.turnkey-file-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0.65rem;
-}
-
-.turnkey-file-chips span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--border);
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-
-.turnkey-file-chips i {
-  color: var(--gold-bright);
-  font-size: 0.72rem;
-}
-
-.turnkey-price-line {
-  margin: 0 0 0.85rem;
-  font-size: 0.88rem;
-  color: var(--text-muted);
-  text-align: center;
+.turnkey-pitch--hero {
+  padding: 1.35rem 1.5rem 1.5rem;
 }
 
 .pitch-action-picker {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.pitch-action-picker--wide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .pitch-action-card {

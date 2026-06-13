@@ -15,17 +15,9 @@
 <body>
 
   <div id="login-gate" class="login-gate">
-    <div class="login-stack">
-      <header class="login-brand-bar">
-        <img src="assets/logo.jpg" alt="(615) Hideaway Entertainment" class="login-brand-logo">
-        <div class="login-brand-text">
-          <span class="login-brand-name">Radio Now</span>
-          <span class="login-brand-tag">(615) Hideaway Entertainment</span>
-        </div>
-      </header>
+    <div id="turnkey-pitch-login" class="turnkey-pitch-login-wrap" data-page="artist"></div>
 
-      <div id="turnkey-pitch-login" data-page="artist"></div>
-
+    <div class="login-auth-column">
       <nav class="account-role-picker" aria-label="Choose account type">
         <a href="index.html" class="account-role-card">
           <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
@@ -40,9 +32,16 @@
       </nav>
 
       <div class="login-card login-card--artist">
+        <div class="brand-lockup brand-lockup--centered">
+          <img src="assets/logo.jpg" alt="(615) Hideaway Entertainment" class="brand-logo brand-logo--large">
+          <div class="brand-text">
+            <h1>Radio Now</h1>
+            <p>(615) Hideaway Entertainment</p>
+          </div>
+        </div>
         <p class="login-account-badge login-account-badge--artist"><i class="fa-solid fa-microphone"></i> Artist sign in</p>
 
-      <div class="auth-tabs" role="tablist" aria-label="Artist account">
+        <div class="auth-tabs" role="tablist" aria-label="Artist account">
         <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">Artist Sign In</button>
         <button type="button" class="auth-tab" data-auth-tab="signup" role="tab" aria-selected="false">Artist Sign Up</button>
       </div>
@@ -113,6 +112,30 @@
         </div>
       </section>
 
+      <section class="charts-panel charts-panel--dashboard charts-panel--artist-share" aria-label="Your top songs — share on social">
+        <div class="charts-share-header">
+          <div>
+            <h2 class="charts-share-title"><i class="fa-solid fa-share-nodes"></i> Your Radio Now charts</h2>
+            <p class="charts-share-copy">Screenshot week &amp; month rankings to post on social — show DJs and fans your momentum.</p>
+          </div>
+          <span class="charts-share-brand">Radio Now</span>
+        </div>
+        <div class="charts-share-grid">
+          <div class="charts-block charts-block--share">
+            <div class="charts-block-header">
+              <h2><i class="fa-solid fa-chart-line"></i> Top This Week</h2>
+            </div>
+            <div id="dashboard-chart-week"></div>
+          </div>
+          <div class="charts-block charts-block--share">
+            <div class="charts-block-header">
+              <h2><i class="fa-solid fa-chart-simple"></i> Top This Month</h2>
+            </div>
+            <div id="dashboard-chart-month"></div>
+          </div>
+        </div>
+      </section>
+
       <section class="dj-panel artist-promo-panel" id="artist-promo-panel" aria-live="polite">
         <div class="dj-panel-header">
           <h2><i class="fa-solid fa-folder-open"></i> Your Turn-Key Promo Folders</h2>
@@ -123,21 +146,6 @@
           ZIP builds in your browser. If downloads fail, confirm Apps Script is deployed (see <code>AUDIO-FIX-STEPS.txt</code>).
         </p>
         <div id="artist-promo-content"></div>
-      </section>
-
-      <section class="charts-panel charts-panel--dashboard" aria-label="Your top songs">
-        <div class="charts-block">
-          <div class="charts-block-header">
-            <h2><i class="fa-solid fa-chart-line"></i> Your Songs — This Week</h2>
-          </div>
-          <div id="dashboard-chart-week"></div>
-        </div>
-        <div class="charts-block">
-          <div class="charts-block-header">
-            <h2><i class="fa-solid fa-chart-simple"></i> Your Songs — This Month</h2>
-          </div>
-          <div id="dashboard-chart-month"></div>
-        </div>
       </section>
 
       <section class="dj-dashboard-stats" id="dashboard-stats"></section>
