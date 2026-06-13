@@ -25,6 +25,19 @@ const ArtistActivity = {
     return ArtistAuth.authRequest('artist_dashboard');
   },
 
+  async fetchDemoDashboard() {
+    const scriptUrl = String(CONFIG.googleScriptUrl || '').trim();
+    if (!scriptUrl.includes('script.google.com')) {
+      throw new Error('Demo dashboard needs Apps Script setup.');
+    }
+
+    const url = `${scriptUrl.replace(/\/$/, '')}?action=demo_artist_dashboard`;
+    const response = await fetch(url, { cache: 'no-store' });
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Demo artist dashboard unavailable');
+    return data;
+  },
+
   formatTimestamp(value) {
     if (!value) return '—';
     const date = new Date(value);

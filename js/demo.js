@@ -10,7 +10,7 @@ const Demo = {
     const banner = document.getElementById('demo-banner');
     if (banner) banner.classList.remove('hidden');
 
-    const welcome = document.getElementById('dj-welcome');
+    const welcome = document.getElementById('dj-welcome') || document.getElementById('artist-welcome');
     if (welcome) {
       welcome.textContent = 'Demo preview';
       welcome.classList.remove('hidden');

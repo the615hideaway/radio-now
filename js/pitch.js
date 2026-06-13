@@ -65,10 +65,10 @@ const TurnkeyPitch = {
             <span>Try free one-sheet demo</span>
             <small>See the PDF DJs receive — no sign-in</small>
           </a>
-          <a href="artist-dashboard.html" class="pitch-cta-btn pitch-cta-btn--artist-outline">
+          <a href="artist-dashboard.html?demo=1" class="pitch-cta-btn pitch-cta-btn--artist-outline">
             <i class="fa-solid fa-microphone" aria-hidden="true"></i>
-            <span>Artist dashboard</span>
-            <small>ZIP downloads + download stats</small>
+            <span>Preview artist dashboard</span>
+            <small>Real sample stats &amp; download history</small>
           </a>
         </div>
       </article>`;

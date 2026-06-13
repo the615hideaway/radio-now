@@ -1,8 +1,10 @@
 (function () {
+  const isDemoMode = Demo.isActive();
   const loginGate = document.getElementById('login-gate');
   const appShell = document.getElementById('app-shell');
   const logoutBtn = document.getElementById('logout-btn');
-  const dashboardTitle = document.getElementById('dashboard-title');
+  const artistDisplayName = document.getElementById('artist-display-name');
+  const dashboardSubtitle = document.getElementById('dashboard-subtitle');
   const dashboardStats = document.getElementById('dashboard-stats');
   const dashboardHistory = document.getElementById('dashboard-history');
   const historyCount = document.getElementById('history-count');
@@ -32,6 +34,24 @@
   function updatePromoSetupNotice() {
     if (!artistPromoSetupNotice) return;
     artistPromoSetupNotice.classList.toggle('hidden', RadioDB.isScriptConfigured());
+  }
+
+  function setArtistHeader(artistName, options = {}) {
+    const name = String(artistName || '').trim();
+    if (artistDisplayName) {
+      artistDisplayName.textContent = name || 'Your artist dashboard';
+    }
+
+    if (dashboardSubtitle) {
+      if (options.demo) {
+        dashboardSubtitle.textContent = 'Read-only preview of a real artist dashboard. Create your account to track your own downloads and share promo folders.';
+        return;
+      }
+
+      dashboardSubtitle.textContent = name
+        ? `${name} — download turn-key promo folders and track when DJs grab your music on Radio Now.`
+        : 'Download your turn-key promo folders and track when DJs grab your music on Radio Now.';
+    }
   }
 
   function renderPromoFolders(artistName) {
@@ -161,7 +181,12 @@
   function showApp() {
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
-    ArtistAuthUI.updateWelcome();
+    if (isDemoMode) {
+      Demo.applyMode();
+      Demo.bindExit(logoutBtn);
+    } else {
+      ArtistAuthUI.updateWelcome();
+    }
     updatePromoSetupNotice();
     loadDashboard();
   }
@@ -224,12 +249,10 @@
   }
 
   async function loadDashboard() {
-    const artist = ArtistAuth.getArtist();
+    const artist = isDemoMode ? null : ArtistAuth.getArtist();
     const artistName = artist?.artistName || '';
 
-    dashboardTitle.textContent = artistName
-      ? `${artistName} — artist dashboard`
-      : 'Your artist dashboard';
+    setArtistHeader(artistName, { demo: isDemoMode });
 
     dashboardStats.innerHTML = `
       <div class="dj-stat-card">
@@ -242,16 +265,22 @@
         <p>Loading your dashboard…</p>
       </div>`;
 
-    loadPromoFolders(artistName);
+    if (artistName) loadPromoFolders(artistName);
 
     try {
-      const data = await ArtistActivity.fetchDashboard();
-      if (data.artist?.artistName) {
-        dashboardTitle.textContent = `${data.artist.artistName} — artist dashboard`;
-        ArtistAuth.updateArtistProfile(data.artist);
-        ArtistAuthUI.updateWelcome();
-        if (!mySongs.length && normalizeArtistName(data.artist.artistName) !== normalizeArtistName(artistName)) {
-          loadPromoFolders(data.artist.artistName);
+      const data = isDemoMode
+        ? await ArtistActivity.fetchDemoDashboard()
+        : await ArtistActivity.fetchDashboard();
+
+      const resolvedName = data.artist?.artistName || artistName;
+      if (resolvedName) {
+        setArtistHeader(resolvedName, { demo: isDemoMode });
+        if (!isDemoMode) {
+          ArtistAuth.updateArtistProfile(data.artist);
+          ArtistAuthUI.updateWelcome();
+        }
+        if (!mySongs.length || normalizeArtistName(resolvedName) !== normalizeArtistName(artistName)) {
+          loadPromoFolders(resolvedName);
         }
       }
 
@@ -279,9 +308,13 @@
     }
   }
 
-  ArtistAuthUI.init({ onAuthenticated: showApp });
-  ArtistAuthUI.bindLogout(logoutBtn, showLogin);
+  if (isDemoMode) {
+    showApp();
+  } else {
+    ArtistAuthUI.init({ onAuthenticated: showApp });
+    ArtistAuthUI.bindLogout(logoutBtn, showLogin);
 
-  if (ArtistAuth.isAuthenticated()) showApp();
-  else showLogin();
+    if (ArtistAuth.isAuthenticated()) showApp();
+    else showLogin();
+  }
 })();

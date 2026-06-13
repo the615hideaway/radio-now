@@ -635,6 +635,7 @@ function findDjByEmail_(email) {
 }
 
 var DEMO_DJ_NAME = 'Sammy Passamano';
+var DEMO_ARTIST_NAME = 'David Parmley';
 
 function findDjByName_(name) {
   var target = String(name || '').trim().toLowerCase();
@@ -673,6 +674,43 @@ function demoDashboard_() {
     dj: publicDj_(dj),
     stats: computeDjStats_(activity),
     activity: activity,
+  };
+}
+
+function getDemoArtist_() {
+  var props = PropertiesService.getScriptProperties();
+  var email = normalizeEmail_(props.getProperty('DEMO_ARTIST_EMAIL') || '');
+  var found = email ? findArtistByEmail_(email) : null;
+  if (!found) found = findArtistByName_(DEMO_ARTIST_NAME);
+  if (found && String(found.artist.status).toLowerCase() === 'active') {
+    return publicArtist_(found.artist);
+  }
+
+  if (!artistNameExistsInCatalog_(DEMO_ARTIST_NAME)) {
+    throw new Error('Demo artist not found in catalog. Add "' + DEMO_ARTIST_NAME + '" to the sheet.');
+  }
+
+  return {
+    id: 'demo-artist',
+    artistName: DEMO_ARTIST_NAME,
+    email: '',
+    status: 'active',
+  };
+}
+
+function demoArtistDashboard_() {
+  var artist = getDemoArtist_();
+  var artistName = artist.artistName;
+  var activity = listArtistActivity_(artistName, 250);
+  var charts = computeArtistCharts_(artistName, 10);
+
+  return {
+    success: true,
+    demo: true,
+    artist: artist,
+    stats: computeDjStats_(activity),
+    activity: activity,
+    charts: charts,
   };
 }
 
@@ -1387,6 +1425,10 @@ function doGet(e) {
 
     if (action === 'demo_dashboard') {
       return jsonResponse_(demoDashboard_());
+    }
+
+    if (action === 'demo_artist_dashboard') {
+      return jsonResponse_(demoArtistDashboard_());
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });
