@@ -20,11 +20,15 @@ const AudioPlayer = {
 
     if (driveId) {
       container.innerHTML = `
-        <iframe class="preview-iframe preview-iframe--now-playing"
-          src="${Utils.escapeHtml(this.getEmbedUrl(driveId))}"
-          title="Now playing: ${title}"
-          allow="autoplay"
-          referrerpolicy="no-referrer-when-downgrade"></iframe>`;
+        <div class="preview-embed-host preview-embed-host--now-playing">
+          <iframe class="preview-iframe preview-iframe--now-playing"
+            src="${Utils.escapeHtml(this.getEmbedUrl(driveId))}"
+            title="Now playing: ${title}"
+            sandbox="allow-scripts allow-same-origin"
+            allow="autoplay"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+          <div class="preview-popout-shield" aria-hidden="true" title=""></div>
+        </div>`;
       return;
     }
 

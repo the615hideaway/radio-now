@@ -935,6 +935,25 @@ select { min-width: 130px; width: auto; }
   min-height: 0;
 }
 
+.preview-embed-host--now-playing {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.preview-popout-shield {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 52px;
+  height: 52px;
+  z-index: 2;
+  background: #0d0d0d;
+  border-radius: 0 11px 0 8px;
+  pointer-events: auto;
+}
+
 .preview-embed-host:empty {
   display: none;
 }
