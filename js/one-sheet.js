@@ -19,20 +19,39 @@ const OneSheet = {
   },
 
   buildBandMemberLines(song) {
+    const groups = this.buildBandMemberGroups(song);
+    return [...groups.vocals, ...groups.instruments];
+  },
+
+  isVocalLine(line) {
+    return /^(Lead Vocals|Harmony Vocals):/i.test(String(line || '').trim());
+  },
+
+  buildBandMemberGroups(song) {
+    let lines = [];
+
     if (Array.isArray(song.bandMemberLines) && song.bandMemberLines.length) {
-      return song.bandMemberLines
-        .map((line) => this.decodeText(line))
-        .filter(Boolean);
+      lines = song.bandMemberLines.map((line) => this.decodeText(line)).filter(Boolean);
+    } else {
+      const text = this.decodeText(song.bandMembers);
+      if (text) {
+        lines = text
+          .split(';')
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => this.formatInstrumentLine(line));
+      }
     }
 
-    const text = this.decodeText(song.bandMembers);
-    if (!text) return [];
+    const vocals = [];
+    const instruments = [];
 
-    return text
-      .split(';')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((line) => this.formatInstrumentLine(line));
+    lines.forEach((line) => {
+      if (this.isVocalLine(line)) vocals.push(line);
+      else instruments.push(line);
+    });
+
+    return { vocals, instruments };
   },
 
   promoStyles() {
@@ -145,6 +164,9 @@ const OneSheet = {
       line-height: 1.75;
       margin: 0 0 6px;
     }
+    .band-group-spacer {
+      height: 14px;
+    }
     .credits-table { width: 100%; border-collapse: collapse; border-top: 1px solid #ddd; }
     .credits-table td {
       width: 50%;
@@ -233,17 +255,20 @@ const OneSheet = {
     const artist = this.decodeText(song.artistName) || 'Unknown Artist';
     const title = this.decodeText(song.songTitle) || 'Untitled';
     const description = this.decodeText(song.description);
-    const bandLines = this.buildBandMemberLines(song);
+    const bandGroups = this.buildBandMemberGroups(song);
     const coverSrc = options.coverSrc || '';
 
     const coverHtml = coverSrc
       ? `<img class="promo-cover" src="${this.escapeHtml(coverSrc)}" alt="${this.escapeHtml(title)} cover art" width="202" height="202">`
       : '<div class="promo-cover-placeholder">Cover art not available</div>';
 
-    const bandHtml = bandLines.length
+    const renderBandLine = (line) => `<p class="promo-line">${this.escapeHtml(line)}</p>`;
+    const bandHtml = (bandGroups.vocals.length || bandGroups.instruments.length)
       ? `<div class="promo-block">
           <h3>Band Members</h3>
-          ${bandLines.map((line) => `<p class="promo-line">${this.escapeHtml(line)}</p>`).join('')}
+          ${bandGroups.vocals.map(renderBandLine).join('')}
+          ${bandGroups.vocals.length && bandGroups.instruments.length ? '<div class="band-group-spacer"></div>' : ''}
+          ${bandGroups.instruments.map(renderBandLine).join('')}
         </div>`
       : '';
 
@@ -266,13 +291,13 @@ const OneSheet = {
         </tr>
       </table>
 
-      ${this.renderMetaRow(song)}
-
       ${description ? `
       <div class="promo-block">
         <h3>Description</h3>
         <p>${this.escapeHtml(description)}</p>
       </div>` : ''}
+
+      ${this.renderMetaRow(song)}
 
       ${bandHtml}
 
@@ -433,7 +458,7 @@ const OneSheet = {
     const artist = this.decodeText(song.artistName) || 'Unknown Artist';
     const title = this.decodeText(song.songTitle) || 'Untitled';
     const description = this.decodeText(song.description);
-    const bandLines = this.buildBandMemberLines(song);
+    const bandGroups = this.buildBandMemberGroups(song);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
@@ -481,6 +506,11 @@ const OneSheet = {
 
     y += coverSize + 0.42;
 
+    if (description) {
+      y = this.addPdfSection(doc, 'Description', y, margin);
+      y = this.addPdfWrappedText(doc, description, margin, y, contentWidth, 11, 0.2) + 0.22;
+    }
+
     const meta = [
       { label: 'Year', value: this.decodeText(song.year) },
       { label: 'Song Time', value: this.decodeText(song.songTime) },
@@ -488,6 +518,7 @@ const OneSheet = {
     ].filter((item) => item.value);
 
     if (meta.length) {
+      y += sectionGap;
       const colWidth = contentWidth / meta.length;
       meta.forEach((item, index) => {
         const x = margin + (colWidth * index);
@@ -506,21 +537,24 @@ const OneSheet = {
       y += 0.3;
     }
 
-    if (description) {
-      y += sectionGap;
-      y = this.addPdfSection(doc, 'Description', y, margin);
-      y = this.addPdfWrappedText(doc, description, margin, y, contentWidth, 11, 0.2) + 0.18;
-    }
-
-    if (bandLines.length) {
+    if (bandGroups.vocals.length || bandGroups.instruments.length) {
       y += sectionGap;
       y = this.addPdfSection(doc, 'Band Members', y, margin);
-      bandLines.forEach((line) => {
+
+      const drawBandLine = (line) => {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(11);
         doc.text(line, margin, y);
         y += 0.22;
-      });
+      };
+
+      bandGroups.vocals.forEach(drawBandLine);
+
+      if (bandGroups.vocals.length && bandGroups.instruments.length) {
+        y += 0.16;
+      }
+
+      bandGroups.instruments.forEach(drawBandLine);
       y += 0.1;
     }
 

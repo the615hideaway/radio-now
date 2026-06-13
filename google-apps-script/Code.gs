@@ -105,16 +105,39 @@ function buildBandMemberLines_(row, headerMap) {
 }
 
 function bandMemberLinesFromSong_(song) {
+  var groups = buildBandMemberGroups_(song);
+  return groups.vocals.concat(groups.instruments);
+}
+
+function isVocalLine_(line) {
+  return /^(Lead Vocals|Harmony Vocals):/i.test(String(line || '').trim());
+}
+
+function buildBandMemberGroups_(song) {
+  var lines = [];
+
   if (song.bandMemberLines && song.bandMemberLines.length) {
-    return song.bandMemberLines;
+    lines = song.bandMemberLines.map(function (line) {
+      return stripHtml_(line);
+    }).filter(function (line) { return !!line; });
+  } else {
+    var text = stripHtml_(song.bandMembers);
+    if (text) {
+      lines = text.split(';').map(function (line) {
+        return formatInstrumentLine_(String(line || '').trim());
+      }).filter(function (line) { return !!line; });
+    }
   }
 
-  var text = stripHtml_(song.bandMembers);
-  if (!text) return [];
+  var vocals = [];
+  var instruments = [];
 
-  return text.split(';').map(function (line) {
-    return formatInstrumentLine_(String(line || '').trim());
-  }).filter(function (line) { return !!line; });
+  lines.forEach(function (line) {
+    if (isVocalLine_(line)) vocals.push(line);
+    else instruments.push(line);
+  });
+
+  return { vocals: vocals, instruments: instruments };
 }
 
 function rowToSong_(row, headerMap, rowIndex) {
@@ -207,6 +230,7 @@ function promoStyles_() {
     + '.promo-block{margin-bottom:14px}'
     + '.promo-block h3{font-family:Arial,sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#888;margin-bottom:6px}'
     + '.promo-block p,.promo-line{font-family:Arial,sans-serif;font-size:12px;color:#333;line-height:1.5;margin:0 0 3px}'
+    + '.band-group-spacer{height:14px}'
     + '.credits-table{width:100%;border-collapse:collapse;border-top:1px solid #ddd}'
     + '.credits-table td{width:50%;padding:10px 12px 0 0;vertical-align:top;font-family:Arial,sans-serif;font-size:12px;color:#111}'
     + '.credit-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:3px}'
@@ -261,12 +285,16 @@ function renderCreditsBlock_(song) {
 }
 
 function renderBandMembersBlock_(song) {
-  var lines = bandMemberLinesFromSong_(song);
-  if (!lines.length) return '';
+  var groups = buildBandMemberGroups_(song);
+  if (!groups.vocals.length && !groups.instruments.length) return '';
 
-  var lineHtml = lines.map(function (line) {
+  var renderLine = function (line) {
     return '<p class="promo-line">' + escapeHtml_(line) + '</p>';
-  }).join('');
+  };
+
+  var lineHtml = groups.vocals.map(renderLine).join('')
+    + (groups.vocals.length && groups.instruments.length ? '<div class="band-group-spacer"></div>' : '')
+    + groups.instruments.map(renderLine).join('');
 
   return '<div class="promo-block"><h3>Band Members</h3>' + lineHtml + '</div>';
 }
@@ -292,8 +320,8 @@ function generateOneSheetHtml_(song, coverFile, hasCover) {
     + '<td><div class="promo-title">' + escapeHtml_(title) + '</div>'
     + '<div class="promo-artist">' + escapeHtml_(artist) + '</div></td>'
     + '</tr></table>'
-    + renderMetaRow_(song)
     + (description ? '<div class="promo-block"><h3>Description</h3><p>' + escapeHtml_(description) + '</p></div>' : '')
+    + renderMetaRow_(song)
     + renderBandMembersBlock_(song)
     + '<div class="promo-block">' + renderCreditsBlock_(song) + '</div>'
     + '<div class="promo-footer">Radio Now DJ One-Sheet — For radio programmer use only</div>'
