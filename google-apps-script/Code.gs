@@ -410,6 +410,17 @@ function streamDriveFile_(driveId) {
   });
 }
 
+function streamMedia_(driveId) {
+  if (!driveId) throw new Error('Missing Drive file id');
+
+  const blob = fetchDriveBlobById_(driveId);
+  const mime = blob.getContentType() || 'audio/mpeg';
+
+  return ContentService
+    .createTextOutput(blob.getBytes())
+    .setMimeType(mime);
+}
+
 function createZip_(songs, format) {
   const blobs = [];
   const skipped = [];
@@ -890,6 +901,10 @@ function doGet(e) {
 
     if (action === 'stream') {
       return streamDriveFile_(e.parameter.id);
+    }
+
+    if (action === 'media') {
+      return streamMedia_(e.parameter.id);
     }
 
     if (action === 'cover') {

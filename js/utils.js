@@ -99,9 +99,21 @@ const Utils = {
     return `${scriptUrl.replace(/\/$/, '')}?action=stream&id=${encodeURIComponent(id)}`;
   },
 
+  scriptMediaUrl(driveId) {
+    const id = String(driveId || '').trim();
+    const scriptUrl = String(CONFIG.googleScriptUrl || '').trim();
+    if (!id || !scriptUrl.includes('script.google.com')) return '';
+    return `${scriptUrl.replace(/\/$/, '')}?action=media&id=${encodeURIComponent(id)}`;
+  },
+
   isScriptStreamUrl(url) {
     const value = String(url || '');
     return value.includes('script.google.com') && value.includes('action=stream');
+  },
+
+  isScriptMediaUrl(url) {
+    const value = String(url || '');
+    return value.includes('script.google.com') && value.includes('action=media');
   },
 
   driveApiMediaUrl(driveId) {
