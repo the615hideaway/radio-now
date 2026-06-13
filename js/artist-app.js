@@ -97,13 +97,14 @@
     nowPlayingTitle.textContent = song.songTitle;
     nowPlayingArtist.textContent = song.artistName;
 
-    try {
-      await AudioPlayer.playSong(song);
-      nowPlaying.classList.remove('hidden');
-      renderSongs();
-    } catch (err) {
-      console.warn('Preview failed:', err);
+    nowPlaying.classList.remove('hidden');
+
+    const started = await AudioPlayer.playSong(song);
+    if (!started) {
+      console.warn('Preview failed:', song.songTitle);
     }
+
+    renderSongs();
   }
 
   function renderProfile() {

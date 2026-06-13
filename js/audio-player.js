@@ -1,43 +1,74 @@
 const AudioPlayer = {
+  audioEl: null,
+
   getDriveId(song) {
     return song.previewDriveId || Utils.extractDriveId(song.mp3) || Utils.extractDriveId(song.previewLink) || '';
   },
 
-  getEmbedUrl(driveId) {
-    return `https://drive.google.com/file/d/${driveId}/preview`;
-  },
-
   hasPreview(song) {
-    return !!(this.getDriveId(song) || song.previewStreamUrl || song.previewLink);
+    return this.getPreviewSources(song).length > 0;
   },
 
-  renderNowPlaying(song) {
-    const container = document.getElementById('now-playing-player');
-    if (!container) return;
-
+  getPreviewSources(song) {
+    const urls = [];
     const driveId = this.getDriveId(song);
-    const title = Utils.escapeHtml(song.songTitle || 'track');
+
+    if (song.previewStreamUrl) urls.push(song.previewStreamUrl);
 
     if (driveId) {
-      container.innerHTML = `
-        <iframe class="preview-iframe preview-iframe--now-playing"
-          src="${Utils.escapeHtml(this.getEmbedUrl(driveId))}"
-          title="Now playing: ${title}"
-          allow="autoplay"
-          referrerpolicy="no-referrer-when-downgrade"></iframe>`;
-      return;
+      const api = Utils.driveApiMediaUrl(driveId);
+      if (api) urls.push(api);
+      urls.push(...Utils.getDriveDownloadUrls(driveId));
     }
 
-    container.innerHTML = `
-      <div class="now-playing-fallback muted">
-        <i class="fa-solid fa-circle-exclamation"></i>
-        Preview unavailable for this track.
-      </div>`;
+    [song.mp3, song.previewLink].forEach((url) => {
+      if (!url) return;
+      urls.push(url);
+      const id = Utils.extractDriveId(url);
+      if (id) {
+        urls.push(...Utils.getDriveDownloadUrls(id));
+        const stream = Utils.toPreviewStreamUrl(url);
+        if (stream) urls.push(stream);
+      }
+    });
+
+    return [...new Set(urls.filter(Boolean))];
+  },
+
+  getPlayerElement() {
+    const container = document.getElementById('now-playing-player');
+    if (!container) return null;
+
+    if (!this.audioEl || !container.contains(this.audioEl)) {
+      container.innerHTML = `
+        <audio class="preview-audio preview-audio--now-playing" controls playsinline preload="metadata"
+          title="Radio Now preview player"></audio>`;
+      this.audioEl = container.querySelector('audio');
+    }
+
+    return this.audioEl;
   },
 
   async playSong(song) {
-    if (!this.hasPreview(song)) return false;
-    this.renderNowPlaying(song);
-    return true;
+    const audio = this.getPlayerElement();
+    const sources = this.getPreviewSources(song);
+    if (!audio || !sources.length) return false;
+
+    audio.pause();
+    audio.currentTime = 0;
+
+    for (let i = 0; i < sources.length; i++) {
+      audio.src = sources[i];
+      try {
+        await audio.play();
+        return true;
+      } catch (err) {
+        if (i === sources.length - 1) {
+          console.warn('Preview failed for', song.songTitle, err.message);
+        }
+      }
+    }
+
+    return false;
   },
 };

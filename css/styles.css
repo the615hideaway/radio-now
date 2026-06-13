@@ -973,6 +973,13 @@ select { min-width: 130px; width: auto; }
   display: block;
 }
 
+.preview-audio--now-playing {
+  width: 100%;
+  min-width: 280px;
+  height: 36px;
+  border-radius: 10px;
+}
+
 .preview-status {
   font-size: 0.72rem;
   min-height: 0;
