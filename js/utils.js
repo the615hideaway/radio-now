@@ -59,16 +59,37 @@ const Utils = {
     return '';
   },
 
-  safeFilename(artist, title, ext) {
-    const base = this.zipFolderName(artist, title);
-    return `${base}.${ext}`;
-  },
-
-  zipFolderName(artist, title) {
-    return `${artist || 'Unknown'} - ${title || 'Track'}`
+  sanitizeNamePart(value) {
+    return String(value || '')
       .replace(/[<>:"/\\|?*]/g, '')
       .replace(/\s+/g, ' ')
-      .trim() || 'Track';
+      .trim();
+  },
+
+  songArtistName(title, artist, maxLength = 0) {
+    let name = `${this.sanitizeNamePart(title) || 'Track'} - ${this.sanitizeNamePart(artist) || 'Unknown'}`;
+    if (maxLength > 0 && name.length > maxLength) {
+      name = name.slice(0, maxLength).replace(/[\s-]+$/, '').trim();
+      if (!name) name = 'Track';
+    }
+    return name || 'Track';
+  },
+
+  safeFilename(artist, title, ext) {
+    return `${this.songArtistName(title, artist)}.${ext}`;
+  },
+
+  zipFolderName(artist, title, options = {}) {
+    const maxLength = options.short ? 48 : 0;
+    return this.songArtistName(title, artist, maxLength);
+  },
+
+  zipArchiveFilename(songs) {
+    if (songs.length === 1) {
+      const song = songs[0];
+      return `${this.songArtistName(song.songTitle, song.artistName)}.zip`;
+    }
+    return `Radio Now - ${songs.length} Songs.zip`;
   },
 
   scriptStreamUrl(driveId) {

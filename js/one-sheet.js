@@ -362,9 +362,9 @@ const OneSheet = {
   },
 
   pdfFilename(song) {
-    const artist = this.pdfSlug(song.artistName, 'Unknown-Artist');
     const title = this.pdfSlug(song.songTitle, 'Untitled');
-    return `${artist}_${title}_OneSheet.pdf`;
+    const artist = this.pdfSlug(song.artistName, 'Unknown-Artist');
+    return `${title}_${artist}_OneSheet.pdf`;
   },
 
   imageFormat(dataUrl) {

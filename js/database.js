@@ -211,19 +211,23 @@ const RadioDB = {
     return 'jpg';
   },
 
-  async addSongPackageToZip(folder, song, format, audioBlob) {
+  async addSongPackageToZip(target, song, format, audioBlob, options = {}) {
     const ext = format === 'wav' ? 'wav' : 'mp3';
-    const baseName = Utils.zipFolderName(song.artistName, song.songTitle);
+    const maxLength = options.shortNames ? 48 : 0;
+    const baseName = Utils.songArtistName(song.songTitle, song.artistName, maxLength);
+    const pdfName = options.shortNames
+      ? 'OneSheet.pdf'
+      : `${Utils.songArtistName(song.songTitle, song.artistName)} OneSheet.pdf`;
 
-    folder.file(`${baseName}.${ext}`, audioBlob);
+    target.file(`${baseName}.${ext}`, audioBlob);
 
     const coverBlob = await this.fetchCoverBlob(song);
     if (coverBlob) {
-      folder.file(`cover.${this.coverExtension(coverBlob)}`, coverBlob);
+      target.file(`cover.${this.coverExtension(coverBlob)}`, coverBlob);
     }
 
     const pdfBlob = await OneSheet.generatePdfBlob(song);
-    folder.file(OneSheet.pdfFilename(song), pdfBlob);
+    target.file(pdfName, pdfBlob);
   },
 
   async upgradeZipOneSheetsToPdf(zipBlob, songs, onProgress) {
@@ -401,7 +405,7 @@ const RadioDB = {
     const zip = new JSZip();
     const usedNames = new Set();
     const errors = [];
-    const ext = format === 'wav' ? 'wav' : 'mp3';
+    const useFolders = songs.length > 1;
     let added = 0;
 
     for (let i = 0; i < songs.length; i++) {
@@ -410,15 +414,22 @@ const RadioDB = {
 
       try {
         const audioBlob = await this.fetchSongBlob(song, format);
-        let folderName = Utils.zipFolderName(song.artistName, song.songTitle);
-        let suffix = 2;
-        while (usedNames.has(folderName.toLowerCase())) {
-          folderName = `${Utils.zipFolderName(song.artistName, song.songTitle)} (${suffix})`;
-          suffix += 1;
-        }
-        usedNames.add(folderName.toLowerCase());
+        let target = zip;
+        const packageOptions = {};
 
-        const folder = zip.folder(folderName);
+        if (useFolders) {
+          let folderName = Utils.zipFolderName(song.artistName, song.songTitle, { short: true });
+          let suffix = 2;
+          while (usedNames.has(folderName.toLowerCase())) {
+            const stem = Utils.zipFolderName(song.artistName, song.songTitle, { short: true });
+            folderName = `${stem} (${suffix})`;
+            suffix += 1;
+          }
+          usedNames.add(folderName.toLowerCase());
+          target = zip.folder(folderName);
+          packageOptions.shortNames = true;
+        }
+
         onProgress?.({
           current: i + 1,
           total: songs.length,
@@ -426,7 +437,7 @@ const RadioDB = {
           status: 'onesheet',
           songTitle: song.songTitle,
         });
-        await this.addSongPackageToZip(folder, song, format, audioBlob);
+        await this.addSongPackageToZip(target, song, format, audioBlob, packageOptions);
         added++;
       } catch (err) {
         errors.push(`${song.songTitle}: ${err.message}`);
@@ -440,7 +451,7 @@ const RadioDB = {
 
     onProgress?.({ current: songs.length, total: songs.length, added, status: 'zipping' });
     const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-    this.triggerBlobDownload(content, `radio-now-${format}-${new Date().toISOString().slice(0, 10)}.zip`);
+    this.triggerBlobDownload(content, Utils.zipArchiveFilename(songs));
 
     onProgress?.({ current: songs.length, total: songs.length, added, status: 'done' });
 
