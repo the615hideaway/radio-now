@@ -53,10 +53,6 @@
     loadQueuesFromStorage();
     checkConnection();
     loadSongs();
-    Charts.loadInto(
-      document.getElementById('chart-week'),
-      document.getElementById('chart-month'),
-    );
   }
 
   function showLogin() {
@@ -451,6 +447,7 @@
     renderQueue();
     renderCatalog();
     refreshDetailPanelIfOpen();
+    loadCatalogCharts();
     updateStats();
   }
 
@@ -552,6 +549,25 @@
     await playSongPreview(queue[queuePlayIndex].id, queuePlayIndex);
   }
 
+  async function loadCatalogCharts() {
+    const queueIds = new Set(queue.map((song) => song.id));
+
+    try {
+      await Charts.loadInto(
+        document.getElementById('chart-week'),
+        document.getElementById('chart-month'),
+        {
+          limit: 10,
+          showQueue: true,
+          isQueued: (songId) => queueIds.has(songId),
+          onQueueToggle: (songId) => toggleQueue(songId),
+        },
+      );
+    } catch (err) {
+      console.warn('Charts unavailable:', err.message);
+    }
+  }
+
   async function checkConnection() {
     try {
       await RadioDB.getCatalogMeta();
@@ -578,6 +594,7 @@
       populateFilters();
       syncQueuesWithStorage();
       filterSongs();
+      loadCatalogCharts();
     } catch (err) {
       catalogGrid.innerHTML = `
         <div class="empty-state">
@@ -623,6 +640,7 @@
     saveQueue();
     renderQueue();
     renderCatalog();
+    loadCatalogCharts();
     updateStats();
     nowPlaying.classList.add('hidden');
   });
