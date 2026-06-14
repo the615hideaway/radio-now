@@ -134,10 +134,17 @@ a:hover { color: var(--white); }
 }
 
 .btn-icon:hover { color: var(--text); border-color: var(--border-light); }
-.btn-icon.active {
+.btn-icon.active,
+.btn-icon.is-favorite,
+.artist-favorite-btn.is-favorite {
   background: var(--gold-dim);
   border-color: var(--gold);
   color: var(--gold-bright);
+}
+
+.turnkey-pitch-catalog-wrap.hidden,
+#turnkey-pitch-queue.hidden {
+  display: none;
 }
 
 /* Login */
@@ -2318,6 +2325,46 @@ select { min-width: 130px; width: auto; }
   gap: 1rem;
 }
 
+.artist-card-wrap {
+  position: relative;
+}
+
+.artist-favorite-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+}
+
+.artist-favorite-btn--profile {
+  position: static;
+}
+
+.artist-favorite-marker {
+  color: var(--gold-bright);
+  font-size: 0.82rem;
+  margin-right: 0.3rem;
+}
+
+.song-card.is-favorite-artist,
+.artist-card-wrap.is-favorite-artist .artist-card {
+  border-color: rgba(244, 196, 48, 0.35);
+}
+
+.song-meta .artist {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.favorite-toggle--inline {
+  width: 28px;
+  height: 28px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .artist-card {
   display: grid;
   grid-template-columns: 88px 1fr auto;
@@ -2423,8 +2470,16 @@ select { min-width: 130px; width: auto; }
   object-fit: cover;
 }
 
+.artist-profile-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
 .artist-profile-info h1 {
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 2rem;
   color: var(--gold-bright);
   line-height: 1.15;

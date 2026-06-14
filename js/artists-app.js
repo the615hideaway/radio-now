@@ -20,6 +20,7 @@
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
     DjAuthUI.updateWelcome();
+    if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
     loadArtists();
   }
 
@@ -37,18 +38,25 @@
   }
 
   function renderArtistCard(artist) {
+    const favorite = DjFavorites.isFavorite(artist.name);
     return `
-      <a class="artist-card" href="artist.html?slug=${encodeURIComponent(artist.slug)}">
-        <div class="artist-card-cover">${renderCover(artist.coverSong)}</div>
-        <div class="artist-card-body">
-          <h3>${Utils.escapeHtml(artist.name)}</h3>
-          <p class="artist-card-meta">
-            <span>${artist.songCount} song${artist.songCount === 1 ? '' : 's'}</span>
-            ${artist.maxYear ? `<span>Latest ${artist.maxYear}</span>` : ''}
-          </p>
-        </div>
-        <span class="artist-card-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
-      </a>`;
+      <div class="artist-card-wrap ${favorite ? 'is-favorite-artist' : ''}">
+        ${DjFavorites.buttonHtml(artist.name, 'artist-favorite-btn')}
+        <a class="artist-card" href="artist.html?slug=${encodeURIComponent(artist.slug)}">
+          <div class="artist-card-cover">${renderCover(artist.coverSong)}</div>
+          <div class="artist-card-body">
+            <h3>
+              ${favorite ? '<i class="fa-solid fa-star artist-favorite-marker" aria-hidden="true"></i>' : ''}
+              ${Utils.escapeHtml(artist.name)}
+            </h3>
+            <p class="artist-card-meta">
+              <span>${artist.songCount} song${artist.songCount === 1 ? '' : 's'}</span>
+              ${artist.maxYear ? `<span>Latest ${artist.maxYear}</span>` : ''}
+            </p>
+          </div>
+          <span class="artist-card-arrow" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+      </div>`;
   }
 
   function renderArtists() {
@@ -65,6 +73,7 @@
     }
 
     artistsGrid.innerHTML = filteredArtists.map((artist) => renderArtistCard(artist)).join('');
+    DjFavorites.bindButtons(artistsGrid, () => filterArtists());
   }
 
   function filterArtists() {
@@ -72,6 +81,7 @@
     filteredArtists = q
       ? allArtists.filter((artist) => artist.name.toLowerCase().includes(q))
       : [...allArtists];
+    filteredArtists = DjFavorites.sortArtists(filteredArtists);
     renderArtists();
   }
 

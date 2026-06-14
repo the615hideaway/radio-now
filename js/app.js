@@ -47,6 +47,7 @@
       Demo.bindExit(logoutBtn);
     } else {
       DjAuthUI.updateWelcome();
+      TurnkeyPitch.hideAppPromo();
     }
     updateDownloadSetupNotice();
     loadQueuesFromStorage();
@@ -61,6 +62,7 @@
   function showLogin() {
     loginGate.classList.remove('hidden');
     appShell.classList.add('hidden');
+    if (!isDemoMode) TurnkeyPitch.mountCatalogPromo();
   }
 
   function triggerTrackedDownload(song, format) {
@@ -194,6 +196,8 @@
       return matchesSearch && matchesStyle && matchesYear;
     });
 
+    filteredSongs = DjFavorites.sortSongs(filteredSongs);
+
     if (expandedDetailId && !filteredSongs.some((s) => s.id === expandedDetailId)) {
       expandedDetailId = null;
       hideDetailPanel();
@@ -255,7 +259,7 @@
           <div><label>Website</label><p>${song.website ? `<a href="${Utils.escapeHtml(song.website)}" target="_blank" rel="noopener">${Utils.escapeHtml(song.website)}</a>` : '—'}</p></div>
         </div>
         <div class="detail-downloads">
-          ${isDemoMode ? Demo.salesNoteHtml() : TurnkeyPitch.detailNoteHtml(false)}
+          ${isDemoMode ? Demo.salesNoteHtml() : (isAuthenticated() ? '' : TurnkeyPitch.detailNoteHtml(false))}
           <button class="btn btn-secondary download-onesheet-btn" type="button">
             <i class="fa-solid fa-file-pdf"></i> Download One-Sheet
           </button>
@@ -370,8 +374,9 @@
     catalogGrid.innerHTML = filteredSongs.map((song) => {
       const inQueue = queue.some((q) => q.id === song.id);
       const inDownload = downloadQueue.some((d) => d.id === song.id);
+      const favoriteArtist = DjFavorites.isFavorite(song.artistName);
       return `
-        <article class="song-card ${inDownload ? 'in-download' : ''} ${expandedDetailId === song.id ? 'details-open' : ''} ${currentPreviewId === song.id ? 'is-previewing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+        <article class="song-card ${inDownload ? 'in-download' : ''} ${favoriteArtist ? 'is-favorite-artist' : ''} ${expandedDetailId === song.id ? 'details-open' : ''} ${currentPreviewId === song.id ? 'is-previewing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
           <div class="song-card-top">
             <div class="song-card-top-actions">
               <button class="btn-icon download-toggle ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inDownload ? 'Remove from download queue' : 'Add to download queue'}">
@@ -385,7 +390,11 @@
           <div class="song-cover">${renderCover(song)}</div>
           <div class="song-meta">
             <h3>${Utils.escapeHtml(song.songTitle)}</h3>
-            <p class="artist">${Utils.escapeHtml(song.artistName)}</p>
+            <p class="artist">
+              ${favoriteArtist ? '<i class="fa-solid fa-star artist-favorite-marker" aria-hidden="true"></i>' : ''}
+              <span>${Utils.escapeHtml(song.artistName)}</span>
+              ${DjFavorites.buttonHtml(song.artistName, 'favorite-toggle favorite-toggle--inline')}
+            </p>
             <div class="song-tags">
               ${song.year ? `<span>${Utils.escapeHtml(song.year)}</span>` : ''}
               ${song.songTime ? `<span>${Utils.escapeHtml(song.songTime)}</span>` : ''}
@@ -427,6 +436,7 @@
       });
     });
 
+    DjFavorites.bindButtons(catalogGrid, () => filterSongs());
   }
 
   function toggleQueue(id) {

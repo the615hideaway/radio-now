@@ -186,6 +186,7 @@
       Demo.bindExit(logoutBtn);
     } else {
       ArtistAuthUI.updateWelcome();
+      if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
     }
     updatePromoSetupNotice();
     loadDashboard();

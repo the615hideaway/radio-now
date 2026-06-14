@@ -42,6 +42,7 @@
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
     DjAuthUI.updateWelcome();
+    if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
     updateDownloadSetupNotice();
     loadArtist();
   }
@@ -117,7 +118,10 @@
       <div class="artist-profile-hero">
         <div class="artist-profile-cover">${renderCover(artist.coverSong)}</div>
         <div class="artist-profile-info">
-          <h1>${Utils.escapeHtml(artist.name)}</h1>
+          <div class="artist-profile-title-row">
+            <h1>${Utils.escapeHtml(artist.name)}</h1>
+            ${DjFavorites.buttonHtml(artist.name, 'artist-favorite-btn artist-favorite-btn--profile')}
+          </div>
           <p class="artist-profile-meta">
             <span>${artist.songCount} song${artist.songCount === 1 ? '' : 's'}</span>
             ${artist.maxYear ? `<span>Latest release ${artist.maxYear}</span>` : ''}
@@ -143,6 +147,8 @@
     if (playFirstBtn && artist.songs[0]) {
       playFirstBtn.addEventListener('click', () => playSongPreview(artist.songs[0].id));
     }
+
+    DjFavorites.bindButtons(artistProfile, () => renderProfile());
   }
 
   function renderSongRow(song) {

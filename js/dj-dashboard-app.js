@@ -20,6 +20,7 @@
       if (privacyPanel) privacyPanel.classList.add('hidden');
     } else {
       DjAuthUI.updateWelcome();
+      if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
     }
     loadDashboard();
   }

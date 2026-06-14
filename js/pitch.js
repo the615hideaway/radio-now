@@ -130,6 +130,41 @@ const TurnkeyPitch = {
       </div>`;
   },
 
+  shouldHideAppPromo() {
+    if (typeof Demo !== 'undefined' && Demo.isActive()) return false;
+    if (typeof DjAuth !== 'undefined' && DjAuth.isAuthenticated()) return true;
+    if (typeof ArtistAuth !== 'undefined' && ArtistAuth.isAuthenticated()) return true;
+    return false;
+  },
+
+  hideAppPromo() {
+    ['turnkey-pitch-catalog', 'turnkey-pitch-queue'].forEach((id) => {
+      const slot = document.getElementById(id);
+      if (!slot) return;
+      slot.innerHTML = '';
+      slot.classList.add('hidden');
+    });
+  },
+
+  mountCatalogPromo() {
+    if (this.shouldHideAppPromo()) {
+      this.hideAppPromo();
+      return;
+    }
+
+    const catalogSlot = document.getElementById('turnkey-pitch-catalog');
+    if (catalogSlot) {
+      catalogSlot.classList.remove('hidden');
+      catalogSlot.innerHTML = this.catalogStripHtml();
+    }
+
+    const queueSlot = document.getElementById('turnkey-pitch-queue');
+    if (queueSlot) {
+      queueSlot.classList.remove('hidden');
+      queueSlot.innerHTML = this.queueNoteHtml();
+    }
+  },
+
   mount() {
     const loginSlot = document.getElementById('turnkey-pitch-login');
     if (loginSlot) {
@@ -137,11 +172,7 @@ const TurnkeyPitch = {
       loginSlot.innerHTML = this.loginHeroHtml(page);
     }
 
-    const catalogSlot = document.getElementById('turnkey-pitch-catalog');
-    if (catalogSlot) catalogSlot.innerHTML = this.catalogStripHtml();
-
-    const queueSlot = document.getElementById('turnkey-pitch-queue');
-    if (queueSlot) queueSlot.innerHTML = this.queueNoteHtml();
+    this.mountCatalogPromo();
   },
 };
 
