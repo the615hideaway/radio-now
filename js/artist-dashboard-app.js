@@ -66,24 +66,27 @@
       return;
     }
 
+    const previewSong = isDemoMode ? mySongs[0] : null;
     const demoNote = isDemoMode
-      ? '<p class="artist-promo-demo-note">Demo preview — one-sheet PDFs only. Create an account for full turn-key promo ZIPs with audio and cover art.</p>'
+      ? `<p class="artist-promo-demo-note">Demo preview — download one sample one-sheet for <strong>${Utils.escapeHtml(previewSong?.songTitle || 'your music')}</strong>. Create an account for full turn-key promo ZIPs with audio and cover art.</p>`
       : '';
-    const downloadAllLabel = isDemoMode
-      ? `Download All One-Sheets (${mySongs.length})`
-      : `Download All (${mySongs.length} song${mySongs.length === 1 ? '' : 's'})`;
-    const downloadAllIcon = isDemoMode ? 'fa-file-pdf' : 'fa-file-zipper';
+    const downloadAllLabel = `Download All (${mySongs.length} song${mySongs.length === 1 ? '' : 's'})`;
     const filesHint = isDemoMode
-      ? 'OneSheet.pdf preview only'
+      ? 'Included in your turn-key promo folder'
       : 'Song Title - Artist Name.mp3 · .jpg · OneSheet.pdf';
 
     artistPromoContent.innerHTML = `
       <div class="artist-promo-actions">
         ${demoNote}
+        ${isDemoMode ? `
+        <button type="button" class="btn btn-primary" id="preview-onesheet-btn">
+          <i class="fa-solid fa-file-pdf"></i>
+          Preview One-Sheet
+        </button>` : `
         <button type="button" class="btn btn-primary" id="download-all-promo-btn">
-          <i class="fa-solid ${downloadAllIcon}"></i>
+          <i class="fa-solid fa-file-zipper"></i>
           ${downloadAllLabel}
-        </button>
+        </button>`}
       </div>
       <div class="artist-promo-list">
         ${mySongs.map((song) => `
@@ -94,24 +97,36 @@
               <p>${Utils.escapeHtml(song.year || '')}${song.musicStyle ? ` · ${Utils.escapeHtml(song.musicStyle)}` : ''}</p>
               <p class="artist-promo-files muted">${filesHint}</p>
             </div>
+            ${isDemoMode ? '' : `
             <div class="artist-promo-buttons">
-              ${isDemoMode ? '' : `
               <button type="button" class="btn btn-secondary btn-sm download-promo-btn" data-id="${Utils.escapeHtml(song.id)}">
                 <i class="fa-solid fa-file-zipper"></i> ZIP
-              </button>`}
-              <button type="button" class="btn ${isDemoMode ? 'btn-secondary' : 'btn-ghost'} btn-sm download-onesheet-btn" data-id="${Utils.escapeHtml(song.id)}">
+              </button>
+              <button type="button" class="btn btn-ghost btn-sm download-onesheet-btn" data-id="${Utils.escapeHtml(song.id)}">
                 <i class="fa-solid fa-file-pdf"></i> One-sheet
               </button>
-            </div>
+            </div>`}
           </article>
         `).join('')}
       </div>`;
 
-    artistPromoContent.querySelector('#download-all-promo-btn')?.addEventListener('click', () => {
-      if (isDemoMode) {
-        downloadAllOneSheets(mySongs, document.getElementById('download-all-promo-btn'));
-        return;
+    artistPromoContent.querySelector('#preview-onesheet-btn')?.addEventListener('click', async () => {
+      if (!previewSong) return;
+      const btn = document.getElementById('preview-onesheet-btn');
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating PDF…';
+      try {
+        await OneSheet.downloadOneSheet(previewSong);
+      } catch (err) {
+        alert(err.message || 'Could not download one-sheet PDF.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
       }
+    });
+
+    artistPromoContent.querySelector('#download-all-promo-btn')?.addEventListener('click', () => {
       downloadPromoZip(mySongs, document.getElementById('download-all-promo-btn'));
     });
 
@@ -141,43 +156,8 @@
     });
   }
 
-  async function downloadAllOneSheets(songs, button) {
-    if (!songs.length || !button) return;
-
-    const total = songs.length;
-    const originalHtml = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing 0/${total}…`;
-
-    try {
-      await RadioDB.downloadOneSheetsZip(songs, (progress) => {
-        if (progress.status === 'onesheet') {
-          button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> One-sheets ${progress.current}/${progress.total}…`;
-          return;
-        }
-        if (progress.status === 'zipping') {
-          button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating ZIP…';
-          return;
-        }
-        if (progress.status === 'done') {
-          button.innerHTML = '<i class="fa-solid fa-check"></i> One-sheets ready';
-          return;
-        }
-        button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparing ${progress.current}/${progress.total}…`;
-      });
-    } catch (err) {
-      alert(err.message || 'Could not download one-sheets.');
-    } finally {
-      button.disabled = false;
-      button.innerHTML = originalHtml;
-    }
-  }
-
   async function downloadPromoZip(songs, button) {
     if (!songs.length || !button) return;
-    if (isDemoMode) {
-      return downloadAllOneSheets(songs, button);
-    }
 
     const total = songs.length;
     const originalHtml = button.innerHTML;

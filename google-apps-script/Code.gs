@@ -648,6 +648,19 @@ function activityRowByHeaders_(sheet, valuesByHeader) {
   appendRowByHeaders_(sheet, valuesByHeader);
 }
 
+function formatSheetTime_(value) {
+  if (value === null || value === undefined || value === '') return '';
+  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), 'HH:mm');
+  }
+  var str = String(value).trim();
+  var match = str.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return str;
+  var hour = parseInt(match[1], 10);
+  var minute = match[2];
+  return (hour < 10 ? '0' : '') + hour + ':' + minute;
+}
+
 function djActivitySnapshot_(dj, shareEmailEnabled) {
   return {
     dj_name: dj.name,
@@ -664,8 +677,8 @@ function djActivitySnapshot_(dj, shareEmailEnabled) {
     dj_state: dj.state,
     dj_station_website: dj.station_website,
     dj_program_website: dj.program_website,
-    dj_program_start: dj.program_start_time,
-    dj_program_end: dj.program_end_time,
+    dj_program_start: formatSheetTime_(dj.program_start_time),
+    dj_program_end: formatSheetTime_(dj.program_end_time),
     dj_program_timezone: dj.program_timezone,
     dj_program_days: dj.program_days,
   };
@@ -805,10 +818,52 @@ function getDemoArtist_() {
   };
 }
 
+function artistActivityWithDjProfile_(item, dj) {
+  var share = shareEmailFlag_(dj.share_email);
+  var snapshot = djActivitySnapshot_(dj, share);
+
+  return {
+    id: item.id,
+    timestamp: item.timestamp,
+    eventType: item.eventType,
+    songId: item.songId,
+    songTitle: item.songTitle,
+    artistName: item.artistName,
+    musicStyle: item.musicStyle,
+    format: item.format,
+    djName: snapshot.dj_name || djFullName_(snapshot.dj_first_name, snapshot.dj_last_name, ''),
+    djStation: snapshot.dj_station,
+    djShowName: snapshot.dj_show_name,
+    djEmail: snapshot.contact_email,
+    djFirstName: snapshot.dj_first_name,
+    djLastName: snapshot.dj_last_name,
+    djProgramName: snapshot.dj_program_name,
+    djProgramFormat: snapshot.dj_program_format,
+    djStationCall: snapshot.dj_station_call,
+    djStationFrequency: snapshot.dj_station_frequency,
+    djState: snapshot.dj_state,
+    djStationWebsite: snapshot.dj_station_website,
+    djProgramWebsite: snapshot.dj_program_website,
+    djProgramStart: snapshot.dj_program_start,
+    djProgramEnd: snapshot.dj_program_end,
+    djProgramTimezone: snapshot.dj_program_timezone,
+    djProgramDays: snapshot.dj_program_days,
+  };
+}
+
 function demoArtistDashboard_() {
   var artist = getDemoArtist_();
   var artistName = artist.artistName;
   var activity = listArtistActivity_(artistName, 250);
+  var demoDj = getDemoDj_();
+  var demoDjName = String(demoDj.name || '').trim().toLowerCase();
+
+  activity = activity.map(function (item) {
+    var itemDjName = String(item.djName || '').trim().toLowerCase();
+    if (demoDjName && itemDjName && itemDjName !== demoDjName) return item;
+    return artistActivityWithDjProfile_(item, demoDj);
+  });
+
   var charts = computeArtistCharts_(artistName, 10);
 
   return {
