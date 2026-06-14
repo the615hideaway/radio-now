@@ -6,11 +6,10 @@ const TurnkeyPitch = {
   },
 
   infographicCard(type, page) {
-    const isDj = type === 'dj';
-    const isActive = (isDj && page === 'dj') || (!isDj && page === 'artist');
+    const isActive = page === type;
     const activeClass = isActive ? ' is-highlighted' : '';
 
-    if (isDj) {
+    if (type === 'dj') {
       return `
         <article class="pitch-infographic-card pitch-infographic-card--dj${activeClass}">
           <header class="pitch-infographic-card-head">
@@ -43,12 +42,45 @@ const TurnkeyPitch = {
         </article>`;
     }
 
+    if (type === 'label') {
+      return `
+        <article class="pitch-infographic-card pitch-infographic-card--label${activeClass}">
+          <header class="pitch-infographic-card-head">
+            <span class="pitch-infographic-icon pitch-infographic-icon--label" aria-hidden="true"><i class="fa-solid fa-building"></i></span>
+            <div>
+              <p class="pitch-infographic-kicker">For record labels</p>
+              <h3 class="pitch-infographic-title">Labels get this</h3>
+            </div>
+          </header>
+          <ul class="pitch-benefit-list">
+            ${this.benefitItem('fa-users', '<strong>Artist roster</strong> — create profiles for artists who won&apos;t log in')}
+            ${this.benefitItem('fa-cloud-arrow-up', '<strong>Submit songs</strong> — send new singles from your dashboard')}
+            ${this.benefitItem('fa-tower-broadcast', '<strong>See every spin</strong> — which DJs downloaded across your roster')}
+            ${this.benefitItem('fa-share-nodes', '<strong>Charts to share</strong> — screenshot momentum for social')}
+            ${this.benefitItem('fa-user-check', '<strong>Artist claim</strong> — artists take over later; you don&apos;t lose history')}
+            ${this.benefitItem('fa-wand-magic-sparkles', '<strong>Turn-key promo</strong> — we build folders from <strong class="turnkey-price">$5</strong>/song')}
+          </ul>
+          <div class="pitch-infographic-ctas">
+            <a href="artist-dashboard.html#label-signup" class="pitch-cta-btn pitch-cta-btn--primary pitch-cta-btn--label">
+              <i class="fa-solid fa-building" aria-hidden="true"></i>
+              <span>Create label account</span>
+              <small>Sign up — roster &amp; song submit</small>
+            </a>
+            <a href="artist-dashboard.html?demo=1" class="pitch-cta-btn pitch-cta-btn--label-outline">
+              <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+              <span>Preview label dashboard</span>
+              <small>Sample spins, charts &amp; promo ZIPs</small>
+            </a>
+          </div>
+        </article>`;
+    }
+
     return `
       <article class="pitch-infographic-card pitch-infographic-card--artist${activeClass}">
         <header class="pitch-infographic-card-head">
           <span class="pitch-infographic-icon pitch-infographic-icon--artist" aria-hidden="true"><i class="fa-solid fa-microphone"></i></span>
           <div>
-            <p class="pitch-infographic-kicker">For artists &amp; labels</p>
+            <p class="pitch-infographic-kicker">For artists</p>
             <h3 class="pitch-infographic-title">Artists get this</h3>
           </div>
         </header>
@@ -56,7 +88,8 @@ const TurnkeyPitch = {
           ${this.benefitItem('fa-wand-magic-sparkles', '<strong>We build your promo</strong> — turn-key from <strong class="turnkey-price">$5</strong>')}
           ${this.benefitItem('fa-file-zipper', '<strong>Download your ZIP folders</strong> — MP3 or WAV, cover &amp; one-sheet like DJs get')}
           ${this.benefitItem('fa-paper-plane', '<strong>Email or share</strong> with DJs not on Radio Now')}
-          ${this.benefitItem('fa-tower-broadcast', '<strong>See who downloaded</strong> — station &amp; DJ info when shared')}
+          ${this.benefitItem('fa-tower-broadcast', '<strong>See every spin</strong> — station &amp; DJ info when shared')}
+          ${this.benefitItem('fa-trophy', '<strong>Chart career history</strong> — best ranks for your next pitch sheet')}
           ${this.benefitItem('fa-share-nodes', '<strong>Charts to screenshot</strong> — post your radio momentum')}
         </ul>
         <div class="pitch-infographic-ctas">
@@ -68,7 +101,7 @@ const TurnkeyPitch = {
           <a href="artist-dashboard.html?demo=1" class="pitch-cta-btn pitch-cta-btn--artist-outline">
             <i class="fa-solid fa-microphone" aria-hidden="true"></i>
             <span>Preview artist dashboard</span>
-            <small>Real sample stats &amp; download history</small>
+            <small>Real sample stats &amp; spin history</small>
           </a>
         </div>
       </article>`;
@@ -76,17 +109,18 @@ const TurnkeyPitch = {
 
   loginHeroHtml(page = 'dj') {
     return `
-      <section class="turnkey-pitch turnkey-pitch--hero" aria-label="Radio Now for DJs and artists">
+      <section class="turnkey-pitch turnkey-pitch--hero" aria-label="Radio Now for DJs, artists, and labels">
         <div class="turnkey-pitch-inner">
-          <p class="turnkey-eyebrow"><i class="fa-solid fa-bolt"></i> One platform · Two audiences</p>
-          <h2 class="turnkey-headline">Turn-key radio promo — built for DJs &amp; artists</h2>
+          <p class="turnkey-eyebrow"><i class="fa-solid fa-bolt"></i> One platform · Three audiences</p>
+          <h2 class="turnkey-headline">Turn-key radio promo — built for DJs, artists &amp; labels</h2>
           <p class="turnkey-lead turnkey-lead--center">
             Every song = one folder with <strong>MP3 or WAV, cover art &amp; PDF one-sheet</strong>, labeled <em>${this.namingExample}</em>.
-            DJs download for airplay. Artists download to share anywhere.
+            DJs download for airplay. Artists and labels track spins and chart momentum.
           </p>
-          <div class="pitch-infographic-grid">
+          <div class="pitch-infographic-grid pitch-infographic-grid--triple">
             ${this.infographicCard('dj', page)}
             ${this.infographicCard('artist', page)}
+            ${this.infographicCard('label', page)}
           </div>
           <p class="pitch-infographic-footer">Pick your account type below to sign in or create a free account.</p>
         </div>
@@ -100,7 +134,7 @@ const TurnkeyPitch = {
           <span class="turnkey-strip-badge"><i class="fa-solid fa-folder-open"></i> Turn-key folders</span>
           <p>Each song downloads as <strong>${this.namingExample}</strong> — MP3 or WAV, cover art &amp; PDF one-sheet, named right and ready for your library.</p>
         </div>
-        <p class="turnkey-strip-artist">Artists: full promo setup from <strong class="turnkey-price">$5</strong>. No tech required.</p>
+        <p class="turnkey-strip-artist">Artists &amp; labels: full promo setup from <strong class="turnkey-price">$5</strong>/song. No tech required.</p>
       </section>`;
   },
 
@@ -165,11 +199,17 @@ const TurnkeyPitch = {
     }
   },
 
+  resolveLoginPage(loginSlot) {
+    let page = loginSlot.dataset.page || 'dj';
+    const hash = String(window.location.hash || '').replace('#', '').trim();
+    if (hash === 'label-signup') return 'label';
+    return page;
+  },
+
   mount() {
     const loginSlot = document.getElementById('turnkey-pitch-login');
     if (loginSlot) {
-      const page = loginSlot.dataset.page || 'dj';
-      loginSlot.innerHTML = this.loginHeroHtml(page);
+      loginSlot.innerHTML = this.loginHeroHtml(this.resolveLoginPage(loginSlot));
     }
 
     this.mountCatalogPromo();

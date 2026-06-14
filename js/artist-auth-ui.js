@@ -42,6 +42,15 @@ const ArtistAuthUI = {
       switchTab(hashTab);
     }
 
+    if (hashTab === 'label-signup' && gate) {
+      gate.querySelectorAll('.account-role-card').forEach((card) => {
+        const isLabel = card.classList.contains('account-role-card--label');
+        card.classList.toggle('is-active', isLabel);
+        if (isLabel) card.setAttribute('aria-current', 'page');
+        else card.removeAttribute('aria-current');
+      });
+    }
+
     loginForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
       clearErrors();

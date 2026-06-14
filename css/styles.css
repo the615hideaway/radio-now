@@ -160,38 +160,36 @@ a:hover { color: var(--white); }
 }
 
 .turnkey-pitch-login-wrap {
-  width: min(920px, 100%);
+  width: min(1160px, 100%);
 }
 
 .login-gate-actions {
-  width: min(920px, 100%);
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
+  width: min(1160px, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 1rem;
 }
 
 .login-auth-column {
-  flex: 1 1 26rem;
-  width: min(500px, 100%);
-  max-width: 500px;
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
 .login-charts-card {
-  flex: 1 1 16rem;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 0.7rem;
-  padding: 1.75rem 1.5rem;
+  gap: 0.55rem;
+  padding: 2rem;
   background: var(--bg-card);
-  border: 2px solid rgba(244, 196, 48, 0.28);
+  border: 2px solid rgba(244, 196, 48, 0.45);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow), 0 0 0 1px rgba(0, 0, 0, 0.8);
 }
 
 .login-charts-eyebrow {
@@ -217,15 +215,14 @@ a:hover { color: var(--white); }
 }
 
 .login-charts-copy {
-  margin: 0;
+  margin: 0 0 0.35rem;
   color: var(--text-secondary);
   font-size: 0.9rem;
-  line-height: 1.5;
-  flex: 1;
+  line-height: 1.45;
 }
 
 .login-charts-btn {
-  margin-top: 0.25rem;
+  margin-top: auto;
 }
 
 .account-role-picker {
@@ -1068,7 +1065,7 @@ a:hover { color: var(--white); }
 
 .charts-panel--artist-share {
   display: block;
-  padding: 1.35rem 1.5rem 1.5rem;
+  padding: 1.15rem 1.25rem 1.25rem;
   border-radius: var(--radius-lg);
   border: 2px solid rgba(244, 196, 48, 0.35);
   background:
@@ -1082,7 +1079,7 @@ a:hover { color: var(--white); }
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.85rem;
 }
 
 .charts-share-title {
@@ -1118,12 +1115,12 @@ a:hover { color: var(--white); }
 .charts-share-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.15rem;
+  gap: 0.85rem;
 }
 
 .charts-block--share {
-  min-height: 300px;
-  padding: 1.2rem 1.35rem;
+  min-height: 0;
+  padding: 1rem 1.1rem;
 }
 
 .charts-panel--artist-share .charts-block-header h2 {
@@ -1347,17 +1344,7 @@ a:hover { color: var(--white); }
   }
 
   .login-gate-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .login-auth-column {
-    max-width: 100%;
-    width: 100%;
-  }
-
-  .login-charts-card {
-    width: 100%;
+    grid-template-columns: 1fr;
   }
 
   .dj-signup-grid--2,
@@ -1479,6 +1466,26 @@ a:hover { color: var(--white); }
   margin-top: 1.15rem;
 }
 
+.pitch-infographic-grid--triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pitch-infographic-grid--triple .pitch-infographic-card {
+  padding: 1rem 1.05rem 1.05rem;
+}
+
+.pitch-infographic-grid--triple .pitch-benefit-list {
+  gap: 0.45rem;
+}
+
+.pitch-infographic-grid--triple .pitch-benefit-list li {
+  font-size: 0.82rem;
+}
+
+.pitch-infographic-grid--triple .pitch-infographic-title {
+  font-size: 1.15rem;
+}
+
 .pitch-infographic-card {
   display: flex;
   flex-direction: column;
@@ -1497,6 +1504,10 @@ a:hover { color: var(--white); }
   border-color: rgba(230, 57, 57, 0.35);
 }
 
+.pitch-infographic-card--label {
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
 .pitch-infographic-card.is-highlighted {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
@@ -1509,6 +1520,11 @@ a:hover { color: var(--white); }
 .pitch-infographic-card--artist.is-highlighted {
   border-color: rgba(230, 57, 57, 0.75);
   background: rgba(230, 57, 57, 0.07);
+}
+
+.pitch-infographic-card--label.is-highlighted {
+  border-color: rgba(96, 165, 250, 0.75);
+  background: rgba(96, 165, 250, 0.08);
 }
 
 .pitch-infographic-card-head {
@@ -1535,6 +1551,12 @@ a:hover { color: var(--white); }
   background: rgba(230, 57, 57, 0.12);
   border-color: rgba(230, 57, 57, 0.4);
   color: #ff8a8a;
+}
+
+.pitch-infographic-icon--label {
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.4);
+  color: #93c5fd;
 }
 
 .pitch-infographic-kicker {
@@ -1585,6 +1607,10 @@ a:hover { color: var(--white); }
 
 .pitch-infographic-card--artist .pitch-benefit-list li i {
   color: #ff8a8a;
+}
+
+.pitch-infographic-card--label .pitch-benefit-list li i {
+  color: #93c5fd;
 }
 
 .pitch-benefit-list strong {
@@ -1668,11 +1694,36 @@ a:hover { color: var(--white); }
   border-color: rgba(230, 57, 57, 0.35);
 }
 
+.pitch-cta-btn--label > i,
+.pitch-cta-btn--label-outline > i {
+  color: #93c5fd;
+}
+
+.pitch-cta-btn--label.pitch-cta-btn--primary {
+  border-color: rgba(96, 165, 250, 0.55);
+  background: rgba(96, 165, 250, 0.1);
+}
+
+.pitch-cta-btn--label.pitch-cta-btn--primary:hover {
+  border-color: rgba(96, 165, 250, 0.85);
+  background: rgba(96, 165, 250, 0.16);
+}
+
+.pitch-cta-btn--label-outline {
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
 .pitch-infographic-footer {
   margin: 1rem 0 0;
   text-align: center;
   font-size: 0.88rem;
   color: var(--text-muted);
+}
+
+@media (max-width: 1024px) {
+  .pitch-infographic-grid--triple {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 800px) {

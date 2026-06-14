@@ -662,11 +662,13 @@
         document.getElementById('dashboard-chart-week'),
         charts.week,
         'No downloads yet this week.',
+        { limit: 5 },
       );
       Charts.renderList(
         document.getElementById('dashboard-chart-month'),
         charts.month,
         'No downloads yet this month.',
+        { limit: 5 },
       );
     } catch (err) {
       dashboardStats.innerHTML = '';
