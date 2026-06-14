@@ -86,6 +86,47 @@ const RadioDB = {
     return this.downloadZipClient(songs, format, onProgress);
   },
 
+  async downloadOneSheetsZip(songs, onProgress) {
+    if (!songs.length) throw new Error('No songs selected.');
+    if (!window.JSZip) throw new Error('JSZip is not loaded');
+
+    const zip = new JSZip();
+    const usedNames = new Set();
+    let added = 0;
+
+    for (let i = 0; i < songs.length; i++) {
+      const song = songs[i];
+      onProgress?.({
+        current: i + 1,
+        total: songs.length,
+        added,
+        status: 'onesheet',
+        songTitle: song.songTitle,
+      });
+
+      const pdfBlob = await OneSheet.generatePdfBlob(song);
+      let filename = OneSheet.pdfFilename(song);
+      let suffix = 2;
+      while (usedNames.has(filename.toLowerCase())) {
+        const stem = filename.replace(/\.pdf$/i, '');
+        filename = `${stem} (${suffix}).pdf`;
+        suffix += 1;
+      }
+      usedNames.add(filename.toLowerCase());
+      zip.file(filename, pdfBlob);
+      added += 1;
+    }
+
+    onProgress?.({ current: songs.length, total: songs.length, added, status: 'zipping' });
+    const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    const downloadName = songs.length === 1
+      ? OneSheet.pdfFilename(songs[0])
+      : `${Utils.safeFilename(songs[0]?.artistName || 'Radio-Now', 'OneSheets', 'zip')}`;
+    this.triggerBlobDownload(content, downloadName);
+
+    onProgress?.({ current: songs.length, total: songs.length, added, status: 'done' });
+  },
+
   async downloadSingleTrack(song, format = 'mp3') {
     const ext = format === 'wav' ? 'wav' : 'mp3';
     const candidates = Utils.getSongDownloadCandidates(song, format);
