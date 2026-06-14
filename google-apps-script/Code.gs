@@ -12,7 +12,168 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-14-label-profiles-v1';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-14-email-v1';
+var RADIO_NOW_ADMIN_EMAIL = 'the615hideaway@gmail.com';
+var RADIO_NOW_SITE_URL = 'https://the615hideaway.github.io/radio-now';
+var RADIO_NOW_FROM_NAME = 'Radio Now — (615) Hideaway Entertainment';
+
+function escapeEmailHtml_(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function radioNowEmailShell_(title, lines, cta) {
+  var body = (lines || []).map(function (line) {
+    return '<p style="margin:0 0 14px;font-size:15px;line-height:1.55;color:#222;">' + line + '</p>';
+  }).join('');
+
+  var ctaHtml = '';
+  if (cta && cta.href && cta.label) {
+    ctaHtml = '<p style="margin:18px 0 0;">'
+      + '<a href="' + escapeEmailHtml_(cta.href) + '" style="display:inline-block;padding:12px 18px;background:#c9a227;color:#111;text-decoration:none;font-weight:700;border-radius:8px;">'
+      + escapeEmailHtml_(cta.label)
+      + '</a></p>';
+  }
+
+  return '<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;">'
+    + '<p style="margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#888;">'
+    + escapeEmailHtml_(RADIO_NOW_FROM_NAME)
+    + '</p>'
+    + '<h1 style="margin:0 0 18px;font-size:24px;line-height:1.2;color:#111;">'
+    + escapeEmailHtml_(title)
+    + '</h1>'
+    + body
+    + ctaHtml
+    + '<p style="margin:24px 0 0;font-size:12px;color:#888;">(615) Hideaway Entertainment · Radio Now</p>'
+    + '</div>';
+}
+
+function sendRadioNowEmail_(to, subject, htmlBody) {
+  if (!to) return;
+  MailApp.sendEmail({
+    to: to,
+    subject: subject,
+    htmlBody: htmlBody,
+    name: RADIO_NOW_FROM_NAME,
+  });
+}
+
+function sendRadioNowEmailSafe_(to, subject, htmlBody) {
+  try {
+    sendRadioNowEmail_(to, subject, htmlBody);
+  } catch (err) {
+    Logger.log('Radio Now email failed (' + subject + '): ' + err.message);
+  }
+}
+
+function notifySignupEmails_(accountType, userEmail, displayName, extra) {
+  extra = extra || {};
+  var safeName = escapeEmailHtml_(displayName || 'there');
+  var dashboardUrl = RADIO_NOW_SITE_URL + '/';
+  var subjectPrefix = 'Welcome to Radio Now';
+
+  if (accountType === 'dj') {
+    dashboardUrl += 'index.html';
+    sendRadioNowEmailSafe_(userEmail, subjectPrefix + ' — DJ account confirmed', radioNowEmailShell_(
+      'Your DJ account is ready',
+      [
+        'Hi ' + safeName + ',',
+        'Thanks for signing up on <strong>Radio Now</strong>. Browse the catalog, preview tracks, and download turn-key promo folders (MP3 or WAV, cover art, and one-sheet PDF).',
+        extra.station ? '<strong>Station:</strong> ' + escapeEmailHtml_(extra.station) : '',
+        extra.program ? '<strong>Program:</strong> ' + escapeEmailHtml_(extra.program) : '',
+      ].filter(Boolean),
+      { href: dashboardUrl, label: 'Open Radio Now catalog' }
+    ));
+    sendRadioNowEmailSafe_(RADIO_NOW_ADMIN_EMAIL, 'New DJ signup — ' + (displayName || userEmail), radioNowEmailShell_(
+      'New DJ account',
+      [
+        '<strong>Name:</strong> ' + escapeEmailHtml_(displayName || '—'),
+        '<strong>Email:</strong> ' + escapeEmailHtml_(userEmail),
+        '<strong>Station:</strong> ' + escapeEmailHtml_(extra.station || '—'),
+        '<strong>Program:</strong> ' + escapeEmailHtml_(extra.program || '—'),
+      ],
+      { href: dashboardUrl, label: 'Open site' }
+    ));
+    return;
+  }
+
+  if (accountType === 'label') {
+    dashboardUrl += 'artist-dashboard.html';
+    sendRadioNowEmailSafe_(userEmail, subjectPrefix + ' — Label account confirmed', radioNowEmailShell_(
+      'Your label account is ready',
+      [
+        'Hi ' + safeName + ',',
+        'Your <strong>Radio Now</strong> label account is active. Create artist profiles, submit new songs, and track spins and charts for your roster.',
+      ],
+      { href: dashboardUrl, label: 'Open label dashboard' }
+    ));
+    sendRadioNowEmailSafe_(RADIO_NOW_ADMIN_EMAIL, 'New label signup — ' + (displayName || userEmail), radioNowEmailShell_(
+      'New label account',
+      [
+        '<strong>Label:</strong> ' + escapeEmailHtml_(displayName || '—'),
+        '<strong>Email:</strong> ' + escapeEmailHtml_(userEmail),
+      ],
+      { href: dashboardUrl, label: 'Open dashboard' }
+    ));
+    return;
+  }
+
+  dashboardUrl += 'artist-dashboard.html';
+  sendRadioNowEmailSafe_(userEmail, subjectPrefix + ' — Artist account confirmed', radioNowEmailShell_(
+    'Your artist account is ready',
+    [
+      'Hi ' + safeName + ',',
+      'Thanks for joining <strong>Radio Now</strong>. Download turn-key promo ZIPs, see who spun your music, and track chart history for your next pitch sheet.',
+      extra.claimed ? 'You claimed your artist profile — you control access; labels you remove cannot take your chart history with them.' : '',
+    ].filter(Boolean),
+    { href: dashboardUrl, label: 'Open artist dashboard' }
+  ));
+  sendRadioNowEmailSafe_(RADIO_NOW_ADMIN_EMAIL, 'New artist signup — ' + (displayName || userEmail), radioNowEmailShell_(
+    'New artist account',
+    [
+      '<strong>Artist:</strong> ' + escapeEmailHtml_(displayName || '—'),
+      '<strong>Email:</strong> ' + escapeEmailHtml_(userEmail),
+    ],
+    { href: dashboardUrl, label: 'Open dashboard' }
+  ));
+}
+
+function notifySongSubmissionEmails_(submission, account) {
+  var userEmail = submission.contactEmail || account.email;
+  var dashboardUrl = RADIO_NOW_SITE_URL + '/artist-dashboard.html';
+
+  sendRadioNowEmailSafe_(userEmail, 'Song submitted — ' + submission.songTitle, radioNowEmailShell_(
+    'We received your song',
+    [
+      'Thanks for submitting to <strong>Radio Now</strong>.',
+      '<strong>Artist:</strong> ' + escapeEmailHtml_(submission.artistName),
+      '<strong>Song:</strong> ' + escapeEmailHtml_(submission.songTitle),
+      '<strong>Label:</strong> ' + escapeEmailHtml_(submission.recordLabel || '—'),
+      'Status: <strong>Pending review</strong>. We will add approved songs to the catalog and email you when they are live.',
+      'Turn-key promo setup is <strong>$5/song</strong> — payment integration coming soon.',
+    ],
+    { href: dashboardUrl, label: 'View your dashboard' }
+  ));
+
+  sendRadioNowEmailSafe_(RADIO_NOW_ADMIN_EMAIL, 'New song submission — ' + submission.songTitle, radioNowEmailShell_(
+    'New song submission',
+    [
+      '<strong>Submission ID:</strong> ' + escapeEmailHtml_(submission.id),
+      '<strong>Submitted by:</strong> ' + escapeEmailHtml_(submission.accountName) + ' (' + escapeEmailHtml_(submission.accountType) + ')',
+      '<strong>Artist:</strong> ' + escapeEmailHtml_(submission.artistName),
+      '<strong>Song:</strong> ' + escapeEmailHtml_(submission.songTitle),
+      '<strong>Year:</strong> ' + escapeEmailHtml_(submission.year || '—'),
+      '<strong>Style:</strong> ' + escapeEmailHtml_(submission.musicStyle || '—'),
+      '<strong>Label:</strong> ' + escapeEmailHtml_(submission.recordLabel || '—'),
+      '<strong>Contact:</strong> ' + escapeEmailHtml_(submission.contactEmail || account.email || '—'),
+      'Check the <strong>Song Submissions</strong> tab in your sheet.',
+    ],
+    { href: 'https://docs.google.com/spreadsheets/', label: 'Open Google Sheet' }
+  ));
+}
 
 const SHEET_NAME = 'Sheet1';
 
@@ -1046,6 +1207,11 @@ function djSignup_(payload) {
   var dj = buildDjFromSignup_(payload, djId, hashed, createdAt);
 
   appendRowByHeaders_(sheet, dj);
+
+  notifySignupEmails_('dj', dj.email, dj.name, {
+    station: dj.station_call_letters || dj.station,
+    program: dj.program_name || dj.show_name,
+  });
 
   return {
     success: true,
@@ -2214,6 +2380,10 @@ function artistSignup_(payload) {
 
   ensureArtistProfileForAccount_(artist, email);
 
+  notifySignupEmails_('artist', email, artistName, {
+    claimed: !!(profileFound && String(profileFound.profile.ownership_status).toLowerCase() === 'unclaimed'),
+  });
+
   return {
     success: true,
     token: createArtistSessionToken_(artist),
@@ -2271,6 +2441,8 @@ function labelSignup_(payload) {
     created_at: createdAt,
     account_type: 'label',
   };
+
+  notifySignupEmails_('label', email, labelName);
 
   return {
     success: true,
@@ -2490,15 +2662,25 @@ function submitSong_(token, payload) {
     profile.profile_id,
   ]);
 
+  var submission = {
+    id: submissionId,
+    artistName: artistName,
+    songTitle: songTitle,
+    status: 'pending',
+    submittedAt: submittedAt,
+    accountName: accountName,
+    accountType: accountType,
+    recordLabel: recordLabel,
+    year: year,
+    musicStyle: musicStyle,
+    contactEmail: contactEmail,
+  };
+
+  notifySongSubmissionEmails_(submission, account);
+
   return {
     success: true,
-    submission: {
-      id: submissionId,
-      artistName: artistName,
-      songTitle: songTitle,
-      status: 'pending',
-      submittedAt: submittedAt,
-    },
+    submission: submission,
   };
 }
 
@@ -2685,6 +2867,8 @@ function doGet(e) {
           'label_access_revoke',
           'song_submit',
           'artist_dashboard',
+          'signup_email',
+          'submission_email',
         ],
       });
     }
