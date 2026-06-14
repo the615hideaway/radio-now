@@ -109,17 +109,23 @@
           <p class="dj-dashboard-eyebrow">DJ Dashboard</p>
           <h1 id="dashboard-title">Your download history</h1>
           <p class="dj-dashboard-copy">Track what you have already downloaded so you do not grab the same song twice.</p>
-          <div class="dj-profile-toggle" id="profile-panel">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              id="edit-profile-btn"
-              aria-expanded="false"
-              aria-controls="profile-editor"
-            >
-              <i class="fa-solid fa-user-pen" aria-hidden="true"></i>
-              Edit Profile
-            </button>
+          <div class="dj-dashboard-hero-actions">
+            <div class="dj-profile-toggle" id="profile-panel">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="edit-profile-btn"
+                aria-expanded="false"
+                aria-controls="profile-editor"
+              >
+                <i class="fa-solid fa-user-pen" aria-hidden="true"></i>
+                Edit Profile
+              </button>
+            </div>
+            <a href="charts.html" class="btn btn-secondary">
+              <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
+              View Charts
+            </a>
           </div>
         </div>
         <a href="index.html" class="btn btn-secondary">
@@ -156,21 +162,6 @@
         </form>
       </div>
 
-      <section class="charts-panel charts-panel--dashboard" aria-label="Top downloads">
-        <div class="charts-block">
-          <div class="charts-block-header">
-            <h2><i class="fa-solid fa-chart-line"></i> Top This Week</h2>
-          </div>
-          <div id="dashboard-chart-week"></div>
-        </div>
-        <div class="charts-block">
-          <div class="charts-block-header">
-            <h2><i class="fa-solid fa-chart-simple"></i> Top This Month</h2>
-          </div>
-          <div id="dashboard-chart-month"></div>
-        </div>
-      </section>
-
       <section class="dj-dashboard-stats" id="dashboard-stats"></section>
 
       <section class="dj-dashboard-grid">
@@ -192,7 +183,6 @@
   <script src="js/dj-auth-ui.js"></script>
   <script src="js/demo.js"></script>
   <script src="js/dj-activity.js"></script>
-  <script src="js/charts.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/dj-dashboard-app.js"></script>
 </body>

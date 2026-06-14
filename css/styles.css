@@ -686,7 +686,10 @@ a:hover { color: var(--white); }
   grid-column: 1 / -1;
 }
 
-.dj-profile-toggle {
+.dj-dashboard-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
   margin-top: 1rem;
 }
 

@@ -161,10 +161,6 @@
 
       renderStats(data.stats || {});
       renderHistory(data.activity || []);
-      Charts.loadInto(
-        document.getElementById('dashboard-chart-week'),
-        document.getElementById('dashboard-chart-month'),
-      );
     } catch (err) {
       dashboardStats.innerHTML = '';
       dashboardHistory.innerHTML = `
