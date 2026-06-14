@@ -156,19 +156,19 @@ a:hover { color: var(--white); }
   align-items: center;
   justify-content: center;
   padding: 2rem 1.5rem 2.5rem;
-  gap: 1.25rem;
+  gap: 0;
 }
 
 .turnkey-pitch-login-wrap {
   width: min(1160px, 100%);
+  margin-bottom: 2.25rem;
 }
 
 .login-gate-actions {
   width: min(1160px, 100%);
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .login-auth-column {
@@ -176,20 +176,25 @@ a:hover { color: var(--white); }
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .login-charts-card {
   width: 100%;
-  min-width: 0;
   display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  padding: 2rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+  padding: 1.15rem 1.35rem;
   background: var(--bg-card);
-  border: 2px solid rgba(244, 196, 48, 0.45);
+  border: 2px solid rgba(244, 196, 48, 0.35);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow), 0 0 0 1px rgba(0, 0, 0, 0.8);
+  box-shadow: var(--shadow);
+}
+
+.login-charts-copy-block {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .login-charts-eyebrow {
@@ -205,9 +210,9 @@ a:hover { color: var(--white); }
 }
 
 .login-charts-title {
-  margin: 0;
+  margin: 0 0 0.2rem;
   font-family: 'Oswald', system-ui, sans-serif;
-  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  font-size: 1.15rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--white);
@@ -215,14 +220,15 @@ a:hover { color: var(--white); }
 }
 
 .login-charts-copy {
-  margin: 0 0 0.35rem;
+  margin: 0;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.45;
+  font-size: 0.88rem;
+  line-height: 1.4;
 }
 
 .login-charts-btn {
-  margin-top: auto;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .account-role-picker {
@@ -1343,8 +1349,14 @@ a:hover { color: var(--white); }
     grid-template-columns: 1fr;
   }
 
-  .login-gate-actions {
-    grid-template-columns: 1fr;
+  .login-charts-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .login-charts-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .dj-signup-grid--2,
