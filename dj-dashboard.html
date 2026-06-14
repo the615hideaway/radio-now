@@ -134,9 +134,26 @@
       <section class="dj-dashboard-stats" id="dashboard-stats"></section>
 
       <section class="dj-dashboard-grid">
-        <div class="dj-panel dj-panel--wide dj-panel--profile" id="profile-panel">
+        <div class="dj-profile-toggle dj-panel--wide" id="profile-panel">
+          <button
+            type="button"
+            class="btn btn-edit-profile"
+            id="edit-profile-btn"
+            aria-expanded="false"
+            aria-controls="profile-editor"
+          >
+            <i class="fa-solid fa-user-pen" aria-hidden="true"></i>
+            Edit Profile
+          </button>
+        </div>
+
+        <div class="dj-panel dj-panel--wide dj-panel--profile hidden" id="profile-editor" aria-hidden="true">
           <div class="dj-panel-header">
             <h2><i class="fa-solid fa-user-pen"></i> DJ Profile</h2>
+            <button type="button" class="btn btn-ghost btn-sm" id="close-profile-btn">
+              <i class="fa-solid fa-xmark"></i>
+              Close
+            </button>
           </div>
           <form id="dj-profile-form" class="dj-profile-form">
             <div id="dj-profile-fields"></div>
@@ -145,7 +162,7 @@
                 <input type="checkbox" id="share-email-toggle">
                 <span>Share my email with artists when I download their music</span>
               </label>
-              <p class="dj-panel-note">Artists can use this to thank you on air or by email. Your login email stays hidden unless this is turned on.</p>
+              <p class="dj-panel-note">Your login email stays hidden from artists unless this is turned on.</p>
               <p class="dj-panel-status" id="share-email-status"></p>
             </div>
             <div class="dj-profile-actions">

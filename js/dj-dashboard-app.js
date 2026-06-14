@@ -4,6 +4,9 @@
   const appShell = document.getElementById('app-shell');
   const logoutBtn = document.getElementById('logout-btn');
   const profilePanel = document.getElementById('profile-panel');
+  const profileEditor = document.getElementById('profile-editor');
+  const editProfileBtn = document.getElementById('edit-profile-btn');
+  const closeProfileBtn = document.getElementById('close-profile-btn');
   const profileForm = document.getElementById('dj-profile-form');
   const dashboardTitle = document.getElementById('dashboard-title');
   const dashboardStats = document.getElementById('dashboard-stats');
@@ -94,6 +97,22 @@
     profileSaveStatus.classList.toggle('dj-panel-status--error', !!isError);
   }
 
+  function openProfileEditor() {
+    profilePanel?.classList.add('hidden');
+    profileEditor?.classList.remove('hidden');
+    if (profileEditor) profileEditor.setAttribute('aria-hidden', 'false');
+    if (editProfileBtn) editProfileBtn.setAttribute('aria-expanded', 'true');
+    profileEditor?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function closeProfileEditor() {
+    profileEditor?.classList.add('hidden');
+    profilePanel?.classList.remove('hidden');
+    if (profileEditor) profileEditor.setAttribute('aria-hidden', 'true');
+    if (editProfileBtn) editProfileBtn.setAttribute('aria-expanded', 'false');
+    setProfileSaveStatus('');
+  }
+
   function fillProfileForm(dj) {
     if (!dj || typeof DjSignupForm === 'undefined') return;
     DjSignupForm.fillFromDj(dj);
@@ -156,6 +175,9 @@
     }
   }
 
+  editProfileBtn?.addEventListener('click', openProfileEditor);
+  closeProfileBtn?.addEventListener('click', closeProfileEditor);
+
   profileForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (isDemoMode || typeof DjSignupForm === 'undefined') return;
@@ -173,6 +195,7 @@
       updateDashboardTitle(dj);
       DjAuthUI.updateWelcome();
       setProfileSaveStatus('Profile saved.');
+      closeProfileEditor();
     } catch (err) {
       setProfileSaveStatus(err.message || 'Could not save profile.', true);
     } finally {
