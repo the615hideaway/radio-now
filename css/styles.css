@@ -687,36 +687,11 @@ a:hover { color: var(--white); }
 }
 
 .dj-profile-toggle {
-  display: flex;
-  justify-content: center;
-  padding: 0.25rem 0;
+  margin-top: 1rem;
 }
 
-.btn-edit-profile {
-  width: 100%;
-  max-width: 28rem;
-  padding: 1rem 1.5rem;
-  font-family: 'Oswald', system-ui, sans-serif;
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: linear-gradient(135deg, var(--bg-elevated), var(--bg-card));
-  border: 2px solid var(--gold);
-  color: var(--gold-bright);
-  border-radius: var(--radius);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-}
-
-.btn-edit-profile:hover:not(:disabled) {
-  border-color: var(--gold-bright);
-  background: var(--gold-dim);
-  color: var(--white);
-  transform: translateY(-1px);
-}
-
-.btn-edit-profile i {
-  font-size: 1.1rem;
+#profile-editor {
+  margin-bottom: 1.5rem;
 }
 
 .dj-profile-form {

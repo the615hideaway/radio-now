@@ -109,12 +109,52 @@
           <p class="dj-dashboard-eyebrow">DJ Dashboard</p>
           <h1 id="dashboard-title">Your download history</h1>
           <p class="dj-dashboard-copy">Track what you have already downloaded so you do not grab the same song twice.</p>
+          <div class="dj-profile-toggle" id="profile-panel">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="edit-profile-btn"
+              aria-expanded="false"
+              aria-controls="profile-editor"
+            >
+              <i class="fa-solid fa-user-pen" aria-hidden="true"></i>
+              Edit Profile
+            </button>
+          </div>
         </div>
         <a href="index.html" class="btn btn-secondary">
           <i class="fa-solid fa-compact-disc"></i>
           Browse Catalog
         </a>
       </section>
+
+      <div class="dj-panel dj-panel--profile hidden" id="profile-editor" aria-hidden="true">
+        <div class="dj-panel-header">
+          <h2><i class="fa-solid fa-user-pen"></i> DJ Profile</h2>
+          <button type="button" class="btn btn-ghost btn-sm" id="close-profile-btn">
+            <i class="fa-solid fa-xmark"></i>
+            Close
+          </button>
+        </div>
+        <form id="dj-profile-form" class="dj-profile-form">
+          <div id="dj-profile-fields"></div>
+          <div class="dj-profile-privacy">
+            <label class="checkbox-field checkbox-field--panel">
+              <input type="checkbox" id="share-email-toggle">
+              <span>Share my email with artists when I download their music</span>
+            </label>
+            <p class="dj-panel-note">Your login email stays hidden from artists unless this is turned on.</p>
+            <p class="dj-panel-status" id="share-email-status"></p>
+          </div>
+          <div class="dj-profile-actions">
+            <button type="submit" class="btn btn-primary" id="save-profile-btn">
+              <i class="fa-solid fa-floppy-disk"></i>
+              Save Profile
+            </button>
+            <p class="dj-panel-status" id="profile-save-status" aria-live="polite"></p>
+          </div>
+        </form>
+      </div>
 
       <section class="charts-panel charts-panel--dashboard" aria-label="Top downloads">
         <div class="charts-block">
@@ -134,47 +174,6 @@
       <section class="dj-dashboard-stats" id="dashboard-stats"></section>
 
       <section class="dj-dashboard-grid">
-        <div class="dj-profile-toggle dj-panel--wide" id="profile-panel">
-          <button
-            type="button"
-            class="btn btn-edit-profile"
-            id="edit-profile-btn"
-            aria-expanded="false"
-            aria-controls="profile-editor"
-          >
-            <i class="fa-solid fa-user-pen" aria-hidden="true"></i>
-            Edit Profile
-          </button>
-        </div>
-
-        <div class="dj-panel dj-panel--wide dj-panel--profile hidden" id="profile-editor" aria-hidden="true">
-          <div class="dj-panel-header">
-            <h2><i class="fa-solid fa-user-pen"></i> DJ Profile</h2>
-            <button type="button" class="btn btn-ghost btn-sm" id="close-profile-btn">
-              <i class="fa-solid fa-xmark"></i>
-              Close
-            </button>
-          </div>
-          <form id="dj-profile-form" class="dj-profile-form">
-            <div id="dj-profile-fields"></div>
-            <div class="dj-profile-privacy">
-              <label class="checkbox-field checkbox-field--panel">
-                <input type="checkbox" id="share-email-toggle">
-                <span>Share my email with artists when I download their music</span>
-              </label>
-              <p class="dj-panel-note">Your login email stays hidden from artists unless this is turned on.</p>
-              <p class="dj-panel-status" id="share-email-status"></p>
-            </div>
-            <div class="dj-profile-actions">
-              <button type="submit" class="btn btn-primary" id="save-profile-btn">
-                <i class="fa-solid fa-floppy-disk"></i>
-                Save Profile
-              </button>
-              <p class="dj-panel-status" id="profile-save-status" aria-live="polite"></p>
-            </div>
-          </form>
-        </div>
-
         <div class="dj-panel dj-panel--wide">
           <div class="dj-panel-header">
             <h2>Download History</h2>
