@@ -42,6 +42,7 @@
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
     DjAuthUI.updateWelcome();
+    SiteNav.init('artists');
     if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
     updateDownloadSetupNotice();
     loadArtist();
@@ -367,7 +368,7 @@
   }
 
   DjAuthUI.init({ onAuthenticated: showApp });
-  DjAuthUI.bindLogout(logoutBtn, showLogin);
+  SiteNav.bindLogout(logoutBtn, showLogin);
 
   clearQueueBtn.addEventListener('click', () => {
     queue = [];

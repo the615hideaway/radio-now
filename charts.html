@@ -23,15 +23,15 @@
           <span class="brand-tag">(615) Hideaway Entertainment</span>
         </div>
       </a>
-      <nav class="site-nav" aria-label="Main navigation">
-        <a href="index.html" class="nav-link">Catalog</a>
-        <a href="artists.html" class="nav-link">Artists</a>
-        <a href="charts.html" class="nav-link active">Charts</a>
-        <a href="dj-dashboard.html" class="nav-link">DJ Dashboard</a>
-        <a href="artist-dashboard.html" class="nav-link">Artist Dashboard</a>
-      </nav>
+      <nav class="site-nav" data-site-nav data-nav-active="charts" aria-label="Main navigation"></nav>
       <div class="header-actions">
-        <a href="index.html" class="btn btn-secondary btn-sm">DJ Sign In</a>
+        <span id="dj-welcome" class="dj-welcome hidden"></span>
+        <span id="artist-welcome" class="dj-welcome hidden"></span>
+        <a href="index.html" class="btn btn-secondary btn-sm" data-signin-btn>Sign In</a>
+        <button class="btn btn-ghost hidden" id="logout-btn" type="button">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Log Out
+        </button>
       </div>
     </div>
   </header>
@@ -66,6 +66,12 @@
   </main>
 
   <script src="js/config.js"></script>
+  <script src="js/dj-auth.js"></script>
+  <script src="js/artist-auth.js"></script>
+  <script src="js/account-auth.js"></script>
+  <script src="js/dj-auth-ui.js"></script>
+  <script src="js/artist-auth-ui.js"></script>
+  <script src="js/nav.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/database.js"></script>
   <script src="js/charts.js"></script>

@@ -34,6 +34,7 @@ const DjAuth = {
       dj: data.dj,
     }));
     sessionStorage.removeItem(CONFIG.authKey);
+    sessionStorage.removeItem(CONFIG.artistSessionKey);
   },
 
   getSession() {

@@ -821,6 +821,54 @@ function demoArtistDashboard_() {
   };
 }
 
+function requireMemberSession_(token) {
+  if (!token) throw new Error('Not signed in.');
+  try {
+    requireDjSession_(token);
+    return 'dj';
+  } catch (ignoreDj) {
+    try {
+      requireArtistSession_(token);
+      return 'artist';
+    } catch (ignoreArtist) {
+      throw new Error('Not signed in.');
+    }
+  }
+}
+
+function directoryDj_(dj) {
+  var pub = publicDj_(dj);
+  if (!shareEmailFlag_(dj.share_email)) {
+    pub.email = '';
+  }
+  return pub;
+}
+
+function listDjDirectory_(token) {
+  requireMemberSession_(token);
+  var sheet = getDjSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var djs = [];
+
+  for (var i = 1; i < rows.length; i++) {
+    var dj = djRowToObject_(rows[i], headerMap);
+    if (String(dj.status).toLowerCase() !== 'active') continue;
+    djs.push(directoryDj_(dj));
+  }
+
+  djs.sort(function (a, b) {
+    var nameA = String(a.name || '').toLowerCase();
+    var nameB = String(b.name || '').toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+
+  return {
+    success: true,
+    djs: djs,
+  };
+}
+
 function publicDj_(dj) {
   return {
     id: dj.dj_id,
@@ -1620,6 +1668,10 @@ function doPost(e) {
 
     if (action === 'dj_profile_update') {
       return jsonResponse_(djProfileUpdate_(body.token, body));
+    }
+
+    if (action === 'dj_directory') {
+      return jsonResponse_(listDjDirectory_(body.token));
     }
 
     if (action === 'artist_login') {

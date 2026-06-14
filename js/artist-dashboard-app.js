@@ -186,6 +186,7 @@
       Demo.bindExit(logoutBtn);
     } else {
       ArtistAuthUI.updateWelcome();
+      SiteNav.init('artistDashboard');
       if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
     }
     updatePromoSetupNotice();
@@ -281,6 +282,7 @@
         if (!isDemoMode) {
           ArtistAuth.updateArtistProfile(data.artist);
           ArtistAuthUI.updateWelcome();
+      SiteNav.init('artistDashboard');
         }
         if (!mySongs.length || normalizeArtistName(resolvedName) !== normalizeArtistName(artistName)) {
           loadPromoFolders(resolvedName);
@@ -315,7 +317,7 @@
     showApp();
   } else {
     ArtistAuthUI.init({ onAuthenticated: showApp });
-    ArtistAuthUI.bindLogout(logoutBtn, showLogin);
+    SiteNav.bindLogout(logoutBtn, showLogin);
 
     if (ArtistAuth.isAuthenticated()) showApp();
     else showLogin();

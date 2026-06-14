@@ -728,6 +728,104 @@ a:hover { color: var(--white); }
   gap: 0.75rem;
 }
 
+.djs-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 4rem;
+}
+
+.dj-directory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dj-directory-item {
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dj-directory-item:hover,
+.dj-directory-item.is-open {
+  border-color: rgba(244, 196, 48, 0.45);
+  background: rgba(244, 196, 48, 0.05);
+}
+
+.dj-directory-rank {
+  font-family: 'Oswald', system-ui, sans-serif;
+  color: var(--gold-bright);
+  font-size: 0.95rem;
+}
+
+.dj-directory-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.dj-directory-name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dj-directory-meta {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dj-directory-chevron {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.detail-hero--dj {
+  grid-template-columns: 88px 1fr;
+}
+
+.detail-cover--dj {
+  width: 88px;
+  height: 88px;
+}
+
+.dj-directory-avatar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid var(--gold);
+  color: var(--gold-bright);
+  font-size: 1.8rem;
+}
+
+.dj-directory-profile {
+  margin-top: 0.25rem;
+}
+
+.account-role-picker .account-role-card {
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
 .artist-dj-line {
   margin: 0.35rem 0 0;
   font-size: 0.88rem;

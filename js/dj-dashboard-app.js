@@ -26,6 +26,7 @@
       if (profilePanel) profilePanel.classList.add('hidden');
     } else {
       DjAuthUI.updateWelcome();
+      SiteNav.init('djDashboard');
       if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
       if (typeof DjSignupForm !== 'undefined') DjSignupForm.mountProfile();
     }
@@ -155,6 +156,7 @@
       } else if (!isDemoMode) {
         DjAuth.updateDjProfile(data.dj);
         DjAuthUI.updateWelcome();
+      SiteNav.init('djDashboard');
         fillProfileForm(data.dj);
         updateDashboardTitle(data.dj);
       }
@@ -190,6 +192,7 @@
       fillProfileForm(dj);
       updateDashboardTitle(dj);
       DjAuthUI.updateWelcome();
+      SiteNav.init('djDashboard');
       setProfileSaveStatus('Profile saved.');
       closeProfileEditor();
     } catch (err) {
@@ -206,7 +209,7 @@
     showApp();
   } else {
     DjAuthUI.init({ onAuthenticated: showApp });
-    DjAuthUI.bindLogout(logoutBtn, showLogin);
+    SiteNav.bindLogout(logoutBtn, showLogin);
     if (DjAuth.isAuthenticated()) showApp();
     else showLogin();
   }

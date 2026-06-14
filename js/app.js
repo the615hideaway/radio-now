@@ -45,8 +45,10 @@
     if (isDemoMode) {
       Demo.applyMode();
       Demo.bindExit(logoutBtn);
+      SiteNav.init('catalog');
     } else {
       DjAuthUI.updateWelcome();
+      SiteNav.init('catalog');
       TurnkeyPitch.hideAppPromo();
     }
     updateDownloadSetupNotice();
@@ -618,7 +620,7 @@
     showApp();
   } else {
     DjAuthUI.init({ onAuthenticated: showApp });
-    DjAuthUI.bindLogout(logoutBtn, showLogin);
+    SiteNav.bindLogout(logoutBtn, showLogin);
     if (DjAuth.isAuthenticated()) showApp();
     else showLogin();
   }

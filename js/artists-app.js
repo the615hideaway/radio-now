@@ -20,6 +20,7 @@
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
     DjAuthUI.updateWelcome();
+    SiteNav.init('artists');
     if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
     loadArtists();
   }
@@ -122,7 +123,7 @@
   }
 
   DjAuthUI.init({ onAuthenticated: showApp });
-  DjAuthUI.bindLogout(logoutBtn, showLogin);
+  SiteNav.bindLogout(logoutBtn, showLogin);
 
   artistSearch.addEventListener('input', Utils.debounce(filterArtists, 180));
   clearSearchBtn.addEventListener('click', () => {

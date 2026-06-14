@@ -33,6 +33,8 @@ const ArtistAuth = {
       token: data.token,
       artist: data.artist,
     }));
+    sessionStorage.removeItem(CONFIG.djSessionKey);
+    sessionStorage.removeItem(CONFIG.authKey);
   },
 
   getSession() {
