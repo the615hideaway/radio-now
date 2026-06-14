@@ -2011,7 +2011,117 @@ select { min-width: 130px; width: auto; }
   align-items: center;
 }
 
-/* Catalog grid */
+/* Catalog list */
+
+.catalog-list,
+.catalog-spotlight {
+  margin-bottom: 1rem;
+}
+
+.catalog-spotlight {
+  background: rgba(244, 196, 48, 0.04);
+  border: 1px solid rgba(244, 196, 48, 0.28);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem 0.85rem 0.85rem;
+}
+
+.catalog-spotlight-header h2,
+.catalog-list-header h2 {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.catalog-list-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.catalog-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+
+.catalog-row.is-open {
+  border-color: rgba(244, 196, 48, 0.45);
+}
+
+.catalog-row.is-previewing {
+  border-color: rgba(74, 222, 128, 0.45);
+}
+
+.catalog-row-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.catalog-row-line {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.catalog-row-artist {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.catalog-row-sep {
+  color: var(--text-muted);
+  margin: 0 0.15rem;
+}
+
+.catalog-row-title {
+  color: var(--text-secondary);
+}
+
+.catalog-row-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  border: 1px solid rgba(244, 196, 48, 0.35);
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+}
+
+.catalog-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.catalog-row-actions .preview-trigger-btn.is-playing {
+  color: var(--success);
+  border-color: rgba(74, 222, 128, 0.45);
+}
+
+.catalog-row-no-preview {
+  width: 2rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.catalog-row-actions .details-btn.active {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
 
 .catalog-grid {
   display: grid;
@@ -3114,6 +3224,15 @@ select { min-width: 130px; width: auto; }
 
   .artist-profile-info h1 {
     font-size: 1.55rem;
+  }
+
+  .catalog-row {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .catalog-row-actions {
+    justify-content: flex-start;
   }
 
   .profile-song-row {

@@ -40,6 +40,9 @@ const RadioDB = {
       website: raw.website || '',
       recordLabel: raw.recordLabel || '',
       contactEmail: raw.contactEmail || '',
+      releaseDate: String(raw.releaseDate || '').trim(),
+      spotlightPriority: parseInt(raw.spotlightPriority, 10) || 0,
+      spotlightUntil: String(raw.spotlightUntil || '').trim(),
     };
   },
 
@@ -70,7 +73,7 @@ const RadioDB = {
     };
 
     const songs = (data.songs || [])
-      .map((song, i) => this.normalizeSong(song, i))
+      .map((song, i) => ({ ...this.normalizeSong(song, i), catalogIndex: i }))
       .filter((song) => song.artistName || song.songTitle);
 
     if (!songs.length) throw new Error('Catalog JSON contains no songs.');

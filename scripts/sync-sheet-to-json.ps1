@@ -189,6 +189,13 @@ foreach ($row in $rows) {
     website            = $record['Website']
     recordLabel        = $record['Record Label']
     contactEmail       = $record['Contact E-Mail']
+    releaseDate        = $record['Release Date']
+    if (-not $releaseDate) { $releaseDate = $record['Radio Now Release'] }
+    if (-not $releaseDate) { $releaseDate = $record['Added Date'] }
+    spotlightPriority  = $record['Spotlight Priority']
+    if (-not $spotlightPriority) { $spotlightPriority = $record['Spotlight'] }
+    spotlightUntil     = $record['Spotlight Until']
+    if (-not $spotlightUntil) { $spotlightUntil = $record['Spotlight End'] }
   })
 }
 

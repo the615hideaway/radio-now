@@ -24,6 +24,9 @@ const COLUMN_MAP = {
   website: ['Website'],
   recordLabel: ['Record Label', 'Label'],
   contactEmail: ['Contact E-Mail', 'Contact Email', 'Email'],
+  releaseDate: ['Release Date', 'Radio Now Release', 'Added Date'],
+  spotlightPriority: ['Spotlight Priority', 'Spotlight'],
+  spotlightUntil: ['Spotlight Until', 'Spotlight End'],
 };
 
 function getSheet_() {

@@ -8,6 +8,7 @@
   const yearFilter = document.getElementById('year-filter');
   const clearFiltersBtn = document.getElementById('clear-filters-btn');
   const catalogGrid = document.getElementById('catalog-grid');
+  const spotlightList = document.getElementById('spotlight-list');
   const statTotal = document.getElementById('stat-total');
   const statQueue = document.getElementById('stat-queue');
   const statDownload = document.getElementById('stat-download');
@@ -112,9 +113,9 @@
     }
     const isPlaying = currentPreviewId === song.id;
     return `
-      <button type="button" class="btn btn-secondary btn-full preview-trigger-btn ${isPlaying ? 'is-playing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+      <button type="button" class="btn btn-secondary preview-trigger-btn ${isPlaying ? 'is-playing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
         <i class="fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play'}"></i>
-        ${isPlaying ? 'Playing in Bottom Player' : 'Play Preview'}
+        ${isPlaying ? 'Playing' : 'Play Preview'}
       </button>`;
   }
 
@@ -194,6 +195,7 @@
       return matchesSearch && matchesStyle && matchesYear;
     });
 
+    filteredSongs = Spotlight.sortSongs(filteredSongs);
     filteredSongs = DjFavorites.sortSongs(filteredSongs);
 
     if (expandedDetailId && !filteredSongs.some((s) => s.id === expandedDetailId)) {
@@ -359,8 +361,64 @@
     else closeDetail();
   }
 
+  function renderCatalogRow(song) {
+    const isPlaying = currentPreviewId === song.id;
+    const isOpen = expandedDetailId === song.id;
+    const badge = Spotlight.badge(song);
+    const hasPreview = AudioPlayer.hasPreview(song);
+
+    return `
+      <article class="catalog-row ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+        <div class="catalog-row-main">
+          <p class="catalog-row-line">
+            <span class="catalog-row-artist">${Utils.escapeHtml(song.artistName || 'Unknown Artist')}</span>
+            <span class="catalog-row-sep" aria-hidden="true">—</span>
+            <span class="catalog-row-title">${Utils.escapeHtml(song.songTitle || 'Untitled')}</span>
+          </p>
+          ${badge ? `<span class="catalog-row-badge">${Utils.escapeHtml(badge)}</span>` : ''}
+        </div>
+        <div class="catalog-row-actions">
+          ${hasPreview ? `
+            <button
+              type="button"
+              class="btn-icon preview-trigger-btn ${isPlaying ? 'is-playing' : ''}"
+              data-id="${Utils.escapeHtml(song.id)}"
+              title="${isPlaying ? 'Playing preview' : 'Play preview'}"
+              aria-label="${isPlaying ? 'Playing preview' : 'Play preview'}"
+            >
+              <i class="fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play'}" aria-hidden="true"></i>
+            </button>` : `
+            <span class="catalog-row-no-preview" title="No preview available">—</span>`}
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm details-btn ${isOpen ? 'active' : ''}"
+            data-id="${Utils.escapeHtml(song.id)}"
+          >
+            Song Details
+          </button>
+        </div>
+      </article>`;
+  }
+
+  function bindCatalogRows(root) {
+    if (!root) return;
+
+    root.querySelectorAll('.details-btn').forEach((btn) => {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        openDetail(btn.dataset.id);
+      });
+    });
+
+    bindPreviewButtons(root);
+  }
+
   function renderCatalog() {
     if (!filteredSongs.length) {
+      if (spotlightList) {
+        spotlightList.classList.add('hidden');
+        spotlightList.innerHTML = '';
+      }
       catalogGrid.innerHTML = `
         <div class="empty-state">
           <i class="fa-solid fa-music"></i>
@@ -369,72 +427,37 @@
       return;
     }
 
-    catalogGrid.innerHTML = filteredSongs.map((song) => {
-      const inQueue = queue.some((q) => q.id === song.id);
-      const inDownload = downloadQueue.some((d) => d.id === song.id);
-      const favoriteArtist = DjFavorites.isFavorite(song.artistName);
-      return `
-        <article class="song-card ${inDownload ? 'in-download' : ''} ${favoriteArtist ? 'is-favorite-artist' : ''} ${expandedDetailId === song.id ? 'details-open' : ''} ${currentPreviewId === song.id ? 'is-previewing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
-          <div class="song-card-top">
-            <div class="song-card-top-actions">
-              <button class="btn-icon download-toggle ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}" title="${inDownload ? 'Remove from download queue' : 'Add to download queue'}">
-                <i class="fa-solid ${inDownload ? 'fa-check' : 'fa-download'}"></i>
-              </button>
-              <button class="btn btn-primary btn-sm add-queue-btn top-queue-btn" data-id="${Utils.escapeHtml(song.id)}">
-                <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'Queued' : 'Queue'}
-              </button>
-            </div>
+    const spotlightSongs = filteredSongs.filter((song) => Spotlight.score(song) > 0);
+    const catalogSongs = filteredSongs.filter((song) => Spotlight.score(song) === 0);
+
+    if (spotlightList) {
+      if (spotlightSongs.length) {
+        spotlightList.classList.remove('hidden');
+        spotlightList.innerHTML = `
+          <div class="catalog-spotlight-header">
+            <h2>Spotlight</h2>
           </div>
-          <div class="song-cover">${renderCover(song)}</div>
-          <div class="song-meta">
-            <h3>${Utils.escapeHtml(song.songTitle)}</h3>
-            <p class="artist">
-              ${favoriteArtist ? '<i class="fa-solid fa-star artist-favorite-marker" aria-hidden="true"></i>' : ''}
-              <span>${Utils.escapeHtml(song.artistName)}</span>
-              ${DjFavorites.buttonHtml(song.artistName, 'favorite-toggle favorite-toggle--inline')}
-            </p>
-            <div class="song-tags">
-              ${song.year ? `<span>${Utils.escapeHtml(song.year)}</span>` : ''}
-              ${song.songTime ? `<span>${Utils.escapeHtml(song.songTime)}</span>` : ''}
-              ${song.musicStyle ? `<span>${Utils.escapeHtml(song.musicStyle)}</span>` : ''}
-            </div>
-          </div>
-          <div class="song-preview">${renderPlayButton(song)}</div>
-          <div class="song-actions">
-            <button class="btn btn-secondary btn-sm details-btn ${expandedDetailId === song.id ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
-              <i class="fa-solid fa-circle-info"></i> Song Details
-            </button>
-            <button class="btn btn-secondary btn-sm add-download-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
-              <i class="fa-solid fa-download"></i> ${inDownload ? 'Queued' : 'Download'}
-            </button>
-          </div>
-        </article>`;
-    }).join('');
+          <div class="catalog-list-inner">
+            ${spotlightSongs.map((song) => renderCatalogRow(song)).join('')}
+          </div>`;
+        bindCatalogRows(spotlightList);
+      } else {
+        spotlightList.classList.add('hidden');
+        spotlightList.innerHTML = '';
+      }
+    }
 
-    catalogGrid.querySelectorAll('.details-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openDetail(btn.dataset.id);
-      });
-    });
+    if (catalogSongs.length) {
+      catalogGrid.innerHTML = `
+        ${spotlightSongs.length ? '<div class="catalog-list-header"><h2>All Tracks</h2></div>' : ''}
+        <div class="catalog-list-inner">
+          ${catalogSongs.map((song) => renderCatalogRow(song)).join('')}
+        </div>`;
+    } else {
+      catalogGrid.innerHTML = '';
+    }
 
-    bindPreviewButtons(catalogGrid);
-
-    catalogGrid.querySelectorAll('.add-queue-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleQueue(btn.dataset.id);
-      });
-    });
-
-    catalogGrid.querySelectorAll('.add-download-btn, .download-toggle').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleDownloadQueue(btn.dataset.id);
-      });
-    });
-
-    DjFavorites.bindButtons(catalogGrid, () => filterSongs());
+    bindCatalogRows(catalogGrid);
   }
 
   function toggleQueue(id) {
