@@ -414,19 +414,39 @@ a:hover { color: var(--white); }
 }
 
 .brand-logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--gold);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: contain;
+  border: none;
+  box-shadow: none;
+  background: transparent;
   flex-shrink: 0;
 }
 
 .brand-logo--large {
-  width: 120px;
-  height: 120px;
-  border-width: 3px;
+  width: 108px;
+  height: 108px;
+}
+
+.brand-lockup--signup {
+  gap: 0.65rem;
+  margin-bottom: 0.15rem;
+}
+
+.brand-lockup--signup .brand-logo--large {
+  width: clamp(88px, 18vw, 112px);
+  height: clamp(88px, 18vw, 112px);
+}
+
+.brand-lockup--signup .brand-text p {
+  display: none;
+}
+
+.brand-lockup--signup .brand-lockup h1,
+.brand-lockup--signup h1 {
+  font-size: 1.45rem;
+  letter-spacing: 0.04em;
 }
 
 .brand-text {
