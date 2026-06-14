@@ -4,7 +4,15 @@
  * Deploy as Web App:
  *   Execute as: Me
  *   Who has access: Anyone
+ *
+ * After pasting: Deploy → Manage deployments → Edit → New version → Deploy
+ * Verify: GET .../exec?action=version
+ *
+ * Artist/label endpoints: artist_login, artist_signup, label_signup, artist_activate,
+ *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
+
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-14-label-profiles-v1';
 
 const SHEET_NAME = 'Sheet1';
 
@@ -1285,7 +1293,28 @@ function djProfileUpdate_(token, payload) {
 
 var ARTIST_SHEET_NAME = 'Artist Accounts';
 var ARTIST_HEADERS = [
-  'artist_account_id', 'artist_name', 'email', 'password_hash', 'password_salt', 'status', 'created_at',
+  'artist_account_id', 'artist_name', 'email', 'password_hash', 'password_salt', 'status', 'created_at', 'account_type',
+];
+var SONG_SUBMISSION_SHEET_NAME = 'Song Submissions';
+var SONG_SUBMISSION_HEADERS = [
+  'submission_id', 'account_id', 'account_type', 'account_name', 'artist_name', 'song_title',
+  'year', 'music_style', 'songwriter', 'record_label', 'description', 'website', 'contact_email',
+  'mp3_link', 'wav_link', 'cover_link', 'status', 'submitted_at', 'profile_id',
+];
+var ARTIST_PROFILE_SHEET_NAME = 'Artist Profiles';
+var ARTIST_PROFILE_HEADERS = [
+  'profile_id', 'artist_name', 'owner_account_id', 'ownership_status', 'created_by_account_id',
+  'created_by_type', 'claim_email', 'created_at', 'updated_at',
+];
+var LABEL_ACCESS_SHEET_NAME = 'Label Access';
+var LABEL_ACCESS_HEADERS = [
+  'access_id', 'profile_id', 'label_account_id', 'label_name', 'access_level', 'status',
+  'granted_at', 'granted_by_account_id', 'revoked_at', 'revoked_by_account_id',
+];
+var CHART_HISTORY_SHEET_NAME = 'Chart History';
+var CHART_HISTORY_HEADERS = [
+  'record_id', 'profile_id', 'artist_name', 'song_id', 'song_title', 'chart_period', 'period_label',
+  'rank', 'download_count', 'recorded_at',
 ];
 
 function normalizeArtistName_(name) {
@@ -1321,6 +1350,7 @@ function artistRowToObject_(row, headerMap) {
     password_salt: pick('password_salt'),
     status: pick('status') || 'invited',
     created_at: pick('created_at'),
+    account_type: pick('account_type') || 'artist',
   };
 }
 
@@ -1392,12 +1422,694 @@ function artistNameExistsInCatalog_(artistName) {
   return false;
 }
 
+function labelNameExistsInCatalog_(labelName) {
+  var target = normalizeArtistName_(labelName);
+  if (!target) return false;
+
+  var result = listSongs_();
+  var songs = result.songs || [];
+
+  for (var i = 0; i < songs.length; i++) {
+    if (normalizeArtistName_(songs[i].recordLabel) === target) return true;
+  }
+
+  return false;
+}
+
+function artistNamesForLabel_(labelName) {
+  var target = normalizeArtistName_(labelName);
+  var allowed = {};
+  if (!target) return allowed;
+
+  var songs = (listSongs_().songs || []);
+  songs.forEach(function (song) {
+    if (normalizeArtistName_(song.recordLabel) === target && song.artistName) {
+      allowed[normalizeArtistName_(song.artistName)] = true;
+    }
+  });
+
+  return allowed;
+}
+
+function getSongSubmissionSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SONG_SUBMISSION_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SONG_SUBMISSION_SHEET_NAME);
+    sheet.getRange(1, 1, 1, SONG_SUBMISSION_HEADERS.length).setValues([SONG_SUBMISSION_HEADERS]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  ensureSheetHeaders_(sheet, SONG_SUBMISSION_HEADERS);
+  return sheet;
+}
+
+function getArtistProfileSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(ARTIST_PROFILE_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(ARTIST_PROFILE_SHEET_NAME);
+    sheet.getRange(1, 1, 1, ARTIST_PROFILE_HEADERS.length).setValues([ARTIST_PROFILE_HEADERS]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  ensureSheetHeaders_(sheet, ARTIST_PROFILE_HEADERS);
+  return sheet;
+}
+
+function getLabelAccessSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(LABEL_ACCESS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(LABEL_ACCESS_SHEET_NAME);
+    sheet.getRange(1, 1, 1, LABEL_ACCESS_HEADERS.length).setValues([LABEL_ACCESS_HEADERS]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  ensureSheetHeaders_(sheet, LABEL_ACCESS_HEADERS);
+  return sheet;
+}
+
+function getChartHistorySheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(CHART_HISTORY_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(CHART_HISTORY_SHEET_NAME);
+    sheet.getRange(1, 1, 1, CHART_HISTORY_HEADERS.length).setValues([CHART_HISTORY_HEADERS]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  ensureSheetHeaders_(sheet, CHART_HISTORY_HEADERS);
+  return sheet;
+}
+
+function profileRowToObject_(row, headerMap) {
+  function pick(key) {
+    var idx = headerMap[key];
+    if (idx === undefined) return '';
+    return String(row[idx] || '').trim();
+  }
+
+  return {
+    profile_id: pick('profile_id'),
+    artist_name: pick('artist_name'),
+    owner_account_id: pick('owner_account_id'),
+    ownership_status: pick('ownership_status') || 'unclaimed',
+    created_by_account_id: pick('created_by_account_id'),
+    created_by_type: pick('created_by_type'),
+    claim_email: pick('claim_email'),
+    created_at: pick('created_at'),
+    updated_at: pick('updated_at'),
+  };
+}
+
+function labelAccessRowToObject_(row, headerMap) {
+  function pick(key) {
+    var idx = headerMap[key];
+    if (idx === undefined) return '';
+    return String(row[idx] || '').trim();
+  }
+
+  return {
+    access_id: pick('access_id'),
+    profile_id: pick('profile_id'),
+    label_account_id: pick('label_account_id'),
+    label_name: pick('label_name'),
+    access_level: pick('access_level') || 'manage',
+    status: pick('status') || 'active',
+    granted_at: pick('granted_at'),
+    granted_by_account_id: pick('granted_by_account_id'),
+    revoked_at: pick('revoked_at'),
+    revoked_by_account_id: pick('revoked_by_account_id'),
+  };
+}
+
+function findProfileByName_(artistName) {
+  var target = normalizeArtistName_(artistName);
+  if (!target) return null;
+
+  var sheet = getArtistProfileSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var profile = profileRowToObject_(rows[i], headerMap);
+    if (normalizeArtistName_(profile.artist_name) === target) {
+      return { rowIndex: i + 1, profile: profile };
+    }
+  }
+
+  return null;
+}
+
+function findProfileById_(profileId) {
+  var target = String(profileId || '').trim();
+  if (!target) return null;
+
+  var sheet = getArtistProfileSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var profile = profileRowToObject_(rows[i], headerMap);
+    if (profile.profile_id === target) {
+      return { rowIndex: i + 1, profile: profile };
+    }
+  }
+
+  return null;
+}
+
+function findProfileByOwnerAccountId_(accountId) {
+  var target = String(accountId || '').trim();
+  if (!target) return null;
+
+  var sheet = getArtistProfileSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var profile = profileRowToObject_(rows[i], headerMap);
+    if (profile.owner_account_id === target) {
+      return { rowIndex: i + 1, profile: profile };
+    }
+  }
+
+  return null;
+}
+
+function publicProfile_(profile) {
+  return {
+    id: profile.profile_id,
+    artistName: profile.artist_name,
+    ownershipStatus: profile.ownership_status,
+    ownerAccountId: profile.owner_account_id,
+    claimEmail: profile.claim_email,
+    createdByType: profile.created_by_type,
+  };
+}
+
+function catalogContactEmailForArtist_(artistName) {
+  var target = normalizeArtistName_(artistName);
+  var songs = (listSongs_().songs || []);
+  for (var i = 0; i < songs.length; i++) {
+    if (normalizeArtistName_(songs[i].artistName) === target && songs[i].contactEmail) {
+      return normalizeEmail_(songs[i].contactEmail);
+    }
+  }
+  return '';
+}
+
+function canClaimProfile_(profile, email) {
+  if (!profile || String(profile.ownership_status).toLowerCase() !== 'unclaimed') {
+    return false;
+  }
+
+  email = normalizeEmail_(email);
+  if (!email) return false;
+
+  if (profile.claim_email && normalizeEmail_(profile.claim_email) === email) {
+    return true;
+  }
+
+  var catalogEmail = catalogContactEmailForArtist_(profile.artist_name);
+  if (catalogEmail && catalogEmail === email) {
+    return true;
+  }
+
+  if (artistNameExistsInCatalog_(profile.artist_name)) {
+    return true;
+  }
+
+  return false;
+}
+
+function grantLabelAccess_(profileId, labelAccount, grantedByAccountId) {
+  var sheet = getLabelAccessSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+
+  for (var i = 1; i < rows.length; i++) {
+    var access = labelAccessRowToObject_(rows[i], headerMap);
+    if (access.profile_id === profileId
+      && access.label_account_id === labelAccount.artist_account_id
+      && String(access.status).toLowerCase() === 'active') {
+      return access;
+    }
+  }
+
+  var accessId = 'acc-' + Utilities.getUuid().slice(0, 8);
+  sheet.appendRow([
+    accessId,
+    profileId,
+    labelAccount.artist_account_id,
+    labelAccount.artist_name,
+    'manage',
+    'active',
+    now,
+    grantedByAccountId || labelAccount.artist_account_id,
+    '',
+    '',
+  ]);
+
+  return {
+    access_id: accessId,
+    profile_id: profileId,
+    label_account_id: labelAccount.artist_account_id,
+    label_name: labelAccount.artist_name,
+    access_level: 'manage',
+    status: 'active',
+    granted_at: now,
+    granted_by_account_id: grantedByAccountId || labelAccount.artist_account_id,
+    revoked_at: '',
+    revoked_by_account_id: '',
+  };
+}
+
+function hasActiveLabelAccess_(profileId, labelAccountId) {
+  var sheet = getLabelAccessSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var access = labelAccessRowToObject_(rows[i], headerMap);
+    if (access.profile_id === profileId
+      && access.label_account_id === labelAccountId
+      && String(access.status).toLowerCase() === 'active') {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function listActiveLabelAccessForProfile_(profileId) {
+  var sheet = getLabelAccessSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var items = [];
+
+  for (var i = 1; i < rows.length; i++) {
+    var access = labelAccessRowToObject_(rows[i], headerMap);
+    if (access.profile_id !== profileId) continue;
+    if (String(access.status).toLowerCase() !== 'active') continue;
+    items.push({
+      id: access.access_id,
+      profileId: access.profile_id,
+      labelAccountId: access.label_account_id,
+      labelName: access.label_name,
+      accessLevel: access.access_level,
+      grantedAt: access.granted_at,
+    });
+  }
+
+  return items;
+}
+
+function listManagedProfilesForLabel_(labelAccountId) {
+  var sheet = getLabelAccessSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var profileIds = {};
+
+  for (var i = 1; i < rows.length; i++) {
+    var access = labelAccessRowToObject_(rows[i], headerMap);
+    if (access.label_account_id !== labelAccountId) continue;
+    if (String(access.status).toLowerCase() !== 'active') continue;
+    profileIds[access.profile_id] = {
+      accessId: access.access_id,
+      grantedAt: access.granted_at,
+    };
+  }
+
+  var items = [];
+  Object.keys(profileIds).forEach(function (profileId) {
+    var found = findProfileById_(profileId);
+    if (!found) return;
+    items.push({
+      profile: publicProfile_(found.profile),
+      accessId: profileIds[profileId].accessId,
+      grantedAt: profileIds[profileId].grantedAt,
+    });
+  });
+
+  items.sort(function (a, b) {
+    return String(a.profile.artistName).localeCompare(String(b.profile.artistName));
+  });
+
+  return items;
+}
+
+function createArtistProfileRecord_(artistName, createdByAccount, createdByType, claimEmail) {
+  artistName = String(artistName || '').trim();
+  if (!artistName) {
+    throw new Error('Artist name is required.');
+  }
+
+  var existing = findProfileByName_(artistName);
+  if (existing) {
+    throw new Error('An artist profile already exists for this name.');
+  }
+
+  var sheet = getArtistProfileSheet_();
+  var profileId = 'prof-' + Utilities.getUuid().slice(0, 8);
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+
+  sheet.appendRow([
+    profileId,
+    artistName,
+    '',
+    'unclaimed',
+    createdByAccount ? createdByAccount.artist_account_id : '',
+    createdByType || 'system',
+    normalizeEmail_(claimEmail),
+    now,
+    now,
+  ]);
+
+  return {
+    profile_id: profileId,
+    artist_name: artistName,
+    owner_account_id: '',
+    ownership_status: 'unclaimed',
+    created_by_account_id: createdByAccount ? createdByAccount.artist_account_id : '',
+    created_by_type: createdByType || 'system',
+    claim_email: normalizeEmail_(claimEmail),
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+function claimArtistProfile_(profile, ownerAccount, email) {
+  if (!canClaimProfile_(profile, email)) {
+    throw new Error('This artist profile cannot be claimed with this email. Use the email your label listed or contact Radio Now.');
+  }
+
+  var sheet = getArtistProfileSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var found = findProfileById_(profile.profile_id);
+  if (!found) {
+    throw new Error('Artist profile not found.');
+  }
+
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+  sheet.getRange(found.rowIndex, headerMap.owner_account_id + 1).setValue(ownerAccount.artist_account_id);
+  sheet.getRange(found.rowIndex, headerMap.ownership_status + 1).setValue('claimed');
+  sheet.getRange(found.rowIndex, headerMap.updated_at + 1).setValue(now);
+
+  profile.owner_account_id = ownerAccount.artist_account_id;
+  profile.ownership_status = 'claimed';
+  profile.updated_at = now;
+  return profile;
+}
+
+function ensureArtistProfileForAccount_(account, email) {
+  var accountType = String(account.account_type || 'artist').toLowerCase();
+  if (accountType !== 'artist') {
+    return null;
+  }
+
+  var existing = findProfileByName_(account.artist_name);
+  if (existing) {
+    if (String(existing.profile.ownership_status).toLowerCase() === 'unclaimed') {
+      return claimArtistProfile_(existing.profile, account, email);
+    }
+    if (existing.profile.owner_account_id === account.artist_account_id) {
+      return existing.profile;
+    }
+    throw new Error('This artist profile is already claimed by another account.');
+  }
+
+  var profile = createArtistProfileRecord_(account.artist_name, account, 'artist', email);
+  var sheet = getArtistProfileSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var found = findProfileById_(profile.profile_id);
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+
+  sheet.getRange(found.rowIndex, headerMap.owner_account_id + 1).setValue(account.artist_account_id);
+  sheet.getRange(found.rowIndex, headerMap.ownership_status + 1).setValue('claimed');
+  sheet.getRange(found.rowIndex, headerMap.updated_at + 1).setValue(now);
+
+  profile.owner_account_id = account.artist_account_id;
+  profile.ownership_status = 'claimed';
+  profile.updated_at = now;
+  return profile;
+}
+
+function resolveProfileForAccount_(account) {
+  var accountType = String(account.account_type || 'artist').toLowerCase();
+  if (accountType !== 'artist') return null;
+
+  var byOwner = findProfileByOwnerAccountId_(account.artist_account_id);
+  if (byOwner) return byOwner.profile;
+
+  var byName = findProfileByName_(account.artist_name);
+  if (byName) return byName.profile;
+
+  return null;
+}
+
+function chartPeriodLabelWeek_(date) {
+  return Utilities.formatDate(date || new Date(), Session.getScriptTimeZone(), "yyyy-'W'ww");
+}
+
+function chartPeriodLabelMonth_(date) {
+  return Utilities.formatDate(date || new Date(), Session.getScriptTimeZone(), 'yyyy-MM');
+}
+
+function recordChartHistorySnapshot_(profileId, artistName, chartPeriod, periodLabel, entries) {
+  if (!profileId || !entries || !entries.length) return;
+
+  var sheet = getChartHistorySheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var existing = {};
+
+  for (var i = 1; i < rows.length; i++) {
+    var row = rows[i];
+    function pick(key) {
+      var idx = headerMap[key];
+      if (idx === undefined) return '';
+      return String(row[idx] || '').trim();
+    }
+
+    if (pick('profile_id') !== profileId) continue;
+    if (pick('chart_period') !== chartPeriod) continue;
+    if (pick('period_label') !== periodLabel) continue;
+    existing[pick('song_id')] = i + 1;
+  }
+
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+
+  entries.forEach(function (entry, index) {
+    var rank = index + 1;
+    var songId = entry.songId;
+    if (!songId) return;
+
+    if (existing[songId]) {
+      var rowIndex = existing[songId];
+      sheet.getRange(rowIndex, headerMap.rank + 1).setValue(rank);
+      sheet.getRange(rowIndex, headerMap.download_count + 1).setValue(entry.count || 0);
+      sheet.getRange(rowIndex, headerMap.recorded_at + 1).setValue(now);
+      return;
+    }
+
+    sheet.appendRow([
+      'ch-' + Utilities.getUuid().slice(0, 8),
+      profileId,
+      artistName,
+      songId,
+      entry.songTitle || 'Untitled',
+      chartPeriod,
+      periodLabel,
+      rank,
+      entry.count || 0,
+      now,
+    ]);
+  });
+}
+
+function updateChartHistorySnapshots_(profileId, artistName) {
+  if (!profileId || !artistName) return;
+
+  var charts = computeArtistCharts_(artistName, 50);
+  var weekLabel = chartPeriodLabelWeek_();
+  var monthLabel = chartPeriodLabelMonth_();
+
+  recordChartHistorySnapshot_(profileId, artistName, 'week', weekLabel, charts.week || []);
+  recordChartHistorySnapshot_(profileId, artistName, 'month', monthLabel, charts.month || []);
+}
+
+function listChartHistorySummary_(profileId) {
+  var sheet = getChartHistorySheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var songs = {};
+
+  for (var i = 1; i < rows.length; i++) {
+    var row = rows[i];
+    function pick(key) {
+      var idx = headerMap[key];
+      if (idx === undefined) return '';
+      return String(row[idx] || '').trim();
+    }
+
+    if (pick('profile_id') !== profileId) continue;
+
+    var songId = pick('song_id');
+    if (!songId) continue;
+
+    var rank = parseInt(pick('rank'), 10);
+    if (isNaN(rank)) continue;
+
+    if (!songs[songId]) {
+      songs[songId] = {
+        songId: songId,
+        songTitle: pick('song_title') || 'Untitled',
+        bestWeekRank: null,
+        bestWeekPeriod: '',
+        bestMonthRank: null,
+        bestMonthPeriod: '',
+        hitTop10: false,
+        hitTop5: false,
+        hitTop1: false,
+      };
+    }
+
+    var item = songs[songId];
+    var chartPeriod = pick('chart_period');
+    var periodLabel = pick('period_label');
+
+    if (chartPeriod === 'week' && (item.bestWeekRank === null || rank < item.bestWeekRank)) {
+      item.bestWeekRank = rank;
+      item.bestWeekPeriod = periodLabel;
+    }
+    if (chartPeriod === 'month' && (item.bestMonthRank === null || rank < item.bestMonthRank)) {
+      item.bestMonthRank = rank;
+      item.bestMonthPeriod = periodLabel;
+    }
+    if (rank <= 10) item.hitTop10 = true;
+    if (rank <= 5) item.hitTop5 = true;
+    if (rank === 1) item.hitTop1 = true;
+  }
+
+  return Object.keys(songs)
+    .map(function (key) { return songs[key]; })
+    .sort(function (a, b) {
+      var aRank = Math.min(a.bestWeekRank || 999, a.bestMonthRank || 999);
+      var bRank = Math.min(b.bestWeekRank || 999, b.bestMonthRank || 999);
+      return aRank - bRank;
+    });
+}
+
+function artistProfileCreate_(token, payload) {
+  var found = requireArtistSession_(token);
+  var account = found.artist;
+  if (String(account.account_type || '').toLowerCase() !== 'label') {
+    throw new Error('Only label accounts can create artist profiles.');
+  }
+
+  var artistName = String(payload.artistName || '').trim();
+  var claimEmail = String(payload.claimEmail || '').trim();
+  var profile = createArtistProfileRecord_(artistName, account, 'label', claimEmail);
+  grantLabelAccess_(profile.profile_id, account, account.artist_account_id);
+
+  return {
+    success: true,
+    profile: publicProfile_(profile),
+  };
+}
+
+function labelAccessRevoke_(token, payload) {
+  var found = requireArtistSession_(token);
+  var account = found.artist;
+  if (String(account.account_type || '').toLowerCase() !== 'artist') {
+    throw new Error('Only artist accounts can remove label access.');
+  }
+
+  var profile = resolveProfileForAccount_(account);
+  if (!profile || profile.owner_account_id !== account.artist_account_id) {
+    throw new Error('You do not own this artist profile.');
+  }
+
+  var labelAccountId = String(payload.labelAccountId || '').trim();
+  if (!labelAccountId) {
+    throw new Error('Label account id is required.');
+  }
+
+  var sheet = getLabelAccessSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+  var updated = false;
+
+  for (var i = 1; i < rows.length; i++) {
+    var access = labelAccessRowToObject_(rows[i], headerMap);
+    if (access.profile_id !== profile.profile_id) continue;
+    if (access.label_account_id !== labelAccountId) continue;
+    if (String(access.status).toLowerCase() !== 'active') continue;
+
+    sheet.getRange(i + 1, headerMap.status + 1).setValue('revoked');
+    sheet.getRange(i + 1, headerMap.revoked_at + 1).setValue(now);
+    sheet.getRange(i + 1, headerMap.revoked_by_account_id + 1).setValue(account.artist_account_id);
+    updated = true;
+    break;
+  }
+
+  if (!updated) {
+    throw new Error('Active label access not found.');
+  }
+
+  return {
+    success: true,
+    profile: publicProfile_(profile),
+    labelAccess: listActiveLabelAccessForProfile_(profile.profile_id),
+  };
+}
+
+function requireProfileManageAccess_(account, artistName) {
+  var profileFound = findProfileByName_(artistName);
+  if (!profileFound) {
+    throw new Error('Create an artist profile for this name before submitting songs.');
+  }
+
+  var profile = profileFound.profile;
+  var accountType = String(account.account_type || '').toLowerCase();
+
+  if (accountType === 'artist') {
+    if (profile.owner_account_id === account.artist_account_id) {
+      return profile;
+    }
+    throw new Error('You do not have access to submit songs for this artist.');
+  }
+
+  if (accountType === 'label') {
+    if (hasActiveLabelAccess_(profile.profile_id, account.artist_account_id)) {
+      return profile;
+    }
+    throw new Error('Your label does not have access to this artist profile.');
+  }
+
+  throw new Error('This account cannot manage artist profiles.');
+}
+
 function publicArtist_(artist) {
+  var accountType = String(artist.account_type || 'artist').toLowerCase();
+  var profile = accountType === 'artist' ? resolveProfileForAccount_(artist) : null;
+
   return {
     id: artist.artist_account_id,
     artistName: artist.artist_name,
     email: artist.email,
     status: artist.status,
+    accountType: accountType,
+    profile: profile ? publicProfile_(profile) : null,
+    isProfileOwner: !!(profile && profile.owner_account_id === artist.artist_account_id),
   };
 }
 
@@ -1467,8 +2179,12 @@ function artistSignup_(payload) {
     throw new Error('An artist account already exists for this name. Contact Radio Now if you need access.');
   }
 
-  if (!artistNameExistsInCatalog_(artistName)) {
-    throw new Error('Artist name must match your catalog listing on Radio Now exactly (e.g. David Parmley).');
+  var profileFound = findProfileByName_(artistName);
+  var canSignup = artistNameExistsInCatalog_(artistName)
+    || (profileFound && canClaimProfile_(profileFound.profile, email));
+
+  if (!canSignup) {
+    throw new Error('Artist name must match your catalog listing on Radio Now, or use the email your label listed to claim a profile they created.');
   }
 
   var sheet = getArtistSheet_();
@@ -1484,6 +2200,7 @@ function artistSignup_(payload) {
     hashed.salt,
     'active',
     createdAt,
+    'artist',
   ]);
 
   var artist = {
@@ -1492,12 +2209,73 @@ function artistSignup_(payload) {
     email: email,
     status: 'active',
     created_at: createdAt,
+    account_type: 'artist',
   };
+
+  ensureArtistProfileForAccount_(artist, email);
 
   return {
     success: true,
     token: createArtistSessionToken_(artist),
     artist: publicArtist_(artist),
+  };
+}
+
+function labelSignup_(payload) {
+  var labelName = String(payload.labelName || '').trim();
+  var email = normalizeEmail_(payload.email);
+  var password = String(payload.password || '');
+
+  if (!labelName || !email || !password) {
+    throw new Error('Label name, email, and password are required.');
+  }
+
+  if (password.length < 8) {
+    throw new Error('Password must be at least 8 characters.');
+  }
+
+  if (findArtistByEmail_(email)) {
+    throw new Error('An account with this email already exists. Try signing in instead.');
+  }
+
+  var existingName = findArtistByName_(labelName);
+  if (existingName && String(existingName.artist.status).toLowerCase() === 'active') {
+    throw new Error('A label account already exists for this name. Contact Radio Now if you need access.');
+  }
+
+  if (!labelNameExistsInCatalog_(labelName)) {
+    throw new Error('Label name must match your catalog listing on Radio Now exactly (e.g. 615 Hideaway Records).');
+  }
+
+  var sheet = getArtistSheet_();
+  var hashed = hashPassword_(password);
+  var accountId = 'lbl-' + Utilities.getUuid().slice(0, 8);
+  var createdAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+
+  sheet.appendRow([
+    accountId,
+    labelName,
+    email,
+    hashed.hash,
+    hashed.salt,
+    'active',
+    createdAt,
+    'label',
+  ]);
+
+  var account = {
+    artist_account_id: accountId,
+    artist_name: labelName,
+    email: email,
+    status: 'active',
+    created_at: createdAt,
+    account_type: 'label',
+  };
+
+  return {
+    success: true,
+    token: createArtistSessionToken_(account),
+    artist: publicArtist_(account),
   };
 }
 
@@ -1549,6 +2327,178 @@ function artistActivate_(email, password) {
     success: true,
     token: createArtistSessionToken_(artist),
     artist: publicArtist_(artist),
+  };
+}
+
+function listLabelActivity_(labelName, limit) {
+  var allowed = artistNamesForLabel_(labelName);
+  if (!Object.keys(allowed).length) return [];
+
+  var sheet = getActivitySheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var items = [];
+
+  for (var i = rows.length - 1; i >= 1; i--) {
+    var row = rows[i];
+    function pick(key) {
+      var idx = headerMap[key];
+      if (idx === undefined) return '';
+      return String(row[idx] || '').trim();
+    }
+
+    if (!allowed[normalizeArtistName_(pick('artist_name'))]) continue;
+    if (!isDownloadEvent_(pick('event_type'))) continue;
+
+    var sharedEmail = shareEmailFlag_(pick('share_email'));
+    items.push({
+      id: pick('activity_id'),
+      timestamp: pick('timestamp'),
+      eventType: pick('event_type'),
+      songId: pick('song_id'),
+      songTitle: pick('song_title'),
+      artistName: pick('artist_name'),
+      musicStyle: pick('music_style'),
+      format: pick('format'),
+      djName: pick('dj_name') || djFullName_(pick('dj_first_name'), pick('dj_last_name'), ''),
+      djStation: pick('dj_station') || pick('dj_station_call'),
+      djShowName: pick('dj_show_name') || pick('dj_program_name'),
+      djEmail: sharedEmail ? pick('contact_email') : '',
+      djFirstName: pick('dj_first_name'),
+      djLastName: pick('dj_last_name'),
+      djProgramName: pick('dj_program_name') || pick('dj_show_name'),
+      djProgramFormat: pick('dj_program_format'),
+      djStationCall: pick('dj_station_call') || pick('dj_station'),
+      djStationFrequency: pick('dj_station_frequency'),
+      djState: pick('dj_state'),
+      djStationWebsite: pick('dj_station_website'),
+      djProgramWebsite: pick('dj_program_website'),
+      djProgramStart: pick('dj_program_start'),
+      djProgramEnd: pick('dj_program_end'),
+      djProgramTimezone: pick('dj_program_timezone'),
+      djProgramDays: pick('dj_program_days'),
+    });
+
+    if (items.length >= limit) break;
+  }
+
+  return items;
+}
+
+function computeLabelCharts_(labelName, limit) {
+  var activity = listLabelActivity_(labelName, 10000);
+  var now = Date.now();
+  var weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+  var monthAgo = now - (30 * 24 * 60 * 60 * 1000);
+  var weekCounts = {};
+  var monthCounts = {};
+
+  activity.forEach(function (item) {
+    var ts = Date.parse(item.timestamp);
+    if (isNaN(ts) || !item.songId) return;
+
+    var meta = {
+      songTitle: item.songTitle,
+      artistName: item.artistName,
+      musicStyle: item.musicStyle,
+    };
+
+    if (ts >= weekAgo) bumpChartCount_(weekCounts, item.songId, meta, ts);
+    if (ts >= monthAgo) bumpChartCount_(monthCounts, item.songId, meta, ts);
+  });
+
+  return {
+    week: sortChartEntries_(weekCounts, limit),
+    month: sortChartEntries_(monthCounts, limit),
+  };
+}
+
+function submitSong_(token, payload) {
+  var found = requireArtistSession_(token);
+  var account = found.artist;
+  var accountType = String(account.account_type || 'artist').toLowerCase();
+  var accountName = String(account.artist_name || '').trim();
+
+  var artistName = String(payload.artistName || '').trim();
+  var songTitle = String(payload.songTitle || '').trim();
+  var year = String(payload.year || '').trim();
+  var musicStyle = String(payload.musicStyle || '').trim();
+  var songwriter = String(payload.songwriter || '').trim();
+  var recordLabel = String(payload.recordLabel || '').trim();
+  var description = String(payload.description || '').trim();
+  var website = String(payload.website || '').trim();
+  var contactEmail = normalizeEmail_(payload.contactEmail);
+  var mp3Link = String(payload.mp3Link || '').trim();
+  var wavLink = String(payload.wavLink || '').trim();
+  var coverLink = String(payload.coverLink || '').trim();
+
+  if (!artistName || !songTitle) {
+    throw new Error('Artist name and song title are required.');
+  }
+
+  if (accountType === 'artist') {
+    if (normalizeArtistName_(artistName) !== normalizeArtistName_(accountName)) {
+      throw new Error('Artist name must match your account name.');
+    }
+    if (!recordLabel) {
+      var songs = listSongs_().songs || [];
+      for (var i = 0; i < songs.length; i++) {
+        if (normalizeArtistName_(songs[i].artistName) === normalizeArtistName_(accountName) && songs[i].recordLabel) {
+          recordLabel = String(songs[i].recordLabel).trim();
+          break;
+        }
+      }
+    }
+  } else if (accountType === 'label') {
+    if (!recordLabel) recordLabel = accountName;
+    if (normalizeArtistName_(recordLabel) !== normalizeArtistName_(accountName)) {
+      throw new Error('Record label must match your label account name.');
+    }
+  } else {
+    throw new Error('This account cannot submit songs.');
+  }
+
+  if (!mp3Link && !wavLink) {
+    throw new Error('Add at least one audio link (MP3 or WAV Google Drive link).');
+  }
+
+  var profile = requireProfileManageAccess_(account, artistName);
+
+  var sheet = getSongSubmissionSheet_();
+  var submissionId = 'sub-' + Utilities.getUuid().slice(0, 8);
+  var submittedAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+
+  sheet.appendRow([
+    submissionId,
+    account.artist_account_id,
+    accountType,
+    accountName,
+    artistName,
+    songTitle,
+    year,
+    musicStyle,
+    songwriter,
+    recordLabel,
+    description,
+    website,
+    contactEmail,
+    mp3Link,
+    wavLink,
+    coverLink,
+    'pending',
+    submittedAt,
+    profile.profile_id,
+  ]);
+
+  return {
+    success: true,
+    submission: {
+      id: submissionId,
+      artistName: artistName,
+      songTitle: songTitle,
+      status: 'pending',
+      submittedAt: submittedAt,
+    },
   };
 }
 
@@ -1637,16 +2587,57 @@ function computeArtistCharts_(artistName, limit) {
 
 function artistDashboard_(token) {
   var found = requireArtistSession_(token);
-  var artistName = found.artist.artist_name;
-  var activity = listArtistActivity_(artistName, 250);
-  var charts = computeArtistCharts_(artistName, 10);
+  var account = found.artist;
+  var accountType = String(account.account_type || 'artist').toLowerCase();
+  var accountName = account.artist_name;
+  var activity;
+  var charts;
+  var profile = null;
+  var chartHistory = [];
+  var labelAccess = [];
+  var managedProfiles = [];
+
+  if (accountType === 'label') {
+    activity = listLabelActivity_(accountName, 250);
+    charts = computeLabelCharts_(accountName, 10);
+    managedProfiles = listManagedProfilesForLabel_(account.artist_account_id);
+  } else {
+    activity = listArtistActivity_(accountName, 250);
+    charts = computeArtistCharts_(accountName, 10);
+    profile = resolveProfileForAccount_(account);
+    if (!profile) {
+      var byName = findProfileByName_(accountName);
+      if (byName && String(byName.profile.ownership_status).toLowerCase() === 'unclaimed') {
+        try {
+          profile = claimArtistProfile_(byName.profile, account, account.email);
+        } catch (claimErr) {
+          profile = null;
+        }
+      } else if (artistNameExistsInCatalog_(accountName)) {
+        try {
+          profile = ensureArtistProfileForAccount_(account, account.email);
+        } catch (ensureErr) {
+          profile = null;
+        }
+      }
+    }
+    if (profile) {
+      updateChartHistorySnapshots_(profile.profile_id, profile.artist_name);
+      chartHistory = listChartHistorySummary_(profile.profile_id);
+      labelAccess = listActiveLabelAccessForProfile_(profile.profile_id);
+    }
+  }
 
   return {
     success: true,
-    artist: publicArtist_(found.artist),
+    artist: publicArtist_(account),
     stats: computeDjStats_(activity),
     activity: activity,
     charts: charts,
+    profile: profile ? publicProfile_(profile) : null,
+    chartHistory: chartHistory,
+    labelAccess: labelAccess,
+    managedProfiles: managedProfiles,
   };
 }
 
@@ -1681,6 +2672,21 @@ function doGet(e) {
 
     if (action === 'demo_artist_dashboard') {
       return jsonResponse_(demoArtistDashboard_());
+    }
+
+    if (action === 'version') {
+      return jsonResponse_({
+        success: true,
+        version: RADIO_NOW_SCRIPT_VERSION,
+        features: [
+          'label_signup',
+          'artist_signup',
+          'artist_profile_create',
+          'label_access_revoke',
+          'song_submit',
+          'artist_dashboard',
+        ],
+      });
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });
@@ -1740,12 +2746,28 @@ function doPost(e) {
       return jsonResponse_(artistSignup_(body));
     }
 
+    if (action === 'label_signup') {
+      return jsonResponse_(labelSignup_(body));
+    }
+
     if (action === 'artist_activate') {
       return jsonResponse_(artistActivate_(body.email, body.password));
     }
 
     if (action === 'artist_dashboard') {
       return jsonResponse_(artistDashboard_(body.token));
+    }
+
+    if (action === 'song_submit') {
+      return jsonResponse_(submitSong_(body.token, body));
+    }
+
+    if (action === 'artist_profile_create') {
+      return jsonResponse_(artistProfileCreate_(body.token, body));
+    }
+
+    if (action === 'label_access_revoke') {
+      return jsonResponse_(labelAccessRevoke_(body.token, body));
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });

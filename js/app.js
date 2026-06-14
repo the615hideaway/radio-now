@@ -35,6 +35,7 @@
   let queuePlayIndex = -1;
   let expandedDetailId = null;
   let currentPreviewId = null;
+  let catalogVisibleCount = CONFIG.catalogPageSize || 40;
 
   function isAuthenticated() {
     return DjAuth.isAuthenticated();
@@ -203,6 +204,7 @@
       hideDetailPanel();
     }
 
+    catalogVisibleCount = CONFIG.catalogPageSize || 40;
     renderCatalog();
     updateStats();
   }
@@ -369,6 +371,7 @@
 
     return `
       <article class="catalog-row ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+        <div class="catalog-row-cover" aria-hidden="true">${renderCover(song)}</div>
         <div class="catalog-row-main">
           <p class="catalog-row-line">
             <span class="catalog-row-artist">${Utils.escapeHtml(song.artistName || 'Unknown Artist')}</span>
@@ -448,11 +451,29 @@
     }
 
     if (catalogSongs.length) {
+      const pageSize = CONFIG.catalogPageSize || 40;
+      const visibleSongs = catalogSongs.slice(0, catalogVisibleCount);
+      const hiddenCount = catalogSongs.length - visibleSongs.length;
+      const loadMoreHtml = hiddenCount > 0
+        ? `<div class="catalog-load-more">
+            <button type="button" class="btn btn-secondary" id="catalog-load-more-btn">
+              Show ${Math.min(pageSize, hiddenCount)} more (${hiddenCount} remaining)
+            </button>
+          </div>`
+        : '';
+
       catalogGrid.innerHTML = `
         ${spotlightSongs.length ? '<div class="catalog-list-header"><h2>All Tracks</h2></div>' : ''}
         <div class="catalog-list-inner">
-          ${catalogSongs.map((song) => renderCatalogRow(song)).join('')}
-        </div>`;
+          ${visibleSongs.map((song) => renderCatalogRow(song)).join('')}
+        </div>
+        ${loadMoreHtml}`;
+
+      const loadMoreBtn = catalogGrid.querySelector('#catalog-load-more-btn');
+      loadMoreBtn?.addEventListener('click', () => {
+        catalogVisibleCount += pageSize;
+        renderCatalog();
+      });
     } else {
       catalogGrid.innerHTML = '';
     }

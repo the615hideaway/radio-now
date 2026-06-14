@@ -3,8 +3,10 @@ const ArtistAuthUI = {
     const gate = document.getElementById('login-gate');
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
+    const labelSignupForm = document.getElementById('label-signup-form');
     const loginError = document.getElementById('login-error');
     const signupError = document.getElementById('signup-error');
+    const labelSignupError = document.getElementById('label-signup-error');
     const tabs = gate ? gate.querySelectorAll('[data-auth-tab]') : [];
     const panels = gate ? gate.querySelectorAll('[data-auth-panel]') : [];
     const onAuthenticated = options.onAuthenticated || (() => {});
@@ -18,6 +20,7 @@ const ArtistAuthUI = {
     const clearErrors = () => {
       loginError?.classList.remove('show');
       signupError?.classList.remove('show');
+      labelSignupError?.classList.remove('show');
     };
 
     const switchTab = (tabName) => {
@@ -33,6 +36,11 @@ const ArtistAuthUI = {
     tabs.forEach((tab) => {
       tab.addEventListener('click', () => switchTab(tab.dataset.authTab));
     });
+
+    const hashTab = String(window.location.hash || '').replace('#', '').trim();
+    if (hashTab && gate?.querySelector(`[data-auth-tab="${hashTab}"]`)) {
+      switchTab(hashTab);
+    }
 
     loginForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -53,6 +61,40 @@ const ArtistAuthUI = {
         onAuthenticated();
       } catch (err) {
         showError(loginError, err.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+      }
+    });
+
+    labelSignupForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      clearErrors();
+
+      const password = document.getElementById('label-signup-password')?.value || '';
+      const confirm = document.getElementById('label-signup-password-confirm')?.value || '';
+      const submitBtn = labelSignupForm.querySelector('button[type="submit"]');
+
+      if (password !== confirm) {
+        showError(labelSignupError, 'Passwords do not match.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      const originalHtml = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating account…';
+
+      try {
+        await ArtistAuth.signupLabel({
+          labelName: document.getElementById('signup-label-name')?.value || '',
+          email: document.getElementById('label-signup-email')?.value || '',
+          password,
+        });
+        labelSignupForm.reset();
+        ArtistAuthUI.updateWelcome();
+        onAuthenticated();
+      } catch (err) {
+        showError(labelSignupError, err.message);
       } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalHtml;
@@ -107,7 +149,8 @@ const ArtistAuthUI = {
       return;
     }
 
-    welcome.textContent = artist.artistName || artist.email;
+    const prefix = String(artist.accountType || '').toLowerCase() === 'label' ? 'Label: ' : '';
+    welcome.textContent = prefix + (artist.artistName || artist.email);
     welcome.classList.remove('hidden');
   },
 

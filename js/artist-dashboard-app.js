@@ -12,6 +12,8 @@
   const artistPromoSetupNotice = document.getElementById('artist-promo-setup-notice');
 
   let mySongs = [];
+  let managedProfiles = [];
+  let dashboardData = null;
 
   function normalizeArtistName(name) {
     return String(name || '').trim().toLowerCase();
@@ -21,6 +23,20 @@
     const target = normalizeArtistName(artistName);
     if (!target) return [];
     return songs.filter((song) => normalizeArtistName(song.artistName) === target);
+  }
+
+  function songsForLabel(labelName, songs) {
+    const target = normalizeArtistName(labelName);
+    if (!target) return [];
+    return songs.filter((song) => normalizeArtistName(song.recordLabel) === target);
+  }
+
+  function songsForAccount(account, songs) {
+    if (!account) return [];
+    if (String(account.accountType || '').toLowerCase() === 'label') {
+      return songsForLabel(account.artistName, songs);
+    }
+    return songsForArtist(account.artistName, songs);
   }
 
   function renderCover(song) {
@@ -38,13 +54,26 @@
 
   function setArtistHeader(artistName, options = {}) {
     const name = String(artistName || '').trim();
+    const isLabel = options.isLabel;
+
     if (artistDisplayName) {
-      artistDisplayName.textContent = name || 'Your artist dashboard';
+      if (isLabel) {
+        artistDisplayName.textContent = name ? `${name} label dashboard` : 'Your label dashboard';
+      } else {
+        artistDisplayName.textContent = name || 'Your artist dashboard';
+      }
     }
 
     if (dashboardSubtitle) {
       if (options.demo) {
         dashboardSubtitle.textContent = 'Read-only preview of a real artist dashboard. Create your account to track your own downloads and share promo folders.';
+        return;
+      }
+
+      if (isLabel) {
+        dashboardSubtitle.textContent = name
+          ? `${name} — submit new releases, download promo folders, and track DJ activity for your roster.`
+          : 'Submit new releases, download promo folders, and track DJ activity for your roster.';
         return;
       }
 
@@ -188,7 +217,292 @@
     }
   }
 
-  async function loadPromoFolders(artistName) {
+  function formatChartRank(rank) {
+    if (!rank || rank < 1) return '—';
+    return `#${rank}`;
+  }
+
+  function renderChartHistory(items) {
+    const panel = document.getElementById('chart-history-panel');
+    const content = document.getElementById('chart-history-content');
+    if (!panel || !content) return;
+
+    if (!items?.length) {
+      panel.classList.add('hidden');
+      return;
+    }
+
+    panel.classList.remove('hidden');
+    content.innerHTML = `
+      <div class="chart-history-table-wrap">
+        <table class="chart-history-table">
+          <thead>
+            <tr>
+              <th>Song</th>
+              <th>Best week</th>
+              <th>Best month</th>
+              <th>Milestones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map((item) => {
+              const milestones = [];
+              if (item.hitTop1) milestones.push('<span class="chart-milestone chart-milestone--1">#1</span>');
+              if (item.hitTop5) milestones.push('<span class="chart-milestone chart-milestone--5">Top 5</span>');
+              if (item.hitTop10) milestones.push('<span class="chart-milestone chart-milestone--10">Top 10</span>');
+              return `
+              <tr>
+                <td><strong>${Utils.escapeHtml(item.songTitle || 'Untitled')}</strong></td>
+                <td>${formatChartRank(item.bestWeekRank)}${item.bestWeekPeriod ? ` <span class="muted">${Utils.escapeHtml(item.bestWeekPeriod)}</span>` : ''}</td>
+                <td>${formatChartRank(item.bestMonthRank)}${item.bestMonthPeriod ? ` <span class="muted">${Utils.escapeHtml(item.bestMonthPeriod)}</span>` : ''}</td>
+                <td class="chart-milestones">${milestones.join(' ') || '<span class="muted">—</span>'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  function renderLabelAccess(items, onRevoke) {
+    const panel = document.getElementById('label-access-panel');
+    const list = document.getElementById('label-access-list');
+    if (!panel || !list) return;
+
+    if (!items?.length) {
+      panel.classList.add('hidden');
+      return;
+    }
+
+    panel.classList.remove('hidden');
+    list.innerHTML = `
+      <div class="label-access-list">
+        ${items.map((item) => `
+          <article class="label-access-item">
+            <div>
+              <strong>${Utils.escapeHtml(item.labelName || 'Label')}</strong>
+              <p class="muted">Access since ${Utils.escapeHtml(ArtistActivity.formatTimestamp(item.grantedAt))}</p>
+            </div>
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm revoke-label-btn"
+              data-label-id="${Utils.escapeHtml(item.labelAccountId)}"
+            >
+              Remove access
+            </button>
+          </article>`).join('')}
+      </div>`;
+
+    list.querySelectorAll('.revoke-label-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`Remove ${btn.closest('.label-access-item')?.querySelector('strong')?.textContent || 'this label'}? They will lose access to submit songs and view your dashboard data.`)) {
+          return;
+        }
+        btn.disabled = true;
+        try {
+          await onRevoke(btn.dataset.labelId);
+        } catch (err) {
+          alert(err.message || 'Could not remove label access.');
+          btn.disabled = false;
+        }
+      });
+    });
+  }
+
+  function renderLabelRoster(items) {
+    const panel = document.getElementById('label-roster-panel');
+    const list = document.getElementById('label-roster-list');
+    if (!panel || !list) return;
+
+    panel.classList.remove('hidden');
+
+    if (!items?.length) {
+      list.innerHTML = `
+        <div class="empty-state dj-empty-state">
+          <i class="fa-solid fa-users"></i>
+          <p>No artist profiles yet. Create one below — artists can claim it later and keep their chart history.</p>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = `
+      <div class="label-roster-list">
+        ${items.map((entry) => {
+          const profile = entry.profile || {};
+          const status = profile.ownershipStatus === 'claimed' ? 'Claimed by artist' : 'Unclaimed — artist can claim';
+          return `
+          <article class="label-roster-item">
+            <div>
+              <strong>${Utils.escapeHtml(profile.artistName || 'Artist')}</strong>
+              <p class="muted">${Utils.escapeHtml(status)}</p>
+            </div>
+          </article>`;
+        }).join('')}
+      </div>`;
+  }
+
+  function updateSubmitArtistOptions() {
+    const datalist = document.getElementById('submit-artist-options');
+    if (!datalist) return;
+
+    const names = managedProfiles
+      .map((entry) => entry.profile?.artistName)
+      .filter(Boolean);
+
+    datalist.innerHTML = names
+      .map((name) => `<option value="${Utils.escapeHtml(name)}"></option>`)
+      .join('');
+  }
+
+  async function handleRevokeLabelAccess(labelAccountId) {
+    const result = await ArtistAuth.revokeLabelAccess(labelAccountId);
+    renderLabelAccess(result.labelAccess || [], handleRevokeLabelAccess);
+  }
+
+  function bindCreateProfileForm() {
+    const form = document.getElementById('create-profile-form');
+    if (!form || form.dataset.bound === 'true') return;
+    form.dataset.bound = 'true';
+
+    const errorEl = document.getElementById('create-profile-error');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorEl?.classList.remove('show');
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      const originalHtml = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating…';
+
+      try {
+        await ArtistAuth.createArtistProfile({
+          artistName: document.getElementById('create-profile-artist-name')?.value || '',
+          claimEmail: document.getElementById('create-profile-claim-email')?.value || '',
+        });
+        form.reset();
+        await loadDashboard();
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent = err.message;
+          errorEl.classList.add('show');
+        }
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+      }
+    });
+  }
+
+  function configureSongSubmitForm(account) {
+    const panel = document.getElementById('song-submit-panel');
+    const form = document.getElementById('song-submit-form');
+    if (!panel || !form || isDemoMode || !account) {
+      panel?.classList.add('hidden');
+      return;
+    }
+
+    panel.classList.remove('hidden');
+
+    const isLabel = String(account.accountType || '').toLowerCase() === 'label';
+    const artistInput = document.getElementById('submit-artist-name');
+    const labelInput = document.getElementById('submit-record-label');
+    const labelField = document.getElementById('submit-label-field');
+    const contactInput = document.getElementById('submit-contact-email');
+
+    updateSubmitArtistOptions();
+
+    if (artistInput) {
+      if (isLabel) {
+        artistInput.readOnly = false;
+        artistInput.value = managedProfiles.length === 1 ? (managedProfiles[0].profile?.artistName || '') : '';
+        artistInput.placeholder = 'Pick a roster artist or type name';
+      } else {
+        artistInput.readOnly = true;
+        artistInput.value = account.artistName || '';
+      }
+    }
+
+    if (labelField && labelInput) {
+      if (isLabel) {
+        labelField.classList.remove('hidden');
+        labelInput.readOnly = true;
+        labelInput.value = account.artistName || '';
+      } else {
+        labelField.classList.add('hidden');
+        labelInput.value = '';
+      }
+    }
+
+    if (contactInput && !contactInput.value && account.email) {
+      contactInput.value = account.email;
+    }
+  }
+
+  function bindSongSubmitForm() {
+    const form = document.getElementById('song-submit-form');
+    if (!form || form.dataset.bound === 'true') return;
+    form.dataset.bound = 'true';
+
+    const errorEl = document.getElementById('song-submit-error');
+    const successEl = document.getElementById('song-submit-success');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      errorEl?.classList.remove('show');
+      successEl?.classList.add('hidden');
+
+      const mp3 = document.getElementById('submit-mp3-link')?.value || '';
+      const wav = document.getElementById('submit-wav-link')?.value || '';
+      if (!mp3 && !wav) {
+        if (errorEl) {
+          errorEl.textContent = 'Add at least one audio link (MP3 or WAV Google Drive link).';
+          errorEl.classList.add('show');
+        }
+        return;
+      }
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      const originalHtml = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting…';
+
+      try {
+        const result = await ArtistAuth.submitSong({
+          artistName: document.getElementById('submit-artist-name')?.value || '',
+          songTitle: document.getElementById('submit-song-title')?.value || '',
+          year: document.getElementById('submit-year')?.value || '',
+          musicStyle: document.getElementById('submit-music-style')?.value || '',
+          songwriter: document.getElementById('submit-songwriter')?.value || '',
+          recordLabel: document.getElementById('submit-record-label')?.value || '',
+          description: document.getElementById('submit-description')?.value || '',
+          website: document.getElementById('submit-website')?.value || '',
+          contactEmail: document.getElementById('submit-contact-email')?.value || '',
+          mp3Link: mp3,
+          wavLink: wav,
+          coverLink: document.getElementById('submit-cover-link')?.value || '',
+        });
+
+        form.reset();
+        configureSongSubmitForm(ArtistAuth.getArtist());
+
+        if (successEl) {
+          const submission = result.submission || {};
+          successEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>${Utils.escapeHtml(submission.songTitle || 'Song')}</strong> submitted — Radio Now will review and add it to the catalog.`;
+          successEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        if (errorEl) {
+          errorEl.textContent = err.message;
+          errorEl.classList.add('show');
+        }
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+      }
+    });
+  }
+
+  async function loadPromoFolders(artistName, account) {
     if (!artistPromoContent) return;
 
     artistPromoContent.innerHTML = `
@@ -199,7 +513,9 @@
 
     try {
       const allSongs = await RadioDB.getAllSongs();
-      mySongs = songsForArtist(artistName, allSongs);
+      mySongs = account
+        ? songsForAccount(account, allSongs)
+        : songsForArtist(artistName, allSongs);
       renderPromoFolders(artistName);
     } catch (err) {
       artistPromoContent.innerHTML = `
@@ -252,7 +568,7 @@
       dashboardHistory.innerHTML = `
         <div class="empty-state dj-empty-state">
           <i class="fa-solid fa-tower-broadcast"></i>
-          <p>No DJ downloads logged yet on Radio Now. Share your turn-key ZIP folders above with programmers — activity shows up when DJs download from the catalog.</p>
+          <p>No spins logged yet on Radio Now. Share your turn-key ZIP folders above with programmers — spins show up when DJs download from the catalog.</p>
         </div>`;
       return;
     }
@@ -287,8 +603,11 @@
   async function loadDashboard() {
     const artist = isDemoMode ? null : ArtistAuth.getArtist();
     const artistName = artist?.artistName || '';
+    const isLabel = String(artist?.accountType || '').toLowerCase() === 'label';
 
-    setArtistHeader(artistName, { demo: isDemoMode });
+    setArtistHeader(artistName, { demo: isDemoMode, isLabel });
+    configureSongSubmitForm(artist);
+    bindSongSubmitForm();
 
     dashboardStats.innerHTML = `
       <div class="dj-stat-card">
@@ -301,28 +620,42 @@
         <p>Loading your dashboard…</p>
       </div>`;
 
-    if (artistName) loadPromoFolders(artistName);
+    if (artistName) loadPromoFolders(artistName, artist);
 
     try {
       const data = isDemoMode
         ? await ArtistActivity.fetchDemoDashboard()
         : await ArtistActivity.fetchDashboard();
 
-      const resolvedName = data.artist?.artistName || artistName;
+      const resolvedAccount = data.artist || artist;
+      const resolvedName = resolvedAccount?.artistName || artistName;
+      const resolvedIsLabel = String(resolvedAccount?.accountType || '').toLowerCase() === 'label';
       if (resolvedName) {
-        setArtistHeader(resolvedName, { demo: isDemoMode });
+        setArtistHeader(resolvedName, { demo: isDemoMode, isLabel: resolvedIsLabel });
         if (!isDemoMode) {
-          ArtistAuth.updateArtistProfile(data.artist);
+          ArtistAuth.updateArtistProfile(resolvedAccount);
           ArtistAuthUI.updateWelcome();
-      SiteNav.init('artistDashboard');
+          configureSongSubmitForm(ArtistAuth.getArtist());
+          SiteNav.init('artistDashboard');
         }
         if (!mySongs.length || normalizeArtistName(resolvedName) !== normalizeArtistName(artistName)) {
-          loadPromoFolders(resolvedName);
+          loadPromoFolders(resolvedName, resolvedAccount);
         }
       }
 
+      dashboardData = data;
+      managedProfiles = data.managedProfiles || [];
+
       renderStats(data.stats || {});
       renderHistory(data.activity || []);
+      renderChartHistory(data.chartHistory || []);
+      renderLabelAccess(data.labelAccess || [], handleRevokeLabelAccess);
+
+      if (resolvedIsLabel) {
+        renderLabelRoster(managedProfiles);
+        bindCreateProfileForm();
+        configureSongSubmitForm(ArtistAuth.getArtist());
+      }
 
       const charts = data.charts || {};
       Charts.renderList(

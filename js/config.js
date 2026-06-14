@@ -24,6 +24,8 @@ const CONFIG = {
   queueKey: 'radio_now_queue',
   downloadQueueKey: 'radio_now_download_queue',
 
+  catalogPageSize: 40,
+
   spotlight: {
     houseArtist: 'David Parmley',
     labelName: '615 Hideaway Records',

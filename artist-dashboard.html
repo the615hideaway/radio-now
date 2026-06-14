@@ -18,7 +18,7 @@
     <div id="turnkey-pitch-login" class="turnkey-pitch-login-wrap" data-page="artist"></div>
 
     <div class="login-auth-column">
-      <nav class="account-role-picker" aria-label="Choose account type">
+      <nav class="account-role-picker account-role-picker--triple" aria-label="Choose account type">
         <a href="index.html" class="account-role-card">
           <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
           <span class="account-role-title">DJ Account</span>
@@ -27,7 +27,12 @@
         <a href="artist-dashboard.html" class="account-role-card is-active" aria-current="page">
           <i class="fa-solid fa-microphone" aria-hidden="true"></i>
           <span class="account-role-title">Artist Account</span>
-          <span class="account-role-desc">Promo ZIPs &amp; radio stats</span>
+          <span class="account-role-desc">Promo ZIPs &amp; spins</span>
+        </a>
+        <a href="artist-dashboard.html#label-signup" class="account-role-card account-role-card--label">
+          <i class="fa-solid fa-building" aria-hidden="true"></i>
+          <span class="account-role-title">Label Account</span>
+          <span class="account-role-desc">Roster, submit songs</span>
         </a>
       </nav>
 
@@ -39,11 +44,12 @@
             <p>(615) Hideaway Entertainment</p>
           </div>
         </div>
-        <p class="login-account-badge login-account-badge--artist"><i class="fa-solid fa-microphone"></i> Artist sign in</p>
+        <p class="login-account-badge login-account-badge--artist"><i class="fa-solid fa-microphone"></i> Artist &amp; label sign in</p>
 
-        <div class="auth-tabs" role="tablist" aria-label="Artist account">
-        <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">Artist Sign In</button>
+        <div class="auth-tabs auth-tabs--triple" role="tablist" aria-label="Artist and label accounts">
+        <button type="button" class="auth-tab active" data-auth-tab="login" role="tab" aria-selected="true">Sign In</button>
         <button type="button" class="auth-tab" data-auth-tab="signup" role="tab" aria-selected="false">Artist Sign Up</button>
+        <button type="button" class="auth-tab" data-auth-tab="label-signup" role="tab" aria-selected="false">Label Sign Up</button>
       </div>
 
       <form id="login-form" class="auth-panel" data-auth-panel="login">
@@ -60,7 +66,7 @@
 
       <form id="signup-form" class="auth-panel hidden" data-auth-panel="signup">
         <div class="login-error" id="signup-error"></div>
-        <p class="auth-panel-note">Use the <strong>Artist Name</strong> exactly as it appears on Radio Now (e.g. David Parmley).</p>
+        <p class="auth-panel-note">Use the <strong>Artist Name</strong> exactly as it appears on Radio Now, or the email your label listed to <strong>claim</strong> a profile they created.</p>
         <label for="signup-artist-name">Artist Name</label>
         <input type="text" id="signup-artist-name" placeholder="As listed on Radio Now" autocomplete="organization" required>
         <label for="signup-email">Email</label>
@@ -72,6 +78,23 @@
         <button type="submit" class="btn btn-primary btn-full">
           <i class="fa-solid fa-user-plus"></i>
           Create Artist Account
+        </button>
+      </form>
+
+      <form id="label-signup-form" class="auth-panel hidden" data-auth-panel="label-signup">
+        <div class="login-error" id="label-signup-error"></div>
+        <p class="auth-panel-note">Use the <strong>Label Name</strong> exactly as it appears on Radio Now (e.g. 615 Hideaway Records).</p>
+        <label for="signup-label-name">Label Name</label>
+        <input type="text" id="signup-label-name" placeholder="As listed on Radio Now" autocomplete="organization" required>
+        <label for="label-signup-email">Email</label>
+        <input type="email" id="label-signup-email" placeholder="you@label.com" autocomplete="email" required>
+        <label for="label-signup-password">Password</label>
+        <input type="password" id="label-signup-password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required>
+        <label for="label-signup-password-confirm">Confirm password</label>
+        <input type="password" id="label-signup-password-confirm" placeholder="Re-enter password" autocomplete="new-password" minlength="8" required>
+        <button type="submit" class="btn btn-primary btn-full">
+          <i class="fa-solid fa-building"></i>
+          Create Label Account
         </button>
       </form>
       </div>
@@ -140,6 +163,111 @@
         </div>
       </section>
 
+      <section class="dj-panel artist-roster-panel hidden" id="label-roster-panel" aria-live="polite">
+        <div class="dj-panel-header">
+          <h2><i class="fa-solid fa-users"></i> Artist Roster</h2>
+        </div>
+        <p class="dj-panel-note">Create artist profiles for your roster. Artists can claim their profile later and keep chart history if they switch labels.</p>
+        <div id="label-roster-list"></div>
+        <form id="create-profile-form" class="create-profile-form">
+          <div class="login-error" id="create-profile-error"></div>
+          <div class="form-grid form-grid--two">
+            <div>
+              <label for="create-profile-artist-name">Artist Name</label>
+              <input type="text" id="create-profile-artist-name" placeholder="As it will appear on Radio Now" required>
+            </div>
+            <div>
+              <label for="create-profile-claim-email">Artist email <span class="label-optional">(for claim)</span></label>
+              <input type="email" id="create-profile-claim-email" placeholder="artist@email.com">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-secondary">
+            <i class="fa-solid fa-user-plus"></i>
+            Create Artist Profile
+          </button>
+        </form>
+      </section>
+
+      <section class="dj-panel artist-access-panel hidden" id="label-access-panel" aria-live="polite">
+        <div class="dj-panel-header">
+          <h2><i class="fa-solid fa-building"></i> Label Access</h2>
+        </div>
+        <p class="dj-panel-note">Labels you allow can submit songs and view spins. Remove access anytime — your chart history stays with you.</p>
+        <div id="label-access-list"></div>
+      </section>
+
+      <section class="dj-panel artist-chart-history-panel hidden" id="chart-history-panel" aria-live="polite">
+        <div class="dj-panel-header">
+          <h2><i class="fa-solid fa-trophy"></i> Chart Career History</h2>
+        </div>
+        <p class="dj-panel-note">Best Radio Now chart positions for your songs — use when building your next radio pitch sheet.</p>
+        <div id="chart-history-content"></div>
+      </section>
+
+      <section class="dj-panel artist-submit-panel hidden" id="song-submit-panel" aria-live="polite">
+        <div class="dj-panel-header">
+          <h2><i class="fa-solid fa-cloud-arrow-up"></i> Submit a New Song</h2>
+        </div>
+        <p class="dj-panel-note">Send your track details and Google Drive links. Radio Now reviews submissions and adds approved songs to the catalog.</p>
+        <form id="song-submit-form" class="song-submit-form">
+          <div class="login-error" id="song-submit-error"></div>
+          <div class="song-submit-success hidden" id="song-submit-success"></div>
+          <div class="form-grid form-grid--two">
+            <div>
+              <label for="submit-artist-name">Artist Name</label>
+              <input type="text" id="submit-artist-name" list="submit-artist-options" placeholder="Artist as listed on Radio Now" required>
+              <datalist id="submit-artist-options"></datalist>
+            </div>
+            <div>
+              <label for="submit-song-title">Song Title</label>
+              <input type="text" id="submit-song-title" placeholder="Song title" required>
+            </div>
+            <div>
+              <label for="submit-year">Year</label>
+              <input type="text" id="submit-year" placeholder="2026" inputmode="numeric">
+            </div>
+            <div>
+              <label for="submit-music-style">Music Style</label>
+              <input type="text" id="submit-music-style" placeholder="Bluegrass, Americana…">
+            </div>
+            <div>
+              <label for="submit-songwriter">Songwriter</label>
+              <input type="text" id="submit-songwriter" placeholder="Writer names">
+            </div>
+            <div id="submit-label-field">
+              <label for="submit-record-label">Record Label</label>
+              <input type="text" id="submit-record-label" placeholder="Label name">
+            </div>
+          </div>
+          <label for="submit-description">Description / Press blurb</label>
+          <textarea id="submit-description" rows="3" placeholder="One paragraph about the release"></textarea>
+          <div class="form-grid form-grid--two">
+            <div>
+              <label for="submit-mp3-link">MP3 Google Drive link</label>
+              <input type="url" id="submit-mp3-link" placeholder="https://drive.google.com/...">
+            </div>
+            <div>
+              <label for="submit-wav-link">WAV Google Drive link</label>
+              <input type="url" id="submit-wav-link" placeholder="https://drive.google.com/...">
+            </div>
+            <div>
+              <label for="submit-cover-link">Cover art Google Drive link</label>
+              <input type="url" id="submit-cover-link" placeholder="https://drive.google.com/...">
+            </div>
+            <div>
+              <label for="submit-website">Website</label>
+              <input type="url" id="submit-website" placeholder="https://">
+            </div>
+          </div>
+          <label for="submit-contact-email">Contact email</label>
+          <input type="email" id="submit-contact-email" placeholder="promo@label.com">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-paper-plane"></i>
+            Submit for Review
+          </button>
+        </form>
+      </section>
+
       <section class="dj-panel artist-promo-panel" id="artist-promo-panel" aria-live="polite">
         <div class="dj-panel-header">
           <h2><i class="fa-solid fa-folder-open"></i> Your Promo Folders</h2>
@@ -157,10 +285,10 @@
       <section class="dj-dashboard-grid">
         <div class="dj-panel dj-panel--wide artist-panel--full">
           <div class="dj-panel-header">
-            <h2>Download Activity</h2>
-            <span class="dj-panel-meta" id="history-count"></span>
-          </div>
-          <p class="dj-panel-note">Each download shows the DJ&apos;s station and program details. Email appears only if they opt in to share it.</p>
+          <h2>Spins</h2>
+          <span class="dj-panel-meta" id="history-count"></span>
+        </div>
+        <p class="dj-panel-note">Each spin (DJ download) shows the station and program details. Email appears only if they opt in to share it.</p>
           <div id="dashboard-history"></div>
         </div>
       </section>
