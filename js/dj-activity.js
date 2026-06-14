@@ -52,10 +52,29 @@ const DjActivity = {
     return data;
   },
 
-  async updateShareEmail(shareEmail) {
-    const data = await DjAuth.authRequest('dj_profile_update', { shareEmail: !!shareEmail });
+  async updateProfile(fields) {
+    const data = await DjAuth.authRequest('dj_profile_update', {
+      firstName: String(fields.firstName || '').trim(),
+      lastName: String(fields.lastName || '').trim(),
+      programName: String(fields.programName || '').trim(),
+      programFormat: String(fields.programFormat || '').trim(),
+      stationCallLetters: String(fields.stationCallLetters || '').trim(),
+      stationFrequency: String(fields.stationFrequency || '').trim(),
+      state: String(fields.state || '').trim(),
+      stationWebsite: String(fields.stationWebsite || '').trim(),
+      programWebsite: String(fields.programWebsite || '').trim(),
+      programStartTime: String(fields.programStartTime || '').trim(),
+      programEndTime: String(fields.programEndTime || '').trim(),
+      programTimezone: String(fields.programTimezone || '').trim(),
+      programDays: String(fields.programDays || '').trim(),
+      shareEmail: !!fields.shareEmail,
+    });
     DjAuth.updateDjProfile(data.dj);
     return data.dj;
+  },
+
+  async updateShareEmail(shareEmail) {
+    return this.updateProfile({ shareEmail: !!shareEmail });
   },
 
   formatTimestamp(value) {

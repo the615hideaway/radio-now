@@ -18,7 +18,19 @@ const DjSignupForm = {
     'Other',
   ],
 
-  fieldsHtml() {
+  idPrefix(mode = 'signup') {
+    return mode === 'profile' ? 'profile' : 'signup';
+  },
+
+  fieldId(name, mode = 'signup') {
+    return `${this.idPrefix(mode)}-${name}`;
+  },
+
+  fieldsHtml(options = {}) {
+    const mode = options.mode || 'signup';
+    const p = (name) => this.fieldId(name, mode);
+    const isProfile = mode === 'profile';
+
     const formatOptions = this.formats.map((value) =>
       `<option value="${Utils.escapeHtml(value)}">${Utils.escapeHtml(value)}</option>`,
     ).join('');
@@ -27,20 +39,43 @@ const DjSignupForm = {
       `<option value="${Utils.escapeHtml(value)}">${Utils.escapeHtml(value)}</option>`,
     ).join('');
 
+    const note = isProfile
+      ? 'Artists see these details when they download your music. Your login email never appears here — only if you enable sharing below.'
+      : 'Artists see your station and program details when they download your music. Your email stays private unless you turn on sharing below.';
+
+    const accountSection = isProfile ? '' : `
+        <fieldset class="dj-signup-section">
+          <legend>Account</legend>
+          <div class="dj-signup-grid">
+            <div>
+              <label for="${p('email')}">Email</label>
+              <input type="email" id="${p('email')}" placeholder="you@station.com" autocomplete="email" required>
+            </div>
+            <div>
+              <label for="${p('password')}">Password</label>
+              <input type="password" id="${p('password')}" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required>
+            </div>
+            <label class="checkbox-field">
+              <input type="checkbox" id="${p('share-email')}">
+              <span>Share my email with artists when I download their music (so they can say thank you)</span>
+            </label>
+          </div>
+        </fieldset>`;
+
     return `
-      <div class="dj-signup-form">
-        <p class="auth-panel-note">Artists see your station and program details when they download your music. Your email stays private unless you turn on sharing below.</p>
+      <div class="dj-signup-form ${isProfile ? 'dj-signup-form--profile' : ''}">
+        <p class="auth-panel-note">${note}</p>
 
         <fieldset class="dj-signup-section">
           <legend>Your name</legend>
           <div class="dj-signup-grid dj-signup-grid--2">
             <div>
-              <label for="signup-first-name">First Name</label>
-              <input type="text" id="signup-first-name" placeholder="Sammy" autocomplete="given-name" required>
+              <label for="${p('first-name')}">First Name</label>
+              <input type="text" id="${p('first-name')}" placeholder="Sammy" autocomplete="given-name" required>
             </div>
             <div>
-              <label for="signup-last-name">Last Name</label>
-              <input type="text" id="signup-last-name" placeholder="Passamano" autocomplete="family-name" required>
+              <label for="${p('last-name')}">Last Name</label>
+              <input type="text" id="${p('last-name')}" placeholder="Passamano" autocomplete="family-name" required>
             </div>
           </div>
         </fieldset>
@@ -49,40 +84,40 @@ const DjSignupForm = {
           <legend>Program</legend>
           <div class="dj-signup-grid">
             <div>
-              <label for="signup-program-name">Program Name</label>
-              <input type="text" id="signup-program-name" placeholder="Radio Now" required>
+              <label for="${p('program-name')}">Program Name</label>
+              <input type="text" id="${p('program-name')}" placeholder="Radio Now" required>
             </div>
             <div>
-              <label for="signup-program-format">Program Format</label>
-              <select id="signup-program-format">
+              <label for="${p('program-format')}">Program Format</label>
+              <select id="${p('program-format')}">
                 <option value="">Select format</option>
                 ${formatOptions}
               </select>
             </div>
             <div>
-              <label for="signup-program-days">Day of Program</label>
-              <input type="text" id="signup-program-days" placeholder="Saturday, Sunday">
+              <label for="${p('program-days')}">Day of Program</label>
+              <input type="text" id="${p('program-days')}" placeholder="Saturday, Sunday">
             </div>
             <div class="dj-signup-grid dj-signup-grid--3">
               <div>
-                <label for="signup-program-start">Program Start Time</label>
-                <input type="time" id="signup-program-start">
+                <label for="${p('program-start')}">Program Start Time</label>
+                <input type="time" id="${p('program-start')}">
               </div>
               <div>
-                <label for="signup-program-end">Program End Time</label>
-                <input type="time" id="signup-program-end">
+                <label for="${p('program-end')}">Program End Time</label>
+                <input type="time" id="${p('program-end')}">
               </div>
               <div>
-                <label for="signup-program-timezone">Time Zone</label>
-                <select id="signup-program-timezone">
+                <label for="${p('program-timezone')}">Time Zone</label>
+                <select id="${p('program-timezone')}">
                   <option value="">Select time zone</option>
                   ${timezoneOptions}
                 </select>
               </div>
             </div>
             <div>
-              <label for="signup-program-website">Program Website / Page</label>
-              <input type="url" id="signup-program-website" placeholder="https://">
+              <label for="${p('program-website')}">Program Website / Page</label>
+              <input type="url" id="${p('program-website')}" placeholder="https://">
             </div>
           </div>
         </fieldset>
@@ -91,41 +126,24 @@ const DjSignupForm = {
           <legend>Station</legend>
           <div class="dj-signup-grid dj-signup-grid--2">
             <div>
-              <label for="signup-station-call">Station Call Letters</label>
-              <input type="text" id="signup-station-call" placeholder="WMTS" required>
+              <label for="${p('station-call')}">Station Call Letters</label>
+              <input type="text" id="${p('station-call')}" placeholder="WMTS" required>
             </div>
             <div>
-              <label for="signup-station-frequency">Radio Station Frequency</label>
-              <input type="text" id="signup-station-frequency" placeholder="88.3 FM">
+              <label for="${p('station-frequency')}">Radio Station Frequency</label>
+              <input type="text" id="${p('station-frequency')}" placeholder="88.3 FM">
             </div>
             <div>
-              <label for="signup-state">State</label>
-              <input type="text" id="signup-state" placeholder="TN" autocomplete="address-level1">
+              <label for="${p('state')}">State</label>
+              <input type="text" id="${p('state')}" placeholder="TN" autocomplete="address-level1">
             </div>
             <div>
-              <label for="signup-station-website">Station Website</label>
-              <input type="url" id="signup-station-website" placeholder="https://">
+              <label for="${p('station-website')}">Station Website</label>
+              <input type="url" id="${p('station-website')}" placeholder="https://">
             </div>
           </div>
         </fieldset>
-
-        <fieldset class="dj-signup-section">
-          <legend>Account</legend>
-          <div class="dj-signup-grid">
-            <div>
-              <label for="signup-email">Email</label>
-              <input type="email" id="signup-email" placeholder="you@station.com" autocomplete="email" required>
-            </div>
-            <div>
-              <label for="signup-password">Password</label>
-              <input type="password" id="signup-password" placeholder="At least 8 characters" autocomplete="new-password" minlength="8" required>
-            </div>
-            <label class="checkbox-field">
-              <input type="checkbox" id="signup-share-email">
-              <span>Share my email with artists when I download their music (so they can say thank you)</span>
-            </label>
-          </div>
-        </fieldset>
+        ${accountSection}
       </div>`;
   },
 
@@ -143,11 +161,18 @@ const DjSignupForm = {
 
     const fieldsHost = document.createElement('div');
     fieldsHost.id = 'dj-signup-fields';
-    fieldsHost.innerHTML = this.fieldsHtml();
+    fieldsHost.innerHTML = this.fieldsHtml({ mode: 'signup' });
     if (submitBtn) form.insertBefore(fieldsHost, submitBtn);
     else form.appendChild(fieldsHost);
 
     form.dataset.djSignupMounted = '1';
+  },
+
+  mountProfile(containerId = 'dj-profile-fields') {
+    const host = document.getElementById(containerId);
+    if (!host || host.dataset.djProfileMounted === '1') return;
+    host.innerHTML = this.fieldsHtml({ mode: 'profile' });
+    host.dataset.djProfileMounted = '1';
   },
 
   fieldValue(id) {
@@ -156,24 +181,76 @@ const DjSignupForm = {
     return String(el.value || '').trim();
   },
 
-  collect() {
+  collectFields(mode = 'signup') {
+    const p = (name) => this.fieldId(name, mode);
     return {
-      firstName: this.fieldValue('signup-first-name'),
-      lastName: this.fieldValue('signup-last-name'),
-      programName: this.fieldValue('signup-program-name'),
-      programFormat: this.fieldValue('signup-program-format'),
-      stationCallLetters: this.fieldValue('signup-station-call'),
-      stationFrequency: this.fieldValue('signup-station-frequency'),
-      state: this.fieldValue('signup-state'),
-      stationWebsite: this.fieldValue('signup-station-website'),
-      programWebsite: this.fieldValue('signup-program-website'),
-      programStartTime: this.fieldValue('signup-program-start'),
-      programEndTime: this.fieldValue('signup-program-end'),
-      programTimezone: this.fieldValue('signup-program-timezone'),
-      programDays: this.fieldValue('signup-program-days'),
-      email: this.fieldValue('signup-email'),
-      password: this.fieldValue('signup-password'),
-      shareEmail: !!document.getElementById('signup-share-email')?.checked,
+      firstName: this.fieldValue(p('first-name')),
+      lastName: this.fieldValue(p('last-name')),
+      programName: this.fieldValue(p('program-name')),
+      programFormat: this.fieldValue(p('program-format')),
+      stationCallLetters: this.fieldValue(p('station-call')),
+      stationFrequency: this.fieldValue(p('station-frequency')),
+      state: this.fieldValue(p('state')),
+      stationWebsite: this.fieldValue(p('station-website')),
+      programWebsite: this.fieldValue(p('program-website')),
+      programStartTime: this.fieldValue(p('program-start')),
+      programEndTime: this.fieldValue(p('program-end')),
+      programTimezone: this.fieldValue(p('program-timezone')),
+      programDays: this.fieldValue(p('program-days')),
     };
+  },
+
+  collect() {
+    const p = (name) => this.fieldId(name, 'signup');
+    return {
+      ...this.collectFields('signup'),
+      email: this.fieldValue(p('email')),
+      password: this.fieldValue(p('password')),
+      shareEmail: !!document.getElementById(p('share-email'))?.checked,
+    };
+  },
+
+  collectProfile() {
+    return {
+      ...this.collectFields('profile'),
+      shareEmail: !!document.getElementById('share-email-toggle')?.checked,
+    };
+  },
+
+  fillFromDj(dj) {
+    if (!dj) return;
+
+    let firstName = dj.firstName || '';
+    let lastName = dj.lastName || '';
+    if (!firstName && !lastName && dj.name) {
+      const parts = String(dj.name).trim().split(/\s+/);
+      firstName = parts[0] || '';
+      lastName = parts.slice(1).join(' ') || '';
+    }
+
+    const values = {
+      'profile-first-name': firstName,
+      'profile-last-name': lastName,
+      'profile-program-name': dj.programName || dj.showName || '',
+      'profile-program-format': dj.programFormat || '',
+      'profile-program-days': dj.programDays || '',
+      'profile-program-start': dj.programStartTime || '',
+      'profile-program-end': dj.programEndTime || '',
+      'profile-program-timezone': dj.programTimezone || '',
+      'profile-program-website': dj.programWebsite || '',
+      'profile-station-call': dj.stationCallLetters || dj.station || '',
+      'profile-station-frequency': dj.stationFrequency || '',
+      'profile-state': dj.state || '',
+      'profile-station-website': dj.stationWebsite || '',
+    };
+
+    Object.entries(values).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = value || '';
+    });
+
+    const shareToggle = document.getElementById('share-email-toggle');
+    if (shareToggle) shareToggle.checked = !!dj.shareEmail;
   },
 };

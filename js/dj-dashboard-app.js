@@ -3,13 +3,16 @@
   const loginGate = document.getElementById('login-gate');
   const appShell = document.getElementById('app-shell');
   const logoutBtn = document.getElementById('logout-btn');
-  const privacyPanel = document.getElementById('privacy-panel');
+  const profilePanel = document.getElementById('profile-panel');
+  const profileForm = document.getElementById('dj-profile-form');
   const dashboardTitle = document.getElementById('dashboard-title');
   const dashboardStats = document.getElementById('dashboard-stats');
   const dashboardHistory = document.getElementById('dashboard-history');
   const historyCount = document.getElementById('history-count');
   const shareEmailToggle = document.getElementById('share-email-toggle');
   const shareEmailStatus = document.getElementById('share-email-status');
+  const profileSaveStatus = document.getElementById('profile-save-status');
+  const saveProfileBtn = document.getElementById('save-profile-btn');
 
   function showApp() {
     loginGate.classList.add('hidden');
@@ -17,10 +20,11 @@
     if (isDemoMode) {
       Demo.applyMode();
       Demo.bindExit(logoutBtn);
-      if (privacyPanel) privacyPanel.classList.add('hidden');
+      if (profilePanel) profilePanel.classList.add('hidden');
     } else {
       DjAuthUI.updateWelcome();
       if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
+      if (typeof DjSignupForm !== 'undefined') DjSignupForm.mountProfile();
     }
     loadDashboard();
   }
@@ -76,10 +80,30 @@
 
   function updateShareEmailUi(dj) {
     const enabled = !!dj?.shareEmail;
-    shareEmailToggle.checked = enabled;
-    shareEmailStatus.textContent = enabled
-      ? 'Artists can see your email on future downloads.'
-      : 'Your email is hidden from artists.';
+    if (shareEmailToggle) shareEmailToggle.checked = enabled;
+    if (shareEmailStatus) {
+      shareEmailStatus.textContent = enabled
+        ? 'Artists can see your email on future downloads.'
+        : 'Your email is hidden from artists.';
+    }
+  }
+
+  function setProfileSaveStatus(message, isError = false) {
+    if (!profileSaveStatus) return;
+    profileSaveStatus.textContent = message || '';
+    profileSaveStatus.classList.toggle('dj-panel-status--error', !!isError);
+  }
+
+  function fillProfileForm(dj) {
+    if (!dj || typeof DjSignupForm === 'undefined') return;
+    DjSignupForm.fillFromDj(dj);
+    updateShareEmailUi(dj);
+  }
+
+  function updateDashboardTitle(dj) {
+    if (!dj) return;
+    const name = [dj.firstName, dj.lastName].filter(Boolean).join(' ') || dj.name;
+    dashboardTitle.textContent = name ? `${name}, your download history` : 'Your download history';
   }
 
   async function loadDashboard() {
@@ -111,7 +135,9 @@
         }
       } else if (!isDemoMode) {
         DjAuth.updateDjProfile(data.dj);
-        updateShareEmailUi(data.dj);
+        DjAuthUI.updateWelcome();
+        fillProfileForm(data.dj);
+        updateDashboardTitle(data.dj);
       }
 
       renderStats(data.stats || {});
@@ -130,21 +156,32 @@
     }
   }
 
-  if (!isDemoMode) {
-    shareEmailToggle?.addEventListener('change', async () => {
-    const previous = shareEmailToggle.checked;
-    shareEmailToggle.disabled = true;
-    try {
-      const dj = await DjActivity.updateShareEmail(shareEmailToggle.checked);
-      updateShareEmailUi(dj);
-    } catch (err) {
-      shareEmailToggle.checked = !previous;
-      alert(err.message);
-    } finally {
-      shareEmailToggle.disabled = false;
+  profileForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (isDemoMode || typeof DjSignupForm === 'undefined') return;
+
+    const originalHtml = saveProfileBtn?.innerHTML;
+    if (saveProfileBtn) {
+      saveProfileBtn.disabled = true;
+      saveProfileBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
     }
-    });
-  }
+    setProfileSaveStatus('');
+
+    try {
+      const dj = await DjActivity.updateProfile(DjSignupForm.collectProfile());
+      fillProfileForm(dj);
+      updateDashboardTitle(dj);
+      DjAuthUI.updateWelcome();
+      setProfileSaveStatus('Profile saved.');
+    } catch (err) {
+      setProfileSaveStatus(err.message || 'Could not save profile.', true);
+    } finally {
+      if (saveProfileBtn) {
+        saveProfileBtn.disabled = false;
+        saveProfileBtn.innerHTML = originalHtml;
+      }
+    }
+  });
 
   if (isDemoMode) {
     showApp();

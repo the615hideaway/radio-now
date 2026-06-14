@@ -1116,22 +1116,64 @@ function djDashboard_(token) {
   };
 }
 
-function djProfileUpdate_(token, shareEmail) {
+function djProfilePatchFromPayload_(dj, payload) {
+  var firstName = String(payload.firstName || payload.first_name || dj.first_name || '').trim();
+  var lastName = String(payload.lastName || payload.last_name || dj.last_name || '').trim();
+  if (!firstName && !lastName && dj.name) {
+    var nameParts = String(dj.name).trim().split(/\s+/);
+    firstName = nameParts[0] || '';
+    lastName = nameParts.slice(1).join(' ') || '';
+  }
+  var programName = String(payload.programName || payload.program_name || dj.program_name || dj.show_name || '').trim();
+  var stationCall = String(payload.stationCallLetters || payload.station_call_letters || dj.station_call_letters || dj.station || '').trim();
+
+  if (!firstName || !lastName || !programName || !stationCall) {
+    throw new Error('First name, last name, program name, and station call letters are required.');
+  }
+
+  var shareEmail = payload.shareEmail !== undefined
+    ? !!payload.shareEmail
+    : shareEmailFlag_(dj.share_email);
+
+  return {
+    first_name: firstName,
+    last_name: lastName,
+    name: djFullName_(firstName, lastName, dj.name),
+    program_name: programName,
+    show_name: programName,
+    station_call_letters: stationCall,
+    station: stationCall,
+    program_format: String(payload.programFormat || payload.program_format || dj.program_format || '').trim(),
+    station_frequency: String(payload.stationFrequency || payload.station_frequency || dj.station_frequency || '').trim(),
+    state: String(payload.state || dj.state || '').trim(),
+    station_website: String(payload.stationWebsite || payload.station_website || dj.station_website || '').trim(),
+    program_website: String(payload.programWebsite || payload.program_website || dj.program_website || '').trim(),
+    program_start_time: String(payload.programStartTime || payload.program_start_time || dj.program_start_time || '').trim(),
+    program_end_time: String(payload.programEndTime || payload.program_end_time || dj.program_end_time || '').trim(),
+    program_timezone: String(payload.programTimezone || payload.program_timezone || dj.program_timezone || '').trim(),
+    program_days: String(payload.programDays || payload.program_days || dj.program_days || '').trim(),
+    share_email: shareEmailValue_(shareEmail),
+  };
+}
+
+function djProfileUpdate_(token, payload) {
   var found = requireDjSession_(token);
   var sheet = getDjSheet_();
   var headerMap = getDjHeaderMap_(sheet);
-  var shareCol = headerMap.share_email;
+  var updates = djProfilePatchFromPayload_(found.dj, payload || {});
 
-  if (shareCol === undefined) {
-    throw new Error('share_email column missing from DJs sheet.');
-  }
+  Object.keys(updates).forEach(function (key) {
+    var col = headerMap[key];
+    if (col === undefined) return;
+    sheet.getRange(found.rowIndex, col + 1).setValue(updates[key]);
+  });
 
-  sheet.getRange(found.rowIndex, shareCol + 1).setValue(shareEmailValue_(!!shareEmail));
-  found.dj.share_email = shareEmailValue_(!!shareEmail);
+  var row = sheet.getRange(found.rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var updatedDj = djRowToObject_(row, headerMap);
 
   return {
     success: true,
-    dj: publicDj_(found.dj),
+    dj: publicDj_(updatedDj),
   };
 }
 
@@ -1577,7 +1619,7 @@ function doPost(e) {
     }
 
     if (action === 'dj_profile_update') {
-      return jsonResponse_(djProfileUpdate_(body.token, body.shareEmail));
+      return jsonResponse_(djProfileUpdate_(body.token, body));
     }
 
     if (action === 'artist_login') {

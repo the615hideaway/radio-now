@@ -134,16 +134,28 @@
       <section class="dj-dashboard-stats" id="dashboard-stats"></section>
 
       <section class="dj-dashboard-grid">
-        <div class="dj-panel" id="privacy-panel">
+        <div class="dj-panel dj-panel--wide dj-panel--profile" id="profile-panel">
           <div class="dj-panel-header">
-            <h2>Privacy Settings</h2>
+            <h2><i class="fa-solid fa-user-pen"></i> DJ Profile</h2>
           </div>
-          <label class="checkbox-field checkbox-field--panel">
-            <input type="checkbox" id="share-email-toggle">
-            <span>Share my email with artists when I download their music</span>
-          </label>
-          <p class="dj-panel-note">Artists can use this to thank you on air or by email. Your email stays hidden unless this is turned on.</p>
-          <p class="dj-panel-status" id="share-email-status"></p>
+          <form id="dj-profile-form" class="dj-profile-form">
+            <div id="dj-profile-fields"></div>
+            <div class="dj-profile-privacy">
+              <label class="checkbox-field checkbox-field--panel">
+                <input type="checkbox" id="share-email-toggle">
+                <span>Share my email with artists when I download their music</span>
+              </label>
+              <p class="dj-panel-note">Artists can use this to thank you on air or by email. Your login email stays hidden unless this is turned on.</p>
+              <p class="dj-panel-status" id="share-email-status"></p>
+            </div>
+            <div class="dj-profile-actions">
+              <button type="submit" class="btn btn-primary" id="save-profile-btn">
+                <i class="fa-solid fa-floppy-disk"></i>
+                Save Profile
+              </button>
+              <p class="dj-panel-status" id="profile-save-status" aria-live="polite"></p>
+            </div>
+          </form>
         </div>
 
         <div class="dj-panel dj-panel--wide">
