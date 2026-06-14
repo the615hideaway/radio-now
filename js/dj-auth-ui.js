@@ -34,6 +34,10 @@ const DjAuthUI = {
       tab.addEventListener('click', () => switchTab(tab.dataset.authTab));
     });
 
+    if (typeof DjSignupForm !== 'undefined') {
+      DjSignupForm.mount();
+    }
+
     loginForm?.addEventListener('submit', async (event) => {
       event.preventDefault();
       clearErrors();
@@ -69,14 +73,18 @@ const DjAuthUI = {
       submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating account…';
 
       try {
-        await DjAuth.signup({
-          name: document.getElementById('signup-name')?.value || '',
-          station: document.getElementById('signup-station')?.value || '',
-          showName: document.getElementById('signup-show')?.value || '',
-          email: document.getElementById('signup-email')?.value || '',
-          password: document.getElementById('signup-password')?.value || '',
-          shareEmail: !!document.getElementById('signup-share-email')?.checked,
-        });
+        const fields = typeof DjSignupForm !== 'undefined'
+          ? DjSignupForm.collect()
+          : {
+            firstName: document.getElementById('signup-name')?.value || '',
+            lastName: '',
+            programName: document.getElementById('signup-show')?.value || '',
+            stationCallLetters: document.getElementById('signup-station')?.value || '',
+            email: document.getElementById('signup-email')?.value || '',
+            password: document.getElementById('signup-password')?.value || '',
+            shareEmail: !!document.getElementById('signup-share-email')?.checked,
+          };
+        await DjAuth.signup(fields);
         signupForm.reset();
         DjAuthUI.updateWelcome();
         onAuthenticated();
@@ -102,8 +110,11 @@ const DjAuthUI = {
       return;
     }
 
-    const station = dj.station ? ` · ${dj.station}` : '';
-    welcome.textContent = `${dj.name || dj.email}${station}`;
+    const name = [dj.firstName, dj.lastName].filter(Boolean).join(' ') || dj.name || dj.email;
+    const station = dj.stationCallLetters || dj.station;
+    const program = dj.programName || dj.showName;
+    const tail = station || program;
+    welcome.textContent = tail ? `${name} · ${tail}` : name;
     welcome.classList.remove('hidden');
   },
 

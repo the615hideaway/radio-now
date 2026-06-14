@@ -173,8 +173,8 @@ a:hover { color: var(--white); }
 
 .login-auth-column {
   flex: 1 1 26rem;
-  width: min(460px, 100%);
-  max-width: 460px;
+  width: min(500px, 100%);
+  max-width: 500px;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -318,6 +318,83 @@ a:hover { color: var(--white); }
 
 .login-card--artist {
   border-color: rgba(230, 57, 57, 0.4);
+}
+
+.auth-panel[data-auth-panel="signup"] {
+  max-height: min(72vh, 760px);
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.dj-signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dj-signup-section {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.dj-signup-section legend {
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  margin-bottom: 0.45rem;
+  padding: 0;
+}
+
+.dj-signup-grid {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.dj-signup-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dj-signup-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.artist-dj-profile {
+  margin: 0.55rem 0 0.35rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.artist-dj-profile-row {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.5rem;
+  font-size: 0.84rem;
+}
+
+.artist-dj-profile-row dt {
+  margin: 0;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.artist-dj-profile-row dd {
+  margin: 0;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.artist-dj-profile-row a {
+  color: var(--gold-bright);
+}
+
+.artist-dj-email-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-right: 0.35rem;
 }
 
 .brand-lockup, .brand {
@@ -1008,6 +1085,16 @@ a:hover { color: var(--white); }
 
   .login-charts-card {
     width: 100%;
+  }
+
+  .dj-signup-grid--2,
+  .dj-signup-grid--3 {
+    grid-template-columns: 1fr;
+  }
+
+  .artist-dj-profile-row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
   }
 
   .charts-page-hero {

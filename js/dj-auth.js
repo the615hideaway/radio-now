@@ -74,9 +74,19 @@ const DjAuth = {
 
   async signup(fields) {
     const data = await this.request('dj_signup', {
-      name: String(fields.name || '').trim(),
-      station: String(fields.station || '').trim(),
-      showName: String(fields.showName || '').trim(),
+      firstName: String(fields.firstName || '').trim(),
+      lastName: String(fields.lastName || '').trim(),
+      programName: String(fields.programName || '').trim(),
+      programFormat: String(fields.programFormat || '').trim(),
+      stationCallLetters: String(fields.stationCallLetters || '').trim(),
+      stationFrequency: String(fields.stationFrequency || '').trim(),
+      state: String(fields.state || '').trim(),
+      stationWebsite: String(fields.stationWebsite || '').trim(),
+      programWebsite: String(fields.programWebsite || '').trim(),
+      programStartTime: String(fields.programStartTime || '').trim(),
+      programEndTime: String(fields.programEndTime || '').trim(),
+      programTimezone: String(fields.programTimezone || '').trim(),
+      programDays: String(fields.programDays || '').trim(),
       email: String(fields.email || '').trim(),
       password: String(fields.password || ''),
       shareEmail: !!fields.shareEmail,

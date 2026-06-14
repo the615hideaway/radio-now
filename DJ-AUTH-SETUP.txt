@@ -23,8 +23,10 @@ On the first DJ sign-up, Apps Script creates a sheet tab named:
 
   DJs
 
-Columns:
-  dj_id | name | email | password_hash | password_salt | station | show_name | status | created_at
+Columns (expanded automatically on redeploy):
+  dj_id | name | email | password_hash | password_salt | station | show_name | share_email | status | created_at
+  first_name | last_name | program_name | program_format | station_call_letters | station_frequency | state
+  station_website | program_website | program_start_time | program_end_time | program_timezone | program_days
 
 Passwords are hashed — you will NOT see plain-text passwords in the sheet.
 
@@ -33,11 +35,10 @@ HOW TO TEST SIGN-UP
 -------------------
 1. Open the site (hard refresh)
 2. Click "Create Account"
-3. Fill in:
-   - Your Name
-   - Station / Program
-   - Email
-   - Password (8+ characters)
+3. Fill in DJ sign-up (required: first/last name, program name, call letters, email, password):
+   - Program & station details (artists see these on downloads)
+   - Optional: format, frequency, state, websites, schedule, time zone, program days
+   - Email sharing is opt-in only
 4. Submit
 
 Expected:

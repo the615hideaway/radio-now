@@ -228,6 +228,7 @@
       <div class="dj-history-list">
         ${activity.map((item) => {
           const djLine = ArtistActivity.formatDjLine(item);
+          const djProfile = ArtistActivity.renderDjProfileHtml(item);
           const emailLine = item.djEmail
             ? `<a href="mailto:${Utils.escapeHtml(item.djEmail)}">${Utils.escapeHtml(item.djEmail)}</a>`
             : '<span class="muted">Email not shared</span>';
@@ -238,7 +239,8 @@
               <h3>${Utils.escapeHtml(item.songTitle || 'Untitled')}</h3>
               <p>${Utils.escapeHtml(item.artistName || '')}${item.musicStyle ? ` · ${Utils.escapeHtml(item.musicStyle)}` : ''}</p>
               ${djLine ? `<p class="artist-dj-line"><i class="fa-solid fa-tower-broadcast"></i> ${Utils.escapeHtml(djLine)}</p>` : ''}
-              <p class="artist-dj-email">${emailLine}</p>
+              ${djProfile}
+              <p class="artist-dj-email"><span class="artist-dj-email-label">Contact</span> ${emailLine}</p>
             </div>
             <div class="dj-history-meta">
               <span class="dj-history-type">${Utils.escapeHtml(ArtistActivity.formatLabel(item.eventType, item.format))}</span>

@@ -465,11 +465,18 @@ function createZip_(songs, format) {
 }
 
 var DJ_SHEET_NAME = 'DJs';
-var DJ_HEADERS = ['dj_id', 'name', 'email', 'password_hash', 'password_salt', 'station', 'show_name', 'share_email', 'status', 'created_at'];
+var DJ_HEADERS = [
+  'dj_id', 'name', 'email', 'password_hash', 'password_salt', 'station', 'show_name', 'share_email', 'status', 'created_at',
+  'first_name', 'last_name', 'program_name', 'program_format', 'station_call_letters', 'station_frequency', 'state',
+  'station_website', 'program_website', 'program_start_time', 'program_end_time', 'program_timezone', 'program_days',
+];
 var ACTIVITY_SHEET_NAME = 'DJ Activity';
 var ACTIVITY_HEADERS = [
   'activity_id', 'timestamp', 'dj_id', 'dj_name', 'dj_station', 'dj_show_name',
-  'share_email', 'contact_email', 'event_type', 'song_id', 'song_title', 'artist_name', 'music_style', 'format',
+  'share_email', 'contact_email',
+  'dj_first_name', 'dj_last_name', 'dj_program_name', 'dj_program_format', 'dj_station_call', 'dj_station_frequency',
+  'dj_state', 'dj_station_website', 'dj_program_website', 'dj_program_start', 'dj_program_end', 'dj_program_timezone', 'dj_program_days',
+  'event_type', 'song_id', 'song_title', 'artist_name', 'music_style', 'format',
 ];
 
 function getAuthSecret_() {
@@ -589,17 +596,117 @@ function djRowToObject_(row, headerMap) {
     return String(row[idx] || '').trim();
   }
 
+  var firstName = pick('first_name');
+  var lastName = pick('last_name');
+  var programName = pick('program_name') || pick('show_name');
+  var stationCall = pick('station_call_letters') || pick('station');
+
   return {
     dj_id: pick('dj_id'),
-    name: pick('name'),
+    name: pick('name') || djFullName_(firstName, lastName, pick('name')),
     email: pick('email'),
     password_hash: pick('password_hash'),
     password_salt: pick('password_salt'),
-    station: pick('station'),
-    show_name: pick('show_name'),
+    station: pick('station') || stationCall,
+    show_name: pick('show_name') || programName,
     share_email: pick('share_email'),
     status: pick('status') || 'active',
     created_at: pick('created_at'),
+    first_name: firstName,
+    last_name: lastName,
+    program_name: programName,
+    program_format: pick('program_format'),
+    station_call_letters: stationCall,
+    station_frequency: pick('station_frequency'),
+    state: pick('state'),
+    station_website: pick('station_website'),
+    program_website: pick('program_website'),
+    program_start_time: pick('program_start_time'),
+    program_end_time: pick('program_end_time'),
+    program_timezone: pick('program_timezone'),
+    program_days: pick('program_days'),
+  };
+}
+
+function djFullName_(firstName, lastName, fallback) {
+  var full = String(firstName || '').trim();
+  if (lastName) full = full ? full + ' ' + String(lastName).trim() : String(lastName).trim();
+  return full || String(fallback || '').trim();
+}
+
+function appendRowByHeaders_(sheet, valuesByHeader) {
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var row = headers.map(function (header) {
+    var key = String(header || '').trim();
+    return valuesByHeader[key] !== undefined ? valuesByHeader[key] : '';
+  });
+  sheet.appendRow(row);
+}
+
+function activityRowByHeaders_(sheet, valuesByHeader) {
+  appendRowByHeaders_(sheet, valuesByHeader);
+}
+
+function djActivitySnapshot_(dj, shareEmailEnabled) {
+  return {
+    dj_name: dj.name,
+    dj_station: dj.station || dj.station_call_letters,
+    dj_show_name: dj.show_name || dj.program_name,
+    share_email: shareEmailValue_(shareEmailEnabled),
+    contact_email: shareEmailEnabled ? dj.email : '',
+    dj_first_name: dj.first_name,
+    dj_last_name: dj.last_name,
+    dj_program_name: dj.program_name || dj.show_name,
+    dj_program_format: dj.program_format,
+    dj_station_call: dj.station_call_letters || dj.station,
+    dj_station_frequency: dj.station_frequency,
+    dj_state: dj.state,
+    dj_station_website: dj.station_website,
+    dj_program_website: dj.program_website,
+    dj_program_start: dj.program_start_time,
+    dj_program_end: dj.program_end_time,
+    dj_program_timezone: dj.program_timezone,
+    dj_program_days: dj.program_days,
+  };
+}
+
+function buildDjFromSignup_(payload, djId, hashed, createdAt) {
+  var firstName = String(payload.firstName || payload.first_name || '').trim();
+  var lastName = String(payload.lastName || payload.last_name || '').trim();
+  var programName = String(payload.programName || payload.program_name || payload.showName || '').trim();
+  var stationCall = String(payload.stationCallLetters || payload.station_call_letters || payload.station || '').trim();
+  var email = normalizeEmail_(payload.email);
+  var shareEmail = !!payload.shareEmail;
+
+  if (!firstName || !lastName || !programName || !stationCall || !email) {
+    throw new Error('First name, last name, program name, station call letters, and email are required.');
+  }
+
+  return {
+    dj_id: djId,
+    name: djFullName_(firstName, lastName, payload.name),
+    email: email,
+    password_hash: hashed.hash,
+    password_salt: hashed.salt,
+    station: stationCall,
+    show_name: programName,
+    share_email: shareEmailValue_(shareEmail),
+    status: 'active',
+    created_at: createdAt,
+    first_name: firstName,
+    last_name: lastName,
+    program_name: programName,
+    program_format: String(payload.programFormat || payload.program_format || '').trim(),
+    station_call_letters: stationCall,
+    station_frequency: String(payload.stationFrequency || payload.station_frequency || '').trim(),
+    state: String(payload.state || '').trim(),
+    station_website: String(payload.stationWebsite || payload.station_website || '').trim(),
+    program_website: String(payload.programWebsite || payload.program_website || '').trim(),
+    program_start_time: String(payload.programStartTime || payload.program_start_time || '').trim(),
+    program_end_time: String(payload.programEndTime || payload.program_end_time || '').trim(),
+    program_timezone: String(payload.programTimezone || payload.program_timezone || '').trim(),
+    program_days: String(payload.programDays || payload.program_days || '').trim(),
   };
 }
 
@@ -719,10 +826,23 @@ function publicDj_(dj) {
     id: dj.dj_id,
     name: dj.name,
     email: dj.email,
-    station: dj.station,
-    showName: dj.show_name || '',
+    station: dj.station || dj.station_call_letters || '',
+    showName: dj.show_name || dj.program_name || '',
     shareEmail: shareEmailFlag_(dj.share_email),
     status: dj.status,
+    firstName: dj.first_name || '',
+    lastName: dj.last_name || '',
+    programName: dj.program_name || dj.show_name || '',
+    programFormat: dj.program_format || '',
+    stationCallLetters: dj.station_call_letters || dj.station || '',
+    stationFrequency: dj.station_frequency || '',
+    state: dj.state || '',
+    stationWebsite: dj.station_website || '',
+    programWebsite: dj.program_website || '',
+    programStartTime: dj.program_start_time || '',
+    programEndTime: dj.program_end_time || '',
+    programTimezone: dj.program_timezone || '',
+    programDays: dj.program_days || '',
   };
 }
 
@@ -794,21 +914,13 @@ function djLogin_(email, password) {
 }
 
 function djSignup_(payload) {
-  var name = String(payload.name || '').trim();
-  var station = String(payload.station || '').trim();
-  var showName = String(payload.showName || '').trim();
-  var email = normalizeEmail_(payload.email);
   var password = String(payload.password || '');
-  var shareEmail = !!payload.shareEmail;
-
-  if (!name || !station || !email || !password) {
-    throw new Error('Name, station, email, and password are required.');
-  }
 
   if (password.length < 8) {
     throw new Error('Password must be at least 8 characters.');
   }
 
+  var email = normalizeEmail_(payload.email);
   if (findDjByEmail_(email)) {
     throw new Error('An account with this email already exists. Try signing in instead.');
   }
@@ -817,30 +929,9 @@ function djSignup_(payload) {
   var hashed = hashPassword_(password);
   var djId = 'dj-' + Utilities.getUuid().slice(0, 8);
   var createdAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+  var dj = buildDjFromSignup_(payload, djId, hashed, createdAt);
 
-  sheet.appendRow([
-    djId,
-    name,
-    email,
-    hashed.hash,
-    hashed.salt,
-    station,
-    showName,
-    shareEmailValue_(shareEmail),
-    'active',
-    createdAt,
-  ]);
-
-  var dj = {
-    dj_id: djId,
-    name: name,
-    email: email,
-    station: station,
-    show_name: showName,
-    share_email: shareEmailValue_(shareEmail),
-    status: 'active',
-    created_at: createdAt,
-  };
+  appendRowByHeaders_(sheet, dj);
 
   return {
     success: true,
@@ -857,22 +948,22 @@ function logDjActivity_(token, payload) {
   var activityId = 'act-' + Utilities.getUuid().slice(0, 10);
   var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
 
-  sheet.appendRow([
-    activityId,
-    timestamp,
-    dj.dj_id,
-    dj.name,
-    dj.station,
-    dj.show_name,
-    share ? 'yes' : 'no',
-    share ? dj.email : '',
-    String(payload.eventType || '').trim(),
-    String(payload.songId || '').trim(),
-    String(payload.songTitle || '').trim(),
-    String(payload.artistName || '').trim(),
-    String(payload.musicStyle || '').trim(),
-    String(payload.format || '').trim(),
-  ]);
+  var activityRow = {
+    activity_id: activityId,
+    timestamp: timestamp,
+    dj_id: dj.dj_id,
+    event_type: String(payload.eventType || '').trim(),
+    song_id: String(payload.songId || '').trim(),
+    song_title: String(payload.songTitle || '').trim(),
+    artist_name: String(payload.artistName || '').trim(),
+    music_style: String(payload.musicStyle || '').trim(),
+    format: String(payload.format || '').trim(),
+  };
+  var snapshot = djActivitySnapshot_(dj, share);
+  Object.keys(snapshot).forEach(function (key) {
+    activityRow[key] = snapshot[key];
+  });
+  appendRowByHeaders_(sheet, activityRow);
 
   return { success: true };
 }
@@ -1343,10 +1434,23 @@ function listArtistActivity_(artistName, limit) {
       artistName: pick('artist_name'),
       musicStyle: pick('music_style'),
       format: pick('format'),
-      djName: pick('dj_name'),
-      djStation: pick('dj_station'),
-      djShowName: pick('dj_show_name'),
+      djName: pick('dj_name') || djFullName_(pick('dj_first_name'), pick('dj_last_name'), ''),
+      djStation: pick('dj_station') || pick('dj_station_call'),
+      djShowName: pick('dj_show_name') || pick('dj_program_name'),
       djEmail: sharedEmail ? pick('contact_email') : '',
+      djFirstName: pick('dj_first_name'),
+      djLastName: pick('dj_last_name'),
+      djProgramName: pick('dj_program_name') || pick('dj_show_name'),
+      djProgramFormat: pick('dj_program_format'),
+      djStationCall: pick('dj_station_call') || pick('dj_station'),
+      djStationFrequency: pick('dj_station_frequency'),
+      djState: pick('dj_state'),
+      djStationWebsite: pick('dj_station_website'),
+      djProgramWebsite: pick('dj_program_website'),
+      djProgramStart: pick('dj_program_start'),
+      djProgramEnd: pick('dj_program_end'),
+      djProgramTimezone: pick('dj_program_timezone'),
+      djProgramDays: pick('dj_program_days'),
     });
 
     if (items.length >= limit) break;
