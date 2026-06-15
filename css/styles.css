@@ -773,6 +773,34 @@ a:hover { color: var(--white); }
   font-size: 0.92rem;
 }
 
+.song-submit-google-form {
+  margin-top: 0.25rem;
+}
+
+.song-google-form-shell {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+}
+
+.song-google-form-shell iframe {
+  display: block;
+  width: 100%;
+  min-height: 2200px;
+  border: 0;
+  background: #fff;
+}
+
+.song-form-open-tab {
+  margin: 0.85rem 0 0;
+}
+
+.song-form-open-tab a {
+  font-weight: 600;
+}
+
 .label-access-list,
 .label-roster-list {
   display: flex;

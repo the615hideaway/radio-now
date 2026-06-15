@@ -435,7 +435,7 @@
 
   function renderSubmissionsList() {
     const host = document.getElementById('song-submissions-list');
-    if (!host) return;
+    if (!host || usesGoogleSongForm()) return;
 
     const editable = mySubmissions.filter((item) => item.canEdit);
     if (!editable.length) {
@@ -581,11 +581,72 @@
     };
   }
 
+  function usesGoogleSongForm() {
+    return !!CONFIG.useGoogleFormForSubmissions && !!CONFIG.artistSongFormEmbedUrl;
+  }
+
+  function buildGoogleSongFormUrl(account) {
+    const base = String(CONFIG.artistSongFormEmbedUrl || '').trim();
+    if (!base) return '';
+
+    const prefill = CONFIG.artistSongFormPrefill || {};
+    const params = new URLSearchParams();
+    params.set('usp', 'pp_url');
+
+    const isLabel = String(account?.accountType || '').toLowerCase() === 'label';
+    const artistName = isLabel ? '' : String(account?.artistName || '').trim();
+    const contactEmail = String(account?.email || '').trim();
+
+    if (prefill.artistName && artistName) {
+      params.set(prefill.artistName, artistName);
+    }
+    if (prefill.contactEmail && contactEmail) {
+      params.set(prefill.contactEmail, contactEmail);
+    }
+
+    const query = params.toString();
+    if (!query || query === 'usp=pp_url') return base;
+    return `${base}${base.includes('?') ? '&' : '?'}${query}`;
+  }
+
+  function mountGoogleSongForm(account) {
+    const iframe = document.getElementById('song-google-form-iframe');
+    const openLink = document.getElementById('song-google-form-open-link');
+    const panelNote = document.getElementById('song-submit-panel-note');
+    if (!iframe) return;
+
+    const embedUrl = buildGoogleSongFormUrl(account);
+    if (iframe.dataset.src !== embedUrl) {
+      iframe.src = embedUrl;
+      iframe.dataset.src = embedUrl;
+    }
+
+    if (openLink) {
+      openLink.href = CONFIG.artistSongFormUrl || embedUrl.replace('?embedded=true', '').replace('&embedded=true', '');
+    }
+
+    if (panelNote) {
+      panelNote.textContent = 'Submit song details and upload MP3, WAV, and cover art below. Files go straight to Google Drive — reliable for large audio files (up to 100 MB each). Responses land in your sheet tab Form Responses 1.';
+    }
+  }
+
   function configureSongSubmitForm(account) {
     const panel = document.getElementById('song-submit-panel');
-    const form = document.getElementById('song-submit-form');
-    if (!panel || !form || isDemoMode || !account) {
+    if (!panel || isDemoMode || !account) {
       panel?.classList.add('hidden');
+      return;
+    }
+
+    if (usesGoogleSongForm()) {
+      panel.classList.remove('hidden');
+      mountGoogleSongForm(account);
+      document.getElementById('song-submissions-list')?.classList.add('hidden');
+      return;
+    }
+
+    const form = document.getElementById('song-submit-form');
+    if (!form) {
+      panel.classList.add('hidden');
       return;
     }
 
@@ -782,6 +843,8 @@
   }
 
   function bindSongSubmitForm() {
+    if (usesGoogleSongForm()) return;
+
     const form = document.getElementById('song-submit-form');
     if (!form || form.dataset.bound === 'true') return;
     form.dataset.bound = 'true';

@@ -12,6 +12,27 @@ YOUR GOOGLE SHEET
 -----------------
 https://docs.google.com/spreadsheets/d/1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU/edit
 
+ARTIST SONG SUBMISSIONS (Google Form)
+-------------------------------------
+Form: https://forms.gle/zFExL6otU1e7hJF59
+Embedded on the artist dashboard for reliable file uploads (100 MB per file).
+
+Responses go to spreadsheet tab "Form Responses 1" (you can rename that tab
+to "Artist Submissions" — renaming does not break the form link).
+
+Keep one tab per form:
+  • Form Responses 1 (or "Artist Submissions") — this song submission form
+  • Form Responses DJs — only if you add a separate DJ signup form later
+Do not mix song submissions and DJ signups on the same tab.
+
+Google Form theme (to match the Radio Now site):
+  • Primary color: #f4c430 (gold)
+  • Background: #111 or #1a1a1a (dark)
+  • Add section titles: Song details, Vocals & musicians, Release info,
+    Press blurb, Audio & cover art, Contact
+  • MP3 + WAV: File upload → Audio, max 100 MB
+  • Cover Art: File upload → Image, max 100 MB
+
 Required columns (row 1) from the Google Form sheet:
   Artist Name, Song Title, Year, Song Time, Music Style, Description,
   Songwriter, Lead Vocals, Featured Artist, Harmony Vocals 1–4,

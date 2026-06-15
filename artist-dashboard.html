@@ -222,150 +222,25 @@
         <div class="dj-panel-header">
           <h2 id="song-submit-heading"><i class="fa-solid fa-cloud-arrow-up"></i> Submit a New Song</h2>
         </div>
-        <p class="dj-panel-note">Fill out the form below and upload your files — everything goes straight to Radio Now. You can edit pending submissions later to group singles into a full album.</p>
+        <p class="dj-panel-note" id="song-submit-panel-note">Submit song details and upload MP3, WAV, and cover art below. Files go straight to Google Drive — reliable for large audio files (up to 100 MB each).</p>
 
-        <div id="song-submissions-list" class="song-submissions-list hidden"></div>
-
-        <form id="song-submit-form" class="song-submit-form dashboard-form dashboard-form--accessible dashboard-form--song-submit">
-          <input type="hidden" id="submit-editing-id" value="">
-          <div class="login-error" id="song-submit-error"></div>
-          <div class="song-submit-success hidden" id="song-submit-success"></div>
-
-          <fieldset class="song-form-section">
-            <legend>Song details</legend>
-            <div class="form-grid form-grid--two">
-              <div class="form-field">
-                <label for="submit-artist-name">Artist Name <span class="label-required">*</span></label>
-                <input type="text" id="submit-artist-name" list="submit-artist-options" placeholder="Artist as listed on Radio Now" required>
-                <datalist id="submit-artist-options"></datalist>
-              </div>
-              <div class="form-field">
-                <label for="submit-song-title">Song Title <span class="label-required">*</span></label>
-                <input type="text" id="submit-song-title" placeholder="Song title" required>
-              </div>
-              <div class="form-field">
-                <label for="submit-year">Year <span class="label-required">*</span></label>
-                <input type="text" id="submit-year" placeholder="2026" inputmode="numeric" required>
-              </div>
-              <div class="form-field">
-                <label for="submit-song-time">Song Time <span class="label-required">*</span></label>
-                <input type="text" id="submit-song-time" placeholder="3:45" required>
-              </div>
-              <div class="form-field">
-                <label for="submit-music-style">Music Style <span class="label-required">*</span></label>
-                <select id="submit-music-style" required></select>
-              </div>
-              <div class="form-field">
-                <label for="submit-songwriter">Songwriter <span class="label-required">*</span></label>
-                <input type="text" id="submit-songwriter" placeholder="Writer names" required>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="song-form-section">
-            <legend>Vocals &amp; musicians</legend>
-            <div class="form-grid form-grid--two">
-              <div class="form-field">
-                <label for="submit-featured-artist">Featured Artist</label>
-                <input type="text" id="submit-featured-artist" placeholder="Guest artist, if any">
-              </div>
-              <div class="form-field">
-                <label for="submit-lead-vocals">Lead Vocals <span class="label-required">*</span></label>
-                <input type="text" id="submit-lead-vocals" placeholder="Lead singer name" required>
-              </div>
-              <div class="form-field">
-                <label for="submit-harmony-1">Harmony Vocals 1</label>
-                <input type="text" id="submit-harmony-1" placeholder="Harmony singer">
-              </div>
-              <div class="form-field">
-                <label for="submit-harmony-2">Harmony Vocals 2</label>
-                <input type="text" id="submit-harmony-2" placeholder="Harmony singer">
-              </div>
-              <div class="form-field">
-                <label for="submit-harmony-3">Harmony Vocals 3</label>
-                <input type="text" id="submit-harmony-3" placeholder="Harmony singer">
-              </div>
-              <div class="form-field">
-                <label for="submit-harmony-4">Harmony Vocals 4</label>
-                <input type="text" id="submit-harmony-4" placeholder="Harmony singer">
-              </div>
-            </div>
-            <p class="field-help">Instrument players — use format <strong>Banjo - Player Name</strong></p>
-            <div class="form-grid form-grid--two">
-              <div class="form-field"><label for="submit-instrument-1">Instrument Player 1</label><input type="text" id="submit-instrument-1" placeholder="Banjo - Scott Vestal"></div>
-              <div class="form-field"><label for="submit-instrument-2">Instrument Player 2</label><input type="text" id="submit-instrument-2" placeholder="Guitar - Jim Hurst"></div>
-              <div class="form-field"><label for="submit-instrument-3">Instrument Player 3</label><input type="text" id="submit-instrument-3" placeholder="Mandolin - Seth Taylor"></div>
-              <div class="form-field"><label for="submit-instrument-4">Instrument Player 4</label><input type="text" id="submit-instrument-4" placeholder="Fiddle - Tim Crouch"></div>
-              <div class="form-field"><label for="submit-instrument-5">Instrument Player 5</label><input type="text" id="submit-instrument-5" placeholder="Bass - Dave Roe"></div>
-              <div class="form-field"><label for="submit-instrument-6">Instrument Player 6</label><input type="text" id="submit-instrument-6" placeholder="Dobro - Jeff Partin"></div>
-              <div class="form-field"><label for="submit-instrument-7">Instrument Player 7</label><input type="text" id="submit-instrument-7" placeholder="Instrument - Player"></div>
-              <div class="form-field"><label for="submit-instrument-8">Instrument Player 8</label><input type="text" id="submit-instrument-8" placeholder="Instrument - Player"></div>
-            </div>
-          </fieldset>
-
-          <fieldset class="song-form-section">
-            <legend>Release info</legend>
-            <div class="form-grid form-grid--two">
-              <div class="form-field" id="submit-label-field">
-                <label for="submit-record-label">Record Label <span class="label-required">*</span></label>
-                <label class="checkbox-field checkbox-field--inline" id="submit-independent-wrap">
-                  <input type="checkbox" id="submit-independent">
-                  <span>Independent (not on a label)</span>
-                </label>
-                <input type="text" id="submit-record-label" placeholder="615 Hideaway Records">
-              </div>
-              <div class="form-field">
-                <label for="submit-release-type">Release type</label>
-                <select id="submit-release-type">
-                  <option value="single">Single</option>
-                  <option value="album_track">Album track</option>
-                </select>
-              </div>
-              <div class="form-field form-field--wide" id="submit-album-field">
-                <label for="submit-album-name">Album name</label>
-                <input type="text" id="submit-album-name" placeholder="e.g. So, What'd I Miss?">
-                <p class="field-help" id="submit-album-help">Optional for singles — use the same album name on each track when building a full album later.</p>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="song-form-section">
-            <legend>Press blurb</legend>
-            <div class="form-field">
-              <label for="submit-description">Description <span class="label-required">*</span></label>
-              <textarea id="submit-description" rows="6" placeholder="One paragraph about the release for DJs and radio" required></textarea>
-            </div>
-          </fieldset>
-
-          <fieldset class="song-form-section">
-            <legend>Audio &amp; cover art <span class="label-required">*</span></legend>
-            <div class="form-grid form-grid--two form-grid--uploads" id="song-upload-fields"></div>
-          </fieldset>
-
-          <fieldset class="song-form-section">
-            <legend>Optional contact</legend>
-            <div class="form-grid form-grid--two">
-              <div class="form-field">
-                <label for="submit-website">Website</label>
-                <input type="url" id="submit-website" placeholder="https://">
-              </div>
-              <div class="form-field">
-                <label for="submit-contact-email">Contact email</label>
-                <input type="email" id="submit-contact-email" placeholder="promo@label.com">
-              </div>
-            </div>
-          </fieldset>
-
-          <div class="song-form-actions">
-            <button type="submit" class="btn btn-primary btn-lg" id="song-submit-btn">
-              <i class="fa-solid fa-paper-plane"></i>
-              Submit for Review
-            </button>
-            <button type="button" class="btn btn-secondary btn-lg hidden" id="song-cancel-edit-btn">
-              Cancel edit
-            </button>
+        <div id="song-submit-google-form" class="song-submit-google-form">
+          <div class="song-google-form-shell">
+            <iframe
+              id="song-google-form-iframe"
+              title="Submit a song to Radio Now"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
           </div>
-        </form>
+          <p class="field-help song-form-open-tab">
+            <a id="song-google-form-open-link" href="https://forms.gle/zFExL6otU1e7hJF59" target="_blank" rel="noopener">
+              <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i>
+              Open form in a new tab
+            </a>
+            if uploads stall in the embedded view.
+          </p>
+        </div>
       </section>
 
       <section class="dj-panel artist-promo-panel" id="artist-promo-panel" aria-live="polite">
@@ -409,7 +284,6 @@
   <script src="js/artist-activity.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/utils.js"></script>
-  <script src="js/file-upload-field.js"></script>
   <script src="js/song-submit-config.js"></script>
   <script src="js/one-sheet.js"></script>
   <script src="js/database.js"></script>

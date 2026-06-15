@@ -12,6 +12,16 @@ const CONFIG = {
   // (Extensions → Apps Script → Deploy as Web app → Anyone). See AUDIO-FIX-STEPS.txt.
   googleScriptUrl: 'https://script.google.com/macros/s/AKfycbxhREXi6EDdwIfIunoXbZfuBjbHPIDCoFLye-o51dJss4bvhOQQjMH23WHraY1Af2JRVw/exec',
 
+  // Artist song submissions — Google Form (reliable file uploads up to 100 MB each).
+  useGoogleFormForSubmissions: true,
+  artistSongFormUrl: 'https://forms.gle/zFExL6otU1e7hJF59',
+  artistSongFormEmbedUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfN8NL5Dg5Vs1VKifayK8itcCfmlPQmYiyhf5nvEmfi-qwYWQ/viewform?embedded=true',
+  // Optional pre-fill after you create a pre-filled link in Google Forms (⋮ → Get pre-filled link).
+  artistSongFormPrefill: {
+    artistName: '',
+    contactEmail: '',
+  },
+
   // Demo dashboards: DJ "Sammy Passamano", artist "David Parmley" (see Code.gs DEMO_DJ_NAME / DEMO_ARTIST_NAME).
 
   // Optional fallback: Google Cloud API key with Drive API enabled (public files only).
