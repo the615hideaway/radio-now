@@ -3,8 +3,8 @@ name: Sync Google Sheet to JSON
 on:
   workflow_dispatch:
   schedule:
-    # Form Responses 1 → songs.json every 5 minutes (live catalog within ~5 min)
-    - cron: '*/5 * * * *'
+    # Kept for manual/backup runs; primary sync runs in deploy-pages.yml
+    - cron: '8,38 * * * *'
 
 permissions:
   contents: write
