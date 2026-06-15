@@ -138,6 +138,20 @@ function Build-SongFromRecord {
   $bandMemberLines = Build-BandMemberLines $Record
   $coverDriveId = Get-DriveId $cover
 
+  $releaseType = if ($Record['TAG - Album/Single']) { $Record['TAG - Album/Single'] }
+    elseif ($Record['Album/Single']) { $Record['Album/Single'] }
+    else { '' }
+  $albumName = if ($Record['Album Name']) { $Record['Album Name'] }
+    elseif ($Record['Album']) { $Record['Album'] }
+    else { '' }
+  $releaseDate = $Record['Release Date']
+  if (-not $releaseDate) { $releaseDate = $Record['Radio Now Release'] }
+  if (-not $releaseDate) { $releaseDate = $Record['Added Date'] }
+  $spotlightPriority = $Record['Spotlight Priority']
+  if (-not $spotlightPriority) { $spotlightPriority = $Record['Spotlight'] }
+  $spotlightUntil = $Record['Spotlight Until']
+  if (-not $spotlightUntil) { $spotlightUntil = $Record['Spotlight End'] }
+
   return [ordered]@{
     id                 = "song-$Index"
     artistName         = $artist
@@ -161,16 +175,12 @@ function Build-SongFromRecord {
     featuredArtist     = $Record['Featured Artist']
     website            = $Record['Website']
     recordLabel        = $Record['Record Label']
-    releaseType        = if ($Record['TAG - Album/Single']) { $Record['TAG - Album/Single'] } elseif ($Record['Album/Single']) { $Record['Album/Single'] } else { '' }
-    albumName          = if ($Record['Album Name']) { $Record['Album Name'] } elseif ($Record['Album']) { $Record['Album'] } else { '' }
+    releaseType        = $releaseType
+    albumName          = $albumName
     contactEmail       = $Record['Contact E-Mail']
-    releaseDate        = $Record['Release Date']
-    if (-not $releaseDate) { $releaseDate = $Record['Radio Now Release'] }
-    if (-not $releaseDate) { $releaseDate = $Record['Added Date'] }
-    spotlightPriority  = $Record['Spotlight Priority']
-    if (-not $spotlightPriority) { $spotlightPriority = $Record['Spotlight'] }
-    spotlightUntil     = $Record['Spotlight Until']
-    if (-not $spotlightUntil) { $spotlightUntil = $Record['Spotlight End'] }
+    releaseDate        = $releaseDate
+    spotlightPriority  = $spotlightPriority
+    spotlightUntil     = $spotlightUntil
   }
 }
 
