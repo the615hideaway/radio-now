@@ -4217,12 +4217,75 @@ select { min-width: 130px; width: auto; }
 /* Artist / label portal — mobile-first spins dashboard */
 
 .artist-portal-body .app-shell {
-  padding-bottom: 5rem;
+  padding-bottom: 2rem;
+}
+
+.artist-portal-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0.45rem 0.75rem 0.15rem;
+}
+
+.artist-portal-chrome-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--gold-bright);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.artist-portal-chrome-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.artist-portal-chrome-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.artist-portal-chrome-link {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.25rem 0.35rem;
+}
+
+.artist-portal-chrome-link:hover {
+  color: var(--gold-bright);
+}
+
+.artist-portal-welcome {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .artist-portal-nav {
   border-bottom: 1px solid var(--border);
   background: var(--bg);
+}
+
+.artist-spins-page {
+  padding-top: 0.65rem;
 }
 
 .artist-portal-nav-inner {

@@ -469,7 +469,6 @@
       if (!isDemoMode && resolved) {
         ArtistAuth.updateArtistProfile(resolved);
         ArtistAuthUI.updateWelcome();
-        SiteNav.init('artistDashboard');
         ArtistPortalNav.init('spins', { isLabel: resolvedIsLabel });
       } else if (isDemoMode && typeof ArtistPortalNav !== 'undefined') {
         ArtistPortalNav.init('spins', { isLabel: false });
@@ -517,7 +516,6 @@
       ArtistPortalNav.init('spins', { isLabel });
     }
 
-    SiteNav.init('artistDashboard');
     if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
     loadDashboard();
   }

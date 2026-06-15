@@ -15,22 +15,20 @@
 <body class="artist-portal-body">
 
   <div id="app-shell" class="app-shell hidden">
-    <header class="site-header">
-      <div class="header-inner">
-        <a href="artist-dashboard.html" class="brand">
-          <img src="assets/logo.png" alt="(615) Hideaway Entertainment" class="brand-logo">
-          <div class="brand-text">
-            <span class="brand-name">Radio Now</span>
-            <span class="brand-tag">(615) Hideaway Entertainment</span>
-          </div>
-        </a>
-        <nav class="site-nav" data-site-nav data-nav-active="yourMusic" aria-label="Main navigation"></nav>
-        <div class="header-actions">
-          <span id="artist-welcome" class="dj-welcome hidden"></span>
-          <button class="btn btn-ghost" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
-        </div>
+    <div class="artist-portal-chrome">
+      <a href="artist-dashboard.html" class="artist-portal-chrome-brand">
+        <img src="assets/logo.png" alt="" class="artist-portal-chrome-logo">
+        <span>Radio Now</span>
+      </a>
+      <div class="artist-portal-chrome-actions">
+        <a href="artist-promo.html" class="artist-portal-chrome-link">Your Music</a>
+        <a href="charts.html" class="artist-portal-chrome-link">Charts</a>
+        <span id="artist-welcome" class="artist-portal-welcome hidden"></span>
+        <button type="button" class="btn btn-ghost btn-sm" id="logout-btn" aria-label="Log out">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
       </div>
-    </header>
+    </div>
 
     <nav class="artist-portal-nav" data-artist-portal-nav></nav>
 

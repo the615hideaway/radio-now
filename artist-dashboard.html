@@ -116,26 +116,6 @@
   </div>
 
   <div id="app-shell" class="app-shell hidden">
-    <header class="site-header">
-      <div class="header-inner">
-        <a href="artist-dashboard.html" class="brand">
-          <img src="assets/logo.png" alt="(615) Hideaway Entertainment" class="brand-logo">
-          <div class="brand-text">
-            <span class="brand-name">Radio Now</span>
-            <span class="brand-tag">(615) Hideaway Entertainment</span>
-          </div>
-        </a>
-        <nav class="site-nav" data-site-nav data-nav-active="artistDashboard" aria-label="Main navigation"></nav>
-        <div class="header-actions">
-          <span id="artist-welcome" class="dj-welcome hidden"></span>
-          <button class="btn btn-ghost" id="logout-btn">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            Log Out
-          </button>
-        </div>
-      </div>
-    </header>
-
     <div id="demo-banner" class="demo-banner hidden" role="status">
       <div class="demo-banner-copy">
         <strong>Demo mode</strong> — Sample spin data for David Parmley.
@@ -143,14 +123,26 @@
       <a href="artist-dashboard.html" class="btn btn-secondary btn-sm">Create artist account</a>
     </div>
 
+    <div class="artist-portal-chrome">
+      <a href="artist-dashboard.html" class="artist-portal-chrome-brand">
+        <img src="assets/logo.png" alt="" class="artist-portal-chrome-logo">
+        <span>Radio Now</span>
+      </a>
+      <div class="artist-portal-chrome-actions">
+        <a href="artist-promo.html" class="artist-portal-chrome-link">Your Music</a>
+        <a href="charts.html" class="artist-portal-chrome-link">Charts</a>
+        <span id="artist-welcome" class="artist-portal-welcome hidden"></span>
+        <button type="button" class="btn btn-ghost btn-sm" id="logout-btn" aria-label="Log out">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+
     <nav class="artist-portal-nav" data-artist-portal-nav aria-label="Artist portal sections"></nav>
 
     <main class="artist-portal-page artist-spins-page">
-      <header class="artist-portal-hero">
-        <p class="artist-portal-eyebrow">Spins</p>
-        <h1 id="artist-display-name">Your artist</h1>
-        <p id="dashboard-subtitle" class="artist-portal-copy">Screenshot-ready spin stats from real DJ downloads.</p>
-      </header>
+      <h1 id="artist-display-name" class="visually-hidden">Your artist</h1>
+      <p id="dashboard-subtitle" class="visually-hidden">Spin stats</p>
 
       <section class="spin-picker-section" id="song-picker" aria-label="Choose a song"></section>
 
