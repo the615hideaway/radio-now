@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Radio Now — Promo folders for artists and labels.">
+  <title>Promo Folders — Radio Now</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="artist-portal-body">
+
+  <div id="app-shell" class="app-shell hidden">
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="index.html" class="brand">
+          <img src="assets/logo.png" alt="(615) Hideaway Entertainment" class="brand-logo">
+          <div class="brand-text">
+            <span class="brand-name">Radio Now</span>
+            <span class="brand-tag">(615) Hideaway Entertainment</span>
+          </div>
+        </a>
+        <nav class="site-nav" data-site-nav data-nav-active="artistDashboard" aria-label="Main navigation"></nav>
+        <div class="header-actions">
+          <span id="artist-welcome" class="dj-welcome hidden"></span>
+          <button class="btn btn-ghost" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="artist-portal-nav" data-artist-portal-nav></nav>
+
+    <main class="artist-portal-page">
+      <header class="artist-portal-hero">
+        <p class="artist-portal-eyebrow">Promo</p>
+        <h1>Your promo folders</h1>
+        <p id="page-copy" class="artist-portal-copy">Download one turn-key ZIP at a time for DJs not on Radio Now.</p>
+      </header>
+
+      <p id="artist-promo-setup-notice" class="queue-help queue-warning hidden">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        ZIP builds in your browser. If downloads fail, confirm Apps Script is deployed.
+      </p>
+
+      <div id="artist-promo-content"></div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="js/vendor/jspdf.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="js/dj-auth.js"></script>
+  <script src="js/artist-auth.js"></script>
+  <script src="js/account-auth.js"></script>
+  <script src="js/artist-auth-ui.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/artist-portal-nav.js"></script>
+  <script src="js/artist-portal-auth.js"></script>
+  <script src="js/one-sheet.js"></script>
+  <script src="js/database.js"></script>
+  <script src="js/artist-promo-app.js"></script>
+</body>
+</html>

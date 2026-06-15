@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Radio Now — Artist dashboard. See who downloaded your music.">
-  <title>Artist Dashboard — Radio Now</title>
+  <meta name="description" content="Radio Now — Artist spins dashboard. See DJ download activity.">
+  <title>Spins — Radio Now</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
+<body class="artist-portal-body">
 
   <div id="login-gate" class="login-gate">
     <div id="turnkey-pitch-login" class="turnkey-pitch-login-wrap" data-page="artist"></div>
@@ -28,12 +28,12 @@
         <a href="artist-dashboard.html" class="account-role-card is-active" aria-current="page">
           <i class="fa-solid fa-microphone" aria-hidden="true"></i>
           <span class="account-role-title">Artist Account</span>
-          <span class="account-role-desc">Promo ZIPs &amp; spins</span>
+          <span class="account-role-desc">Spins &amp; promo</span>
         </a>
         <a href="artist-dashboard.html#label-signup" class="account-role-card account-role-card--label">
           <i class="fa-solid fa-building" aria-hidden="true"></i>
           <span class="account-role-title">Label Account</span>
-          <span class="account-role-desc">Roster, submit songs</span>
+          <span class="account-role-desc">Roster &amp; spins</span>
         </a>
       </nav>
 
@@ -127,7 +127,6 @@
         </a>
         <nav class="site-nav" data-site-nav data-nav-active="artistDashboard" aria-label="Main navigation"></nav>
         <div class="header-actions">
-          <span id="dj-welcome" class="dj-welcome hidden"></span>
           <span id="artist-welcome" class="dj-welcome hidden"></span>
           <button class="btn btn-ghost" id="logout-btn">
             <i class="fa-solid fa-right-from-bracket"></i>
@@ -139,340 +138,48 @@
 
     <div id="demo-banner" class="demo-banner hidden" role="status">
       <div class="demo-banner-copy">
-        <strong>Demo mode</strong> — Read-only preview for <strong>David Parmley</strong>. Charts, history, and promo folders are real sample data.
+        <strong>Demo mode</strong> — Sample spin data for David Parmley.
       </div>
       <a href="artist-dashboard.html" class="btn btn-secondary btn-sm">Create artist account</a>
     </div>
 
-    <main class="dj-dashboard-page artist-dashboard-page">
-      <section class="dj-dashboard-hero">
-        <div>
-          <p class="dj-dashboard-eyebrow">Artist Dashboard</p>
-          <h1 id="artist-display-name">Your artist dashboard</h1>
-          <p id="dashboard-subtitle" class="dj-dashboard-copy">Download your turn-key promo folders and track when DJs grab your music on Radio Now.</p>
-        </div>
-      </section>
+    <nav class="artist-portal-nav" data-artist-portal-nav aria-label="Artist portal sections"></nav>
 
-      <section class="charts-panel charts-panel--dashboard charts-panel--artist-share" aria-label="Your top songs — share on social">
-        <div class="charts-share-header">
-          <div>
-            <h2 class="charts-share-title"><i class="fa-solid fa-share-nodes"></i> Your Radio Now charts</h2>
-            <p class="charts-share-copy">Screenshot week &amp; month rankings to post on social — show DJs and fans your momentum.</p>
-          </div>
-          <span class="charts-share-brand">Radio Now</span>
-        </div>
-        <div class="charts-share-grid">
-          <div class="charts-block charts-block--share">
-            <div class="charts-block-header">
-              <h2><i class="fa-solid fa-chart-line"></i> Top This Week</h2>
-            </div>
-            <div id="dashboard-chart-week"></div>
-          </div>
-          <div class="charts-block charts-block--share">
-            <div class="charts-block-header">
-              <h2><i class="fa-solid fa-chart-simple"></i> Top This Month</h2>
-            </div>
-            <div id="dashboard-chart-month"></div>
-          </div>
-        </div>
-      </section>
+    <main class="artist-portal-page artist-spins-page">
+      <header class="artist-portal-hero">
+        <p class="artist-portal-eyebrow">Spins</p>
+        <h1 id="artist-display-name">Your artist</h1>
+        <p id="dashboard-subtitle" class="artist-portal-copy">Screenshot-ready spin stats from real DJ downloads.</p>
+      </header>
 
-      <section class="dj-panel artist-roster-panel hidden" id="label-roster-panel" aria-live="polite">
-        <div class="dj-panel-header">
-          <h2><i class="fa-solid fa-users"></i> Artist Roster</h2>
+      <section class="spin-stats-row" id="dashboard-stats" aria-label="Overview stats"></section>
+
+      <section class="spin-picker-section" id="song-picker" aria-label="Choose a song"></section>
+
+      <section id="song-infographic" class="spin-infographic-host hidden" aria-live="polite"></section>
+
+      <section class="spin-lines-section" aria-label="Spin activity">
+        <div class="spin-lines-header">
+          <h2><i class="fa-solid fa-tower-broadcast"></i> DJ spins</h2>
+          <span class="spin-lines-meta" id="spin-lines-meta"></span>
         </div>
-        <p class="dj-panel-note">Create artist profiles for your roster. Artists can claim their profile later and keep chart history if they switch labels.</p>
-        <div id="label-roster-list"></div>
-        <form id="create-profile-form" class="create-profile-form dashboard-form">
-          <div class="login-error" id="create-profile-error"></div>
-          <div class="form-grid form-grid--two">
-            <div class="form-field">
-              <label for="create-profile-artist-name">Artist Name</label>
-              <input type="text" id="create-profile-artist-name" placeholder="As it will appear on Radio Now" required>
-            </div>
-            <div class="form-field">
-              <label for="create-profile-claim-email">Artist email <span class="label-optional">(for claim)</span></label>
-              <input type="email" id="create-profile-claim-email" placeholder="artist@email.com">
-            </div>
-          </div>
-          <button type="submit" class="btn btn-secondary">
-            <i class="fa-solid fa-user-plus"></i>
-            Create Artist Profile
-          </button>
-        </form>
+        <a href="djs.html" class="btn btn-secondary btn-full spin-dj-directory-btn">
+          <i class="fa-solid fa-users"></i>
+          DJ Member Directory
+        </a>
+        <div id="spin-lines" class="spin-lines-list"></div>
       </section>
 
       <section class="dj-panel artist-access-panel hidden" id="label-access-panel" aria-live="polite">
         <div class="dj-panel-header">
-          <h2><i class="fa-solid fa-building"></i> Label Access</h2>
+          <h2><i class="fa-solid fa-building"></i> Label access</h2>
         </div>
-        <p class="dj-panel-note">Labels you allow can submit songs and view spins. Remove access anytime — your chart history stays with you.</p>
+        <p class="dj-panel-note">Labels with access to your account. Remove anytime — your chart history stays with you.</p>
         <div id="label-access-list"></div>
-      </section>
-
-      <section class="dj-panel artist-chart-history-panel hidden" id="chart-history-panel" aria-live="polite">
-        <div class="dj-panel-header">
-          <h2><i class="fa-solid fa-trophy"></i> Chart Career History</h2>
-        </div>
-        <p class="dj-panel-note">Best Radio Now chart positions for your songs — use when building your next radio pitch sheet.</p>
-        <div id="chart-history-content"></div>
-      </section>
-
-      <section class="dj-panel artist-submit-panel artist-submit-panel--form hidden" id="song-submit-panel" aria-live="polite">
-        <div class="dj-panel-header">
-          <h2 id="song-submit-heading"><i class="fa-solid fa-cloud-arrow-up"></i> Submit a New Song</h2>
-        </div>
-        <p class="dj-panel-note song-submit-intro" id="song-submit-panel-note">Use your Google Form to submit songs. Files go to your MP3, WAV, and Cover Art folders; song details are copied to the catalog sheet automatically.</p>
-
-        <div id="song-submit-simple" class="song-submit-simple">
-          <div class="song-submit-simple-steps">
-            <p><strong>1.</strong> Open the submission form and fill it out (text + file uploads).</p>
-            <p><strong>2.</strong> After you submit, your song is queued for Radio Now.</p>
-            <p><strong>3.</strong> Approved songs usually appear on the live catalog within a few minutes.</p>
-          </div>
-          <a
-            id="song-google-form-open-link"
-            class="btn btn-primary btn-lg song-submit-open-btn"
-            href="https://forms.gle/zFExL6otU1e7hJF59"
-            target="_blank"
-            rel="noopener"
-          >
-            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
-            Open song submission form
-          </a>
-          <p class="field-help song-submit-sync-note">
-            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-            Uploads are free this week. Payment will be added later — you will not need to do anything technical on your end.
-          </p>
-        </div>
-
-        <div id="song-submissions-list" class="song-submissions-list hidden"></div>
-
-        <form id="song-submit-form" class="song-submit-form dashboard-form dashboard-form--accessible dashboard-form--song-submit hidden" aria-hidden="true">
-          <input type="hidden" id="submit-editing-id" value="">
-          <div class="login-error" id="song-submit-error"></div>
-          <div class="song-submit-success hidden" id="song-submit-success"></div>
-
-          <fieldset class="song-form-section" aria-labelledby="song-section-1-title">
-            <legend class="visually-hidden">Song details</legend>
-            <div class="song-form-section-header" id="song-section-1-title">
-              <span class="song-form-section-num">01</span>
-              <h3 class="song-form-section-title"><i class="fa-solid fa-music" aria-hidden="true"></i> Song details</h3>
-            </div>
-            <div class="song-form-section-body">
-              <div class="form-grid form-grid--two song-form-field-group">
-                <div class="form-field">
-                  <label for="submit-artist-name">Artist Name <span class="label-required">*</span></label>
-                  <input type="text" id="submit-artist-name" list="submit-artist-options" placeholder="Artist as listed on Radio Now" required>
-                  <datalist id="submit-artist-options"></datalist>
-                </div>
-                <div class="form-field">
-                  <label for="submit-song-title">Song Title <span class="label-required">*</span></label>
-                  <input type="text" id="submit-song-title" placeholder="Song title" required>
-                </div>
-                <div class="form-field">
-                  <label for="submit-year">Year <span class="label-required">*</span></label>
-                  <input type="text" id="submit-year" placeholder="2026" inputmode="numeric" required>
-                </div>
-                <div class="form-field">
-                  <label for="submit-song-time">Song Time <span class="label-required">*</span></label>
-                  <input type="text" id="submit-song-time" placeholder="3:45" required>
-                </div>
-                <div class="form-field">
-                  <label for="submit-music-style">Music Style <span class="label-required">*</span></label>
-                  <select id="submit-music-style" required></select>
-                </div>
-                <div class="form-field">
-                  <label for="submit-songwriter">Songwriter <span class="label-required">*</span></label>
-                  <input type="text" id="submit-songwriter" placeholder="Writer names" required>
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="song-form-section" aria-labelledby="song-section-2-title">
-            <legend class="visually-hidden">Vocals and musicians</legend>
-            <div class="song-form-section-header" id="song-section-2-title">
-              <span class="song-form-section-num">02</span>
-              <h3 class="song-form-section-title"><i class="fa-solid fa-microphone" aria-hidden="true"></i> Vocals &amp; musicians</h3>
-            </div>
-            <div class="song-form-section-body">
-              <div class="song-form-field-group">
-                <p class="song-form-group-label">Vocals</p>
-                <div class="form-grid form-grid--two">
-                  <div class="form-field">
-                    <label for="submit-lead-vocals">Lead Vocals <span class="label-required">*</span></label>
-                    <input type="text" id="submit-lead-vocals" placeholder="Lead singer name" required>
-                  </div>
-                  <div class="form-field">
-                    <label for="submit-featured-artist">Featured Artist</label>
-                    <input type="text" id="submit-featured-artist" placeholder="Guest artist, if any">
-                  </div>
-                  <div class="form-field">
-                    <label for="submit-harmony-1">Harmony Vocals 1</label>
-                    <input type="text" id="submit-harmony-1" placeholder="Harmony singer">
-                  </div>
-                  <div class="form-field">
-                    <label for="submit-harmony-2">Harmony Vocals 2</label>
-                    <input type="text" id="submit-harmony-2" placeholder="Harmony singer">
-                  </div>
-                  <div class="form-field">
-                    <label for="submit-harmony-3">Harmony Vocals 3</label>
-                    <input type="text" id="submit-harmony-3" placeholder="Harmony singer">
-                  </div>
-                </div>
-              </div>
-              <div class="song-form-field-group">
-                <p class="song-form-group-label">More vocals</p>
-                <div class="form-grid form-grid--two">
-                  <div class="form-field">
-                    <label for="submit-harmony-4">Harmony Vocals 4</label>
-                    <input type="text" id="submit-harmony-4" placeholder="Harmony singer">
-                  </div>
-                </div>
-              </div>
-              <div class="song-form-field-group">
-                <p class="song-form-group-label">Instrument players <span class="song-form-group-hint">Format: Banjo - Player Name</span></p>
-                <div class="form-grid form-grid--two">
-                  <div class="form-field"><label for="submit-instrument-1">Instrument Player 1</label><input type="text" id="submit-instrument-1" placeholder="Banjo - Scott Vestal"></div>
-                  <div class="form-field"><label for="submit-instrument-2">Instrument Player 2</label><input type="text" id="submit-instrument-2" placeholder="Guitar - Jim Hurst"></div>
-                  <div class="form-field"><label for="submit-instrument-3">Instrument Player 3</label><input type="text" id="submit-instrument-3" placeholder="Mandolin - Seth Taylor"></div>
-                  <div class="form-field"><label for="submit-instrument-4">Instrument Player 4</label><input type="text" id="submit-instrument-4" placeholder="Fiddle - Tim Crouch"></div>
-                  <div class="form-field"><label for="submit-instrument-5">Instrument Player 5</label><input type="text" id="submit-instrument-5" placeholder="Bass - Dave Roe"></div>
-                </div>
-              </div>
-              <div class="song-form-field-group">
-                <p class="song-form-group-label">More instruments</p>
-                <div class="form-grid form-grid--two">
-                  <div class="form-field"><label for="submit-instrument-6">Instrument Player 6</label><input type="text" id="submit-instrument-6" placeholder="Dobro - Jeff Partin"></div>
-                  <div class="form-field"><label for="submit-instrument-7">Instrument Player 7</label><input type="text" id="submit-instrument-7" placeholder="Instrument - Player"></div>
-                  <div class="form-field"><label for="submit-instrument-8">Instrument Player 8</label><input type="text" id="submit-instrument-8" placeholder="Instrument - Player"></div>
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="song-form-section" aria-labelledby="song-section-3-title">
-            <legend class="visually-hidden">Release info</legend>
-            <div class="song-form-section-header" id="song-section-3-title">
-              <span class="song-form-section-num">03</span>
-              <h3 class="song-form-section-title"><i class="fa-solid fa-compact-disc" aria-hidden="true"></i> Release info</h3>
-            </div>
-            <div class="song-form-section-body">
-              <div class="form-grid form-grid--two song-form-field-group">
-                <div class="form-field" id="submit-label-field">
-                  <label for="submit-record-label">Record Label <span class="label-required">*</span></label>
-                  <label class="checkbox-field checkbox-field--inline" id="submit-independent-wrap">
-                    <input type="checkbox" id="submit-independent">
-                    <span>Independent (not on a label)</span>
-                  </label>
-                  <input type="text" id="submit-record-label" placeholder="615 Hideaway Records">
-                </div>
-                <div class="form-field">
-                  <label for="submit-release-type">Release type</label>
-                  <select id="submit-release-type">
-                    <option value="single">Single</option>
-                    <option value="album_track">Album track</option>
-                  </select>
-                </div>
-                <div class="form-field form-field--wide" id="submit-album-field">
-                  <label for="submit-album-name">Album name</label>
-                  <input type="text" id="submit-album-name" placeholder="e.g. So, What'd I Miss?">
-                  <p class="field-help" id="submit-album-help">Optional for singles — use the same album name on each track when building a full album later.</p>
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="song-form-section" aria-labelledby="song-section-4-title">
-            <legend class="visually-hidden">Press blurb</legend>
-            <div class="song-form-section-header" id="song-section-4-title">
-              <span class="song-form-section-num">04</span>
-              <h3 class="song-form-section-title"><i class="fa-solid fa-align-left" aria-hidden="true"></i> Press blurb</h3>
-            </div>
-            <div class="song-form-section-body">
-              <div class="song-form-field-group">
-                <div class="form-field">
-                  <label for="submit-description">Description <span class="label-required">*</span></label>
-                  <textarea id="submit-description" rows="6" placeholder="One paragraph about the release for DJs and radio" required></textarea>
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <fieldset class="song-form-section song-form-section--files" aria-labelledby="song-section-5-title">
-            <legend class="visually-hidden">Audio and cover art</legend>
-            <div class="song-form-section-header" id="song-section-5-title">
-              <span class="song-form-section-num">05</span>
-              <h3 class="song-form-section-title"><i class="fa-solid fa-file-audio" aria-hidden="true"></i> Audio &amp; cover art <span class="label-required">*</span></h3>
-            </div>
-            <div class="song-form-section-body">
-              <p class="field-help song-form-files-note">All three files are required. Large WAV files upload in parts — stay on this page until finished.</p>
-              <div class="form-grid form-grid--two form-grid--uploads song-form-field-group" id="song-upload-fields"></div>
-            </div>
-          </fieldset>
-
-          <fieldset class="song-form-section" aria-labelledby="song-section-6-title">
-            <legend class="visually-hidden">Contact</legend>
-            <div class="song-form-section-header" id="song-section-6-title">
-              <span class="song-form-section-num">06</span>
-              <h3 class="song-form-section-title"><i class="fa-solid fa-envelope" aria-hidden="true"></i> Contact</h3>
-            </div>
-            <div class="song-form-section-body">
-              <div class="form-grid form-grid--two song-form-field-group">
-                <div class="form-field">
-                  <label for="submit-website">Website</label>
-                  <input type="url" id="submit-website" placeholder="https://">
-                </div>
-                <div class="form-field">
-                  <label for="submit-contact-email">Contact email</label>
-                  <input type="email" id="submit-contact-email" placeholder="promo@label.com">
-                </div>
-              </div>
-            </div>
-          </fieldset>
-
-          <div class="song-form-actions">
-            <button type="submit" class="btn btn-primary btn-lg" id="song-submit-btn">
-              <i class="fa-solid fa-paper-plane"></i>
-              Submit for Review
-            </button>
-            <button type="button" class="btn btn-secondary btn-lg hidden" id="song-cancel-edit-btn">
-              Cancel edit
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section class="dj-panel artist-promo-panel" id="artist-promo-panel" aria-live="polite">
-        <div class="dj-panel-header">
-          <h2><i class="fa-solid fa-folder-open"></i> Your Promo Folders</h2>
-        </div>
-        <p class="dj-panel-note">Download ZIPs to share with DJs who are not on Radio Now.</p>
-        <p id="artist-promo-setup-notice" class="queue-help queue-warning hidden">
-          <i class="fa-solid fa-triangle-exclamation"></i>
-          ZIP builds in your browser. If downloads fail, confirm Apps Script is deployed (see <code>AUDIO-FIX-STEPS.txt</code>).
-        </p>
-        <div id="artist-promo-content"></div>
-      </section>
-
-      <section class="dj-dashboard-stats" id="dashboard-stats"></section>
-
-      <section class="dj-dashboard-grid">
-        <div class="dj-panel dj-panel--wide artist-panel--full">
-          <div class="dj-panel-header">
-          <h2>Spins</h2>
-          <span class="dj-panel-meta" id="history-count"></span>
-        </div>
-        <p class="dj-panel-note">Each spin (DJ download) shows the station and program details. A DJ contact email appears only if they opt in to share it.</p>
-          <div id="dashboard-history"></div>
-        </div>
       </section>
     </main>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="js/vendor/jspdf.umd.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/pitch.js"></script>
   <script src="js/demo.js"></script>
@@ -480,14 +187,10 @@
   <script src="js/artist-auth.js"></script>
   <script src="js/account-auth.js"></script>
   <script src="js/artist-auth-ui.js"></script>
-  <script src="js/dj-auth-ui.js"></script>
   <script src="js/nav.js"></script>
-  <script src="js/artist-activity.js"></script>
-  <script src="js/charts.js"></script>
   <script src="js/utils.js"></script>
-  <script src="js/file-upload-field.js"></script>
-  <script src="js/song-submit-config.js"></script>
-  <script src="js/one-sheet.js"></script>
+  <script src="js/artist-portal-nav.js"></script>
+  <script src="js/artist-activity.js"></script>
   <script src="js/database.js"></script>
   <script src="js/artist-dashboard-app.js"></script>
 </body>
