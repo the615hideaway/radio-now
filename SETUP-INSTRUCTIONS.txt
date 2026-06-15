@@ -12,19 +12,29 @@ YOUR GOOGLE SHEET
 -----------------
 https://docs.google.com/spreadsheets/d/1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU/edit
 
-HOW SONGS GET ON THE WEBSITE
-----------------------------
+HOW SONGS GET ON THE WEBSITE (automatic, ~5 minutes)
+----------------------------------------------------
   Google Form submit
     → Form Responses 1 (raw log)
-    → Apps Script onArtistSongFormSubmit
+    → Apps Script onArtistSongFormSubmit (form submit trigger)
         moves MP3/WAV/Cover to type folders
         appends row to Sheet1 (catalog)
-    → GitHub Action "Sync Google Sheet to JSON"
-        builds data/songs.json
+        triggers GitHub "Sync Google Sheet to JSON" via API
+    → data/songs.json updates on GitHub
     → Live site at the615hideaway.github.io/radio-now
 
-Uploads are FREE for now (no Stripe payment required). Payment tracking
-(Stripe / Google Pay) can be added later — not needed this week.
+ONE-TIME ADMIN SETUP (not shown to artists):
+  1. GitHub → Settings → Developer settings → Personal access tokens
+     Create a token with "repo" scope for the615hideaway/radio-now
+  2. Apps Script → Project Settings → Script Properties
+     Add: GITHUB_CATALOG_SYNC_TOKEN = (paste token)
+  3. Redeploy Code.gs (version 2026-06-15-submission-v7+)
+
+Backup: the sync workflow also runs every 5 minutes on a schedule.
+
+Uploads are FREE for now. Later, add a "Payment Status" column on the form;
+only rows marked paid (or blank during free period) publish to Sheet1.
+Stripe / Google Pay hook can call the same catalog sync after payment.
 
 ARTIST SONG SUBMISSIONS (Google Form)
 -------------------------------------

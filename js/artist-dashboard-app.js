@@ -625,7 +625,7 @@
     if (openLink) openLink.href = formUrl;
 
     if (panelNote) {
-      panelNote.textContent = 'Use your Google Form to submit songs. Files go to your MP3, WAV, and Cover Art folders; song details are copied to the catalog sheet automatically.';
+      panelNote.textContent = 'Use your Google Form to submit songs. After you submit, new releases usually appear on the live catalog within a few minutes.';
     }
 
     simpleWrap?.classList.remove('hidden');

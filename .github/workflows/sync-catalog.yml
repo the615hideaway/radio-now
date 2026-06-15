@@ -2,8 +2,11 @@ name: Sync Google Sheet to JSON
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [sync-catalog]
   schedule:
-    - cron: '0 12 * * *'
+    # Backup sync every 5 minutes if the Apps Script dispatch fails
+    - cron: '*/5 * * * *'
 
 permissions:
   contents: write
