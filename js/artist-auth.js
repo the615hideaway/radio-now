@@ -3,11 +3,26 @@ const ArtistAuth = {
     return !!(CONFIG.googleScriptUrl && CONFIG.googleScriptUrl.includes('script.google.com'));
   },
 
-  async request(action, payload = {}) {
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  },
+
+  isRetryableRequestError(err) {
+    const message = String(err?.message || err || '').toLowerCase();
+    return message.includes('timed out')
+      || message.includes('timeout')
+      || message.includes('network')
+      || message.includes('failed to fetch')
+      || message.includes('upload request failed')
+      || message.includes('upload service returned');
+  },
+
+  async request(action, payload = {}, options = {}) {
     if (!this.isScriptReady()) {
       throw new Error('Artist sign-in is not configured yet. Redeploy Apps Script with the latest Code.gs.');
     }
 
+    const label = options.label || action;
     let response;
     try {
       response = await fetch(CONFIG.googleScriptUrl, {
@@ -16,21 +31,46 @@ const ArtistAuth = {
         body: JSON.stringify({ action, ...payload }),
       });
     } catch (err) {
-      throw new Error('Could not reach the upload service. Check your internet connection and try again.');
+      throw new Error(`Upload request failed (${label}). Google timed out or blocked the request — wait a moment and try again.`);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Upload service returned an error (${label}). Please try again.`);
     }
 
     let data;
     try {
       data = await response.json();
     } catch (err) {
-      throw new Error('Could not reach the artist sign-in service. Redeploy Apps Script with the latest Code.gs.');
+      throw new Error(`Upload service sent an invalid response (${label}). Redeploy Apps Script with the latest Code.gs.`);
     }
 
     if (!data.success) {
-      throw new Error(data.error || 'Request failed');
+      throw new Error(data.error || `Request failed (${label}).`);
     }
 
     return data;
+  },
+
+  async requestWithRetry(action, payload = {}, options = {}) {
+    const maxAttempts = options.maxAttempts || 4;
+    const label = options.label || action;
+    let lastError;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await this.request(action, payload, { label });
+      } catch (err) {
+        lastError = err;
+        if (attempt < maxAttempts && this.isRetryableRequestError(err)) {
+          await this.sleep(700 * attempt);
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    throw lastError || new Error(`Request failed (${label}).`);
   },
 
   saveSession(data) {
@@ -114,42 +154,54 @@ const ArtistAuth = {
     });
   },
 
+  uploadAuthPayload(fields = {}) {
+    const token = this.getToken();
+    if (!token) throw new Error('Not signed in.');
+    return { token, ...fields };
+  },
+
   async uploadSubmissionAsset(fields) {
-    return this.authRequest('song_upload_asset', {
+    const fileName = String(fields.fileName || '').trim() || 'file';
+    return this.requestWithRetry('song_upload_asset', this.uploadAuthPayload({
       artistName: String(fields.artistName || '').trim(),
       songTitle: String(fields.songTitle || '').trim(),
       assetType: String(fields.assetType || '').trim(),
-      fileName: String(fields.fileName || '').trim(),
+      fileName,
       mimeType: String(fields.mimeType || '').trim(),
       fileBase64: String(fields.fileBase64 || ''),
-    });
+    }), { label: `${fileName} upload` });
   },
 
   async uploadSubmissionAssetStart(fields) {
-    return this.authRequest('song_upload_start', {
+    const fileName = String(fields.fileName || '').trim() || 'file';
+    return this.requestWithRetry('song_upload_start', this.uploadAuthPayload({
       uploadId: String(fields.uploadId || '').trim(),
       artistName: String(fields.artistName || '').trim(),
       songTitle: String(fields.songTitle || '').trim(),
       assetType: String(fields.assetType || '').trim(),
-      fileName: String(fields.fileName || '').trim(),
+      fileName,
       mimeType: String(fields.mimeType || '').trim(),
       totalChunks: fields.totalChunks,
-    });
+    }), { label: `${fileName} start` });
   },
 
   async uploadSubmissionAssetChunk(fields) {
-    return this.authRequest('song_upload_chunk', {
+    const fileName = String(fields.fileName || '').trim() || 'file';
+    const part = Number(fields.chunkIndex || 0) + 1;
+    const total = Number(fields.totalChunks || 0);
+    return this.requestWithRetry('song_upload_chunk', this.uploadAuthPayload({
       uploadId: String(fields.uploadId || '').trim(),
       chunkIndex: fields.chunkIndex,
       totalChunks: fields.totalChunks,
       chunkBase64: String(fields.chunkBase64 || ''),
-    });
+    }), { label: `${fileName} part ${part} of ${total}` });
   },
 
   async uploadSubmissionAssetFinish(fields) {
-    return this.authRequest('song_upload_finish', {
+    const fileName = String(fields.fileName || '').trim() || 'file';
+    return this.requestWithRetry('song_upload_finish', this.uploadAuthPayload({
       uploadId: String(fields.uploadId || '').trim(),
-    });
+    }), { label: `${fileName} finalize`, maxAttempts: 3 });
   },
 
   buildSongPayload(fields) {

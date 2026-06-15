@@ -687,7 +687,8 @@
     sync();
   }
 
-  const UPLOAD_CHUNK_BYTES = 1536 * 1024;
+  const UPLOAD_CHUNK_BYTES = 512 * 1024;
+  const UPLOAD_DIRECT_MAX_BYTES = 400 * 1024;
 
   function makeUploadId() {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -724,7 +725,9 @@
     );
 
     let result;
-    if (file.size <= UPLOAD_CHUNK_BYTES) {
+    const useChunkedUpload = assetType === 'wav' || file.size > UPLOAD_DIRECT_MAX_BYTES;
+
+    if (!useChunkedUpload) {
       const fileBase64 = await FileUploadField.readBase64(fieldId);
       result = await ArtistAuth.uploadSubmissionAsset({
         artistName,
@@ -736,7 +739,7 @@
       });
     } else {
       const uploadId = makeUploadId();
-      const totalChunks = Math.ceil(file.size / UPLOAD_CHUNK_BYTES);
+      const totalChunks = Math.max(1, Math.ceil(file.size / UPLOAD_CHUNK_BYTES));
 
       await ArtistAuth.uploadSubmissionAssetStart({
         uploadId,
@@ -761,10 +764,12 @@
           chunkIndex,
           totalChunks,
           chunkBase64,
+          fileName: file.name,
         });
+        await ArtistAuth.sleep(120);
       }
 
-      result = await ArtistAuth.uploadSubmissionAssetFinish({ uploadId });
+      result = await ArtistAuth.uploadSubmissionAssetFinish({ uploadId, fileName: file.name });
     }
 
     if (statusEl) {

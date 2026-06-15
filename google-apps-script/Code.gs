@@ -12,7 +12,7 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v3';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v4';
 var SUBMISSION_CHUNK_FOLDER_NAME = '_RadioNowUploadChunks';
 var RADIO_NOW_MUSIC_STYLES = [
   'Bluegrass',
@@ -550,7 +550,12 @@ function uploadSubmissionChunk_(token, payload) {
 
   var bytes = Utilities.base64Decode(chunkBase64);
   var folder = getSubmissionChunkFolder_();
-  folder.createFile(Utilities.newBlob(bytes, 'application/octet-stream', uploadId + '_chunk_' + chunkIndex));
+  var chunkName = uploadId + '_chunk_' + chunkIndex;
+  var existing = folder.getFilesByName(chunkName);
+  while (existing.hasNext()) {
+    existing.next().setTrashed(true);
+  }
+  folder.createFile(Utilities.newBlob(bytes, 'application/octet-stream', chunkName));
 
   return {
     success: true,
@@ -559,6 +564,25 @@ function uploadSubmissionChunk_(token, payload) {
     receivedChunks: chunkIndex + 1,
     totalChunks: meta.totalChunks,
   };
+}
+
+function combineUploadChunkBytes_(chunks) {
+  var totalLength = 0;
+  chunks.forEach(function (chunk) {
+    totalLength += chunk.bytes.length;
+  });
+
+  var combined = new Array(totalLength);
+  var offset = 0;
+  chunks.forEach(function (chunk) {
+    var bytes = chunk.bytes;
+    for (var i = 0; i < bytes.length; i++) {
+      var value = bytes[i];
+      combined[offset++] = value < 0 ? value + 256 : value;
+    }
+  });
+
+  return combined;
 }
 
 function uploadSubmissionFinish_(token, payload) {
@@ -590,12 +614,7 @@ function uploadSubmissionFinish_(token, payload) {
     throw new Error('Upload incomplete (' + chunks.length + ' of ' + meta.totalChunks + ' parts). Please try again.');
   }
 
-  var combined = [];
-  chunks.forEach(function (chunk) {
-    chunk.bytes.forEach(function (byte) {
-      combined.push(byte < 0 ? byte + 256 : byte);
-    });
-  });
+  var combined = combineUploadChunkBytes_(chunks);
 
   var result = saveSubmissionAssetToFolder_(
     meta.artistName,
