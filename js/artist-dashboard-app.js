@@ -626,7 +626,7 @@
     }
 
     if (panelNote) {
-      panelNote.textContent = 'Complete each section below. MP3, WAV, and cover art upload directly to Google Drive — up to 100 MB per file.';
+      panelNote.textContent = 'Fill out each section below on this page — nothing redirects away. Required fields are marked with *.';
     }
   }
 
