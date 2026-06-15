@@ -74,6 +74,107 @@
     return Array.from(map.values()).sort((a, b) => a.songTitle.localeCompare(b.songTitle));
   }
 
+  function songsForAccount(account, songs) {
+    if (!account) return songs;
+    const isLabel = String(account.accountType || '').toLowerCase() === 'label';
+    const target = String(account.artistName || '').trim().toLowerCase();
+    return songs.filter((song) => {
+      const field = isLabel ? song.recordLabel : song.artistName;
+      return String(field || '').trim().toLowerCase() === target;
+    });
+  }
+
+  function catalogSortScore(song) {
+    const year = parseInt(String(song?.year || '').trim(), 10) || 0;
+    const releaseTs = Date.parse(song?.releaseDate || '') || 0;
+    return releaseTs || (year * 10000);
+  }
+
+  async function enrichSongsFromCatalog(songs, account) {
+    const catalog = await fetchCatalogOnce();
+    const roster = songsForAccount(account, catalog);
+    const map = new Map(songs.map((s) => [s.key, s]));
+
+    roster.forEach((entry) => {
+      const key = normalizeKey(entry.artistName, entry.songTitle);
+      if (map.has(key)) return;
+      map.set(key, {
+        key,
+        artistName: String(entry.artistName || '').trim(),
+        songTitle: String(entry.songTitle || '').trim(),
+        songId: String(entry.id || '').trim(),
+        musicStyle: String(entry.musicStyle || '').trim(),
+      });
+    });
+
+    return Array.from(map.values()).sort((a, b) => a.songTitle.localeCompare(b.songTitle));
+  }
+
+  async function resolveLatestSongKey(songs, account) {
+    const catalog = await fetchCatalogOnce();
+    const roster = songsForAccount(account, catalog)
+      .sort((a, b) => catalogSortScore(b) - catalogSortScore(a));
+
+    if (roster.length) {
+      return normalizeKey(roster[0].artistName, roster[0].songTitle);
+    }
+
+    if (!songs.length) return '';
+
+    const keys = new Set(songs.map((s) => s.key));
+    let latestKey = songs[0].key;
+    let latestTs = 0;
+    (dashboardData?.activity || []).forEach((item) => {
+      const key = normalizeKey(item.artistName, item.songTitle);
+      if (!keys.has(key)) return;
+      const ts = Date.parse(item.timestamp);
+      if (!Number.isNaN(ts) && ts > latestTs) {
+        latestTs = ts;
+        latestKey = key;
+      }
+    });
+    return latestKey;
+  }
+
+  function buildCreditsHtml(catalogSong) {
+    if (!catalogSong) return '';
+
+    const blocks = [];
+
+    if (catalogSong.songwriter) {
+      blocks.push(`
+        <div class="spin-infographic-credit-block">
+          <p class="spin-infographic-credit-label">Songwriter</p>
+          <p class="spin-infographic-credit-value">${Utils.escapeHtml(catalogSong.songwriter)}</p>
+        </div>`);
+    }
+
+    const lines = Array.isArray(catalogSong.bandMemberLines)
+      ? catalogSong.bandMemberLines.filter(Boolean)
+      : String(catalogSong.bandMembers || '').split(';').map((s) => s.trim()).filter(Boolean);
+
+    if (lines.length) {
+      blocks.push(`
+        <div class="spin-infographic-credit-block">
+          <p class="spin-infographic-credit-label">Musicians</p>
+          <ul class="spin-infographic-musicians">
+            ${lines.map((line) => `<li>${Utils.escapeHtml(line)}</li>`).join('')}
+          </ul>
+        </div>`);
+    }
+
+    if (catalogSong.featuredArtist) {
+      blocks.push(`
+        <div class="spin-infographic-credit-block">
+          <p class="spin-infographic-credit-label">Featured artist</p>
+          <p class="spin-infographic-credit-value">${Utils.escapeHtml(catalogSong.featuredArtist)}</p>
+        </div>`);
+    }
+
+    if (!blocks.length) return '';
+    return `<div class="spin-infographic-credits">${blocks.join('')}</div>`;
+  }
+
   function songStats(data, song) {
     const key = song.key;
     const now = Date.now();
@@ -134,20 +235,28 @@
     return songs.find((entry) => normalizeKey(entry.artistName, entry.songTitle) === song.key) || null;
   }
 
-  function renderStats(stats) {
+  function renderSongMetrics(stats) {
     if (!dashboardStats) return;
+
     const items = [
-      { label: 'Total spins', value: stats.totalDownloads || 0 },
-      { label: 'This week', value: stats.thisWeek || 0 },
-      { label: 'This month', value: stats.thisMonth || 0 },
-      { label: 'Songs spun', value: stats.uniqueSongs || 0 },
+      { label: 'DJ spins', value: stats.total, hero: true },
+      { label: 'This week', value: stats.week },
+      { label: 'This month', value: stats.month },
+      { label: 'DJs', value: stats.uniqueDjs },
     ];
 
+    dashboardStats.classList.remove('hidden');
     dashboardStats.innerHTML = items.map((item) => `
-      <div class="spin-stat-pill">
+      <div class="spin-stat-pill${item.hero ? ' spin-stat-pill--hero' : ''}">
         <span class="spin-stat-pill-value">${item.value}</span>
         <span class="spin-stat-pill-label">${item.label}</span>
       </div>`).join('');
+  }
+
+  function hideSongMetrics() {
+    if (!dashboardStats) return;
+    dashboardStats.classList.add('hidden');
+    dashboardStats.innerHTML = '';
   }
 
   function renderSongPicker(songs) {
@@ -159,8 +268,8 @@
       return;
     }
 
-    songPicker.innerHTML = `
-      <p class="spin-picker-label">Tap a song for spin stats</p>
+      songPicker.innerHTML = `
+      <p class="spin-picker-label">Your songs — latest release shown first</p>
       <div class="spin-song-chips">
         ${songs.map((song) => `
           <button
@@ -175,12 +284,17 @@
 
     songPicker.querySelectorAll('.spin-song-chip').forEach((btn) => {
       btn.addEventListener('click', () => {
-        selectedSongKey = btn.dataset.songKey || '';
-        renderSongPicker(songs);
-        loadSongInfographic(songs.find((s) => s.key === selectedSongKey));
-        renderSpinLines(dashboardData?.activity || [], selectedSongKey);
+        selectSong(songs, btn.dataset.songKey || '');
       });
     });
+  }
+
+  function selectSong(songs, key) {
+    selectedSongKey = key || '';
+    renderSongPicker(songs);
+    const song = songs.find((s) => s.key === selectedSongKey);
+    loadSongInfographic(song);
+    renderSpinLines(dashboardData?.activity || [], selectedSongKey);
   }
 
   async function loadSongInfographic(song) {
@@ -189,6 +303,7 @@
     if (!song) {
       songInfographic.classList.add('hidden');
       songInfographic.innerHTML = '';
+      hideSongMetrics();
       return;
     }
 
@@ -196,12 +311,21 @@
     songInfographic.innerHTML = `
       <div class="spin-infographic spin-infographic--loading">
         <i class="fa-solid fa-spinner fa-spin"></i>
-        <p>Building stats card…</p>
+        <p>Loading latest release…</p>
       </div>`;
 
     const stats = songStats(dashboardData, song);
+    renderSongMetrics(stats);
+
     const catalogSong = await findCatalogSong(song);
     const coverUrl = catalogSong ? Utils.resolveCoverUrl(catalogSong) : '';
+    const creditsHtml = buildCreditsHtml(catalogSong);
+
+    const metaBits = [
+      catalogSong?.year || '',
+      catalogSong?.songTime || '',
+      catalogSong?.recordLabel || '',
+    ].filter(Boolean);
 
     const rankBits = [];
     if (stats.weekRank) rankBits.push(`#${stats.weekRank} this week`);
@@ -222,29 +346,13 @@
     : '<i class="fa-solid fa-compact-disc" aria-hidden="true"></i>'}
           </div>
           <div class="spin-infographic-copy">
-            <p class="spin-infographic-eyebrow">${Utils.escapeHtml(song.musicStyle || 'Bluegrass')}</p>
+            <p class="spin-infographic-eyebrow">${Utils.escapeHtml(catalogSong?.musicStyle || song.musicStyle || 'Bluegrass')}</p>
             <h2 class="spin-infographic-title">${Utils.escapeHtml(song.songTitle)}</h2>
             <p class="spin-infographic-artist">${Utils.escapeHtml(song.artistName)}</p>
+            ${metaBits.length ? `<p class="spin-infographic-meta-line">${metaBits.map((b) => Utils.escapeHtml(b)).join(' · ')}</p>` : ''}
           </div>
         </div>
-        <div class="spin-infographic-metrics">
-          <div class="spin-infographic-metric spin-infographic-metric--hero">
-            <span class="spin-infographic-metric-value">${stats.total}</span>
-            <span class="spin-infographic-metric-label">DJ spins</span>
-          </div>
-          <div class="spin-infographic-metric">
-            <span class="spin-infographic-metric-value">${stats.week}</span>
-            <span class="spin-infographic-metric-label">This week</span>
-          </div>
-          <div class="spin-infographic-metric">
-            <span class="spin-infographic-metric-value">${stats.month}</span>
-            <span class="spin-infographic-metric-label">This month</span>
-          </div>
-          <div class="spin-infographic-metric">
-            <span class="spin-infographic-metric-value">${stats.uniqueDjs}</span>
-            <span class="spin-infographic-metric-label">DJs</span>
-          </div>
-        </div>
+        ${creditsHtml}
         ${rankBits.length ? `<p class="spin-infographic-ranks">${rankBits.map((b) => Utils.escapeHtml(b)).join(' · ')}</p>` : ''}
         <p class="spin-infographic-foot">Screenshot and share — real DJ download activity on Radio Now.</p>
       </article>`;
@@ -341,9 +449,7 @@
 
     setArtistHeader(artistName, { demo: isDemoMode, isLabel });
 
-    if (dashboardStats) {
-      dashboardStats.innerHTML = '<div class="spin-stat-pill"><span class="spin-stat-pill-value"><i class="fa-solid fa-spinner fa-spin"></i></span></div>';
-    }
+    hideSongMetrics();
     if (spinLines) {
       spinLines.innerHTML = '<div class="spin-lines-empty"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading spins…</p></div>';
     }
@@ -369,16 +475,22 @@
         ArtistPortalNav.init('spins', { isLabel: false });
       }
 
-      renderStats(data.stats || {});
-      const songs = collectSongs(data);
+      let songs = collectSongs(data);
+      songs = await enrichSongsFromCatalog(songs, resolved);
+      selectedSongKey = await resolveLatestSongKey(songs, resolved);
       renderSongPicker(songs);
-      renderSpinLines(data.activity || [], selectedSongKey);
 
       if (selectedSongKey) {
-        loadSongInfographic(songs.find((s) => s.key === selectedSongKey));
-      } else if (songInfographic) {
-        songInfographic.classList.add('hidden');
-        songInfographic.innerHTML = '';
+        const song = songs.find((s) => s.key === selectedSongKey);
+        await loadSongInfographic(song);
+        renderSpinLines(data.activity || [], selectedSongKey);
+      } else {
+        renderSpinLines(data.activity || [], '');
+        if (songInfographic) {
+          songInfographic.classList.add('hidden');
+          songInfographic.innerHTML = '';
+        }
+        hideSongMetrics();
       }
 
       if (!resolvedIsLabel) {
