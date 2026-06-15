@@ -4244,9 +4244,13 @@ select { min-width: 130px; width: auto; }
 }
 
 .artist-portal-chrome-logo {
+  display: block;
   width: 22px;
   height: 22px;
+  max-width: 22px;
+  max-height: 22px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .artist-portal-chrome-actions {
@@ -4525,9 +4529,13 @@ select { min-width: 130px; width: auto; }
 }
 
 .spin-infographic-logo {
+  display: block;
   width: 28px;
   height: 28px;
+  max-width: 28px;
+  max-height: 28px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .spin-infographic-body {
@@ -4783,6 +4791,46 @@ select { min-width: 130px; width: auto; }
 
 .artist-promo-list--compact .artist-promo-item {
   grid-template-columns: 52px minmax(0, 1fr) auto;
+}
+
+@media (max-width: 520px) {
+  .artist-portal-chrome {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem 0.35rem;
+  }
+
+  .artist-portal-chrome-brand {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .artist-portal-chrome-logo {
+    width: 18px;
+    height: 18px;
+    max-width: 18px;
+    max-height: 18px;
+  }
+
+  .artist-portal-chrome-actions {
+    justify-content: center;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.4rem;
+  }
+
+  .spin-infographic-brand {
+    justify-content: center;
+  }
+
+  .spin-infographic-logo {
+    width: 20px;
+    height: 20px;
+    max-width: 20px;
+    max-height: 20px;
+  }
 }
 
 @media (max-width: 400px) {
