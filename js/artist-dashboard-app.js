@@ -626,7 +626,7 @@
     }
 
     if (panelNote) {
-      panelNote.textContent = 'Submit song details and upload MP3, WAV, and cover art below. Files go straight to Google Drive — reliable for large audio files (up to 100 MB each). Responses land in your sheet tab Form Responses 1.';
+      panelNote.textContent = 'Complete each section below. MP3, WAV, and cover art upload directly to Google Drive — up to 100 MB per file.';
     }
   }
 

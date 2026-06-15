@@ -28,8 +28,13 @@ Do not mix song submissions and DJ signups on the same tab.
 Google Form theme (to match the Radio Now site):
   • Primary color: #f4c430 (gold)
   • Background: #111 or #1a1a1a (dark)
-  • Add section titles: Song details, Vocals & musicians, Release info,
-    Press blurb, Audio & cover art, Contact
+  • Use these section headers (in order) so the form matches the dashboard:
+      01 Song details
+      02 Vocals & musicians
+      03 Release info
+      04 Press blurb
+      05 Audio & cover art
+      06 Contact
   • MP3 + WAV: File upload → Audio, max 100 MB
   • Cover Art: File upload → Image, max 100 MB
 

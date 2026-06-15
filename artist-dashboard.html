@@ -218,28 +218,112 @@
         <div id="chart-history-content"></div>
       </section>
 
-      <section class="dj-panel artist-submit-panel hidden" id="song-submit-panel" aria-live="polite">
+      <section class="dj-panel artist-submit-panel artist-submit-panel--form hidden" id="song-submit-panel" aria-live="polite">
         <div class="dj-panel-header">
           <h2 id="song-submit-heading"><i class="fa-solid fa-cloud-arrow-up"></i> Submit a New Song</h2>
         </div>
-        <p class="dj-panel-note" id="song-submit-panel-note">Submit song details and upload MP3, WAV, and cover art below. Files go straight to Google Drive — reliable for large audio files (up to 100 MB each).</p>
+        <p class="dj-panel-note song-submit-intro" id="song-submit-panel-note">Complete each section below. MP3, WAV, and cover art upload directly to Google Drive — up to 100 MB per file.</p>
 
         <div id="song-submit-google-form" class="song-submit-google-form">
-          <div class="song-google-form-shell">
-            <iframe
-              id="song-google-form-iframe"
-              title="Submit a song to Radio Now"
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade"
-            ></iframe>
+          <div class="song-form-layout">
+            <aside class="song-form-guide" aria-label="Form sections guide">
+              <p class="song-form-guide-eyebrow">Six sections</p>
+              <h3 class="song-form-guide-title">How the form is organized</h3>
+              <p class="song-form-guide-lead">Work top to bottom in the form on the right. Required items are marked with an asterisk (*).</p>
+
+              <div class="song-form-guide-sections">
+                <article class="song-form-guide-section">
+                  <div class="song-form-guide-section-head">
+                    <span class="song-form-guide-num" aria-hidden="true">01</span>
+                    <h4><i class="fa-solid fa-music" aria-hidden="true"></i> Song details</h4>
+                  </div>
+                  <p>Artist name, song title, year, song length, music style, and songwriter.</p>
+                </article>
+
+                <article class="song-form-guide-section">
+                  <div class="song-form-guide-section-head">
+                    <span class="song-form-guide-num" aria-hidden="true">02</span>
+                    <h4><i class="fa-solid fa-microphone" aria-hidden="true"></i> Vocals &amp; musicians</h4>
+                  </div>
+                  <p>Lead vocals, featured artist, up to four harmony singers, and up to eight instrument players.</p>
+                  <p class="song-form-guide-hint">Instruments: <strong>Banjo - Player Name</strong></p>
+                </article>
+
+                <article class="song-form-guide-section">
+                  <div class="song-form-guide-section-head">
+                    <span class="song-form-guide-num" aria-hidden="true">03</span>
+                    <h4><i class="fa-solid fa-compact-disc" aria-hidden="true"></i> Release info</h4>
+                  </div>
+                  <p>Record label, single or album track, and album name when applicable.</p>
+                </article>
+
+                <article class="song-form-guide-section">
+                  <div class="song-form-guide-section-head">
+                    <span class="song-form-guide-num" aria-hidden="true">04</span>
+                    <h4><i class="fa-solid fa-align-left" aria-hidden="true"></i> Press blurb</h4>
+                  </div>
+                  <p>One paragraph description for DJs and radio — what makes this release worth a spin.</p>
+                </article>
+
+                <article class="song-form-guide-section song-form-guide-section--highlight">
+                  <div class="song-form-guide-section-head">
+                    <span class="song-form-guide-num" aria-hidden="true">05</span>
+                    <h4><i class="fa-solid fa-file-audio" aria-hidden="true"></i> Audio &amp; cover art</h4>
+                  </div>
+                  <p>Upload your <strong>MP3</strong>, <strong>WAV</strong>, and <strong>cover image</strong>. All three are required.</p>
+                  <p class="song-form-guide-hint">Large WAV files may take a few minutes — stay on this page until each upload finishes.</p>
+                </article>
+
+                <article class="song-form-guide-section">
+                  <div class="song-form-guide-section-head">
+                    <span class="song-form-guide-num" aria-hidden="true">06</span>
+                    <h4><i class="fa-solid fa-envelope" aria-hidden="true"></i> Contact</h4>
+                  </div>
+                  <p>Website and promo contact email (optional unless your form marks them required).</p>
+                </article>
+              </div>
+
+              <div class="song-form-guide-tip">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                <p>Work through the sections in order. If a large WAV upload seems stuck, use <strong>Open in new tab</strong> and wait until each file shows finished before you submit.</p>
+              </div>
+            </aside>
+
+            <div class="song-form-main">
+              <div class="song-google-form-shell">
+                <div class="song-google-form-chrome">
+                  <span class="song-google-form-chrome-label">
+                    <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                    Radio Now submission form
+                  </span>
+                  <span class="song-google-form-chrome-meta">Scroll within the form to reach all six sections</span>
+                </div>
+                <iframe
+                  id="song-google-form-iframe"
+                  title="Submit a song to Radio Now"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                ></iframe>
+              </div>
+
+              <div class="song-form-footer-bar">
+                <p class="song-form-footer-note">
+                  <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                  Files upload to Google Drive. You will see a confirmation after you submit.
+                </p>
+                <a
+                  id="song-google-form-open-link"
+                  class="btn btn-secondary song-form-open-btn"
+                  href="https://forms.gle/zFExL6otU1e7hJF59"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i>
+                  Open in new tab
+                </a>
+              </div>
+            </div>
           </div>
-          <p class="field-help song-form-open-tab">
-            <a id="song-google-form-open-link" href="https://forms.gle/zFExL6otU1e7hJF59" target="_blank" rel="noopener">
-              <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i>
-              Open form in a new tab
-            </a>
-            if uploads stall in the embedded view.
-          </p>
         </div>
       </section>
 

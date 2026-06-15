@@ -773,32 +773,295 @@ a:hover { color: var(--white); }
   font-size: 0.92rem;
 }
 
+.artist-submit-panel--form {
+  padding: 1.35rem 1.5rem 1.5rem;
+}
+
+.song-submit-intro {
+  max-width: 72ch;
+  margin-bottom: 0.25rem;
+}
+
 .song-submit-google-form {
-  margin-top: 0.25rem;
+  margin-top: 1rem;
+}
+
+.song-form-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.song-form-guide {
+  position: sticky;
+  top: 1.25rem;
+  padding: 1.35rem 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+}
+
+.song-form-guide-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.song-form-guide-title {
+  margin: 0 0 0.65rem;
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.song-form-guide-lead {
+  margin: 0 0 1.35rem;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.song-form-guide-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.song-form-guide-section {
+  padding: 1rem 1rem 1.05rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-light);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.song-form-guide-section--highlight {
+  border-left-color: var(--gold);
+  background: var(--gold-dim);
+}
+
+.song-form-guide-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.song-form-guide-num {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(244, 196, 48, 0.14);
+  border: 1px solid rgba(244, 196, 48, 0.35);
+  color: var(--gold-bright);
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.song-form-guide-section h4 {
+  margin: 0;
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.song-form-guide-section h4 i {
+  font-size: 0.88rem;
+  opacity: 0.9;
+}
+
+.song-form-guide-section p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.song-form-guide-section p + p,
+.song-form-guide-section .song-form-guide-hint {
+  margin-top: 0.45rem;
+}
+
+.song-form-guide-hint {
+  font-size: 0.84rem !important;
+  color: var(--text-muted) !important;
+}
+
+.song-form-guide-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-top: 1.35rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(244, 196, 48, 0.25);
+  background: rgba(244, 196, 48, 0.06);
+}
+
+.song-form-guide-tip i {
+  color: var(--gold-bright);
+  margin-top: 0.15rem;
+}
+
+.song-form-guide-tip p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.song-form-main {
+  min-width: 0;
 }
 
 .song-google-form-shell {
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: #fff;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  box-shadow: var(--shadow);
+}
+
+.song-google-form-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.15rem;
+  border-bottom: 2px solid var(--gold);
+  background: var(--bg-elevated);
+}
+
+.song-google-form-chrome-label {
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.song-google-form-chrome-meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
 }
 
 .song-google-form-shell iframe {
   display: block;
   width: 100%;
-  min-height: 2200px;
+  min-height: 2450px;
   border: 0;
   background: #fff;
 }
 
-.song-form-open-tab {
-  margin: 0.85rem 0 0;
+.song-form-footer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.song-form-open-tab a {
-  font-weight: 600;
+.song-form-footer-note {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.song-form-footer-note i {
+  color: var(--gold-bright);
+}
+
+.song-form-open-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (min-width: 1100px) {
+  .artist-submit-panel--form {
+    padding: 1.5rem 1.75rem 1.75rem;
+  }
+
+  .song-form-layout {
+    gap: 2.25rem;
+  }
+
+  .song-form-guide-title {
+    font-size: 1.45rem;
+  }
+
+  .song-form-guide-section h4 {
+    font-size: 1.08rem;
+  }
+}
+
+@media (max-width: 960px) {
+  .song-form-layout {
+    grid-template-columns: 1fr;
+    gap: 1.35rem;
+  }
+
+  .song-form-guide {
+    position: static;
+  }
+
+  .song-form-guide-sections {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+
+  .song-google-form-shell iframe {
+    min-height: 2100px;
+  }
+}
+
+@media (max-width: 640px) {
+  .song-form-guide-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .song-form-footer-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .song-form-open-btn {
+    justify-content: center;
+  }
 }
 
 .label-access-list,
