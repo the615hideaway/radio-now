@@ -12,8 +12,12 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v4';
-var SUBMISSION_CHUNK_FOLDER_NAME = '_RadioNowUploadChunks';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v5';
+var SUBMISSION_CHUNK_FOLDER_ID = '1uSIu4QKuy1CkvaoksiA8eBJpFNHeZSdD';
+var SUBMISSION_MP3_FOLDER_ID = '1B0XflDxcTJYcKkvzOYpdHvWLyTHZNAN37O1Q65wLg_rHu6xuxrSfKl8DDvr_BLsVo5Ft6lb-';
+var SUBMISSION_WAV_FOLDER_ID = '137edNXYOv3xTVy7q4o1NKcTGMyshzR7MtN1BthqeXydD1Gwq-0V7JsRQR-9tXSYR45rsILzX';
+var SUBMISSION_COVER_FOLDER_ID = '1ahg11e6XCaYXensbKRhhu-JyfYI72SKjUEgAHuDUClS9T8yBFwnokk4jvb9Q2qs5y9A_kRis';
+var ARTIST_SONG_FORM_ID = '1FAIpQLSfN8NL5Dg5Vs1VKifayK8itcCfmlPQmYiyhf5nvEmfi-qwYWQ';
 var RADIO_NOW_MUSIC_STYLES = [
   'Bluegrass',
   'Traditional Bluegrass',
@@ -27,6 +31,7 @@ var RADIO_NOW_MUSIC_STYLES = [
   'Holiday Music',
   'Instrumental',
 ];
+// Legacy parent folder — dashboard chunked uploads only. Google Form files go to MP3/WAV/Cover folders.
 var SUBMISSION_UPLOAD_FOLDER_ID = '1A74Xv1UosXF34hlzZ_c6gEjbER8DH5PvDNONa6f_gDPfZXSVOfCMF-jqYfOn0xryhwP7BxT4';
 var RADIO_NOW_LABEL_SETUP_KEY = 'rn-615-hideaway-setup';
 var RADIO_NOW_ADMIN_EMAIL = 'the615hideaway@gmail.com';
@@ -391,12 +396,83 @@ function driveFileShareUrl_(fileId) {
   return 'https://drive.google.com/file/d/' + fileId + '/view?usp=sharing';
 }
 
-function getSubmissionUploadFolder_(artistName, songTitle) {
-  var root = DriveApp.getFolderById(SUBMISSION_UPLOAD_FOLDER_ID);
-  var name = folderName_(artistName, songTitle);
-  var folders = root.getFoldersByName(name);
-  if (folders.hasNext()) return folders.next();
-  return root.createFolder(name);
+function getSubmissionAssetFolder_(assetType) {
+  if (assetType === 'mp3') return DriveApp.getFolderById(SUBMISSION_MP3_FOLDER_ID);
+  if (assetType === 'wav') return DriveApp.getFolderById(SUBMISSION_WAV_FOLDER_ID);
+  if (assetType === 'cover') return DriveApp.getFolderById(SUBMISSION_COVER_FOLDER_ID);
+  throw new Error('Unsupported file type.');
+}
+
+function extractDriveFileIdFromUrl_(url) {
+  var text = String(url || '');
+  var match = text.match(/\/file\/d\/([^/]+)/) || text.match(/\/d\/([^/]+)/) || text.match(/[?&]id=([^&]+)/);
+  return match ? match[1] : '';
+}
+
+function extractFirstFileUrl_(value) {
+  if (!value) return '';
+  if (Object.prototype.toString.call(value) === '[object Array]') return String(value[0] || '');
+  return String(value);
+}
+
+function moveUploadedFileToAssetFolder_(fileUrl, assetType, artistName, songTitle) {
+  var fileId = extractDriveFileIdFromUrl_(fileUrl);
+  if (!fileId) return '';
+
+  var file = DriveApp.getFileById(fileId);
+  var folder = getSubmissionAssetFolder_(assetType);
+  var targetName = submissionAssetFileName_(artistName, songTitle, assetType, file.getName());
+
+  file.setName(targetName);
+  folder.addFile(file);
+
+  var parents = file.getParents();
+  while (parents.hasNext()) {
+    var parent = parents.next();
+    if (parent.getId() !== folder.getId()) {
+      parent.removeFile(file);
+    }
+  }
+
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return driveFileShareUrl_(file.getId());
+}
+
+function routeFormSubmissionFiles_(response) {
+  var artistName = '';
+  var songTitle = '';
+  var files = { mp3: '', wav: '', cover: '' };
+
+  response.getItemResponses().forEach(function (item) {
+    var title = String(item.getItem().getTitle() || '').trim().toLowerCase();
+    var value = item.getResponse();
+
+    if (title === 'artist name') artistName = String(value || '').trim();
+    if (title === 'song title') songTitle = String(value || '').trim();
+    if (title === 'mp3') files.mp3 = extractFirstFileUrl_(value);
+    if (title === 'wav') files.wav = extractFirstFileUrl_(value);
+    if (title.indexOf('cover') >= 0) files.cover = extractFirstFileUrl_(value);
+  });
+
+  if (!artistName || !songTitle) return;
+
+  if (files.mp3) moveUploadedFileToAssetFolder_(files.mp3, 'mp3', artistName, songTitle);
+  if (files.wav) moveUploadedFileToAssetFolder_(files.wav, 'wav', artistName, songTitle);
+  if (files.cover) moveUploadedFileToAssetFolder_(files.cover, 'cover', artistName, songTitle);
+}
+
+/**
+ * Install once: Apps Script → Triggers → Add trigger
+ *   Function: onArtistSongFormSubmit
+ *   Event: From form → On form submit → pick your artist song form
+ */
+function onArtistSongFormSubmit(e) {
+  if (!e || !e.response) return;
+  try {
+    routeFormSubmissionFiles_(e.response);
+  } catch (err) {
+    Logger.log('Artist song form file routing failed: ' + err.message);
+  }
 }
 
 function submissionAssetFileName_(artistName, songTitle, assetType, originalName) {
@@ -419,7 +495,7 @@ function validateSubmissionAssetMeta_(artistName, songTitle, assetType) {
 }
 
 function saveSubmissionAssetToFolder_(artistName, songTitle, assetType, fileName, mimeType, bytes) {
-  var folder = getSubmissionUploadFolder_(artistName, songTitle);
+  var folder = getSubmissionAssetFolder_(assetType);
   var targetName = submissionAssetFileName_(artistName, songTitle, assetType, fileName);
   var blob = Utilities.newBlob(bytes, mimeType || 'application/octet-stream', targetName);
   var file = folder.createFile(blob);
@@ -456,10 +532,7 @@ function uploadSubmissionAsset_(token, payload) {
 }
 
 function getSubmissionChunkFolder_() {
-  var root = DriveApp.getFolderById(SUBMISSION_UPLOAD_FOLDER_ID);
-  var folders = root.getFoldersByName(SUBMISSION_CHUNK_FOLDER_NAME);
-  if (folders.hasNext()) return folders.next();
-  return root.createFolder(SUBMISSION_CHUNK_FOLDER_NAME);
+  return DriveApp.getFolderById(SUBMISSION_CHUNK_FOLDER_ID);
 }
 
 function cleanupUploadChunks_(uploadId) {

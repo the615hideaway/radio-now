@@ -626,8 +626,13 @@
     }
 
     if (panelNote) {
-      panelNote.textContent = 'Fill out each section below on this page — nothing redirects away. Required fields are marked with *.';
+      panelNote.textContent = 'Complete the form below on this page. MP3, WAV, and cover art upload directly to your Drive folders — up to 100 MB each.';
     }
+
+    const googleWrap = document.getElementById('song-submit-google-form');
+    const nativeForm = document.getElementById('song-submit-form');
+    googleWrap?.classList.remove('hidden');
+    nativeForm?.classList.add('hidden');
   }
 
   function configureSongSubmitForm(account) {
@@ -641,8 +646,13 @@
       panel.classList.remove('hidden');
       mountGoogleSongForm(account);
       document.getElementById('song-submissions-list')?.classList.add('hidden');
+      document.getElementById('song-submit-google-form')?.classList.remove('hidden');
+      document.getElementById('song-submit-form')?.classList.add('hidden');
       return;
     }
+
+    document.getElementById('song-submit-google-form')?.classList.add('hidden');
+    document.getElementById('song-submit-form')?.classList.remove('hidden');
 
     const form = document.getElementById('song-submit-form');
     if (!form) {

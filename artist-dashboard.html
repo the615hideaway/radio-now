@@ -222,11 +222,55 @@
         <div class="dj-panel-header">
           <h2 id="song-submit-heading"><i class="fa-solid fa-cloud-arrow-up"></i> Submit a New Song</h2>
         </div>
-        <p class="dj-panel-note song-submit-intro" id="song-submit-panel-note">Fill out each section below on this page — nothing redirects away. Required fields are marked with <span class="label-required">*</span>.</p>
+        <p class="dj-panel-note song-submit-intro" id="song-submit-panel-note">Complete the form below on this page. MP3, WAV, and cover art upload directly to your Drive folders — up to 100 MB each.</p>
+
+        <div id="song-submit-google-form" class="song-submit-google-form">
+          <div class="song-form-section-strip" aria-label="Form sections">
+            <div class="song-form-strip-item"><span>01</span> Song details</div>
+            <div class="song-form-strip-item"><span>02</span> Vocals</div>
+            <div class="song-form-strip-item"><span>03</span> Release</div>
+            <div class="song-form-strip-item"><span>04</span> Press blurb</div>
+            <div class="song-form-strip-item song-form-strip-item--highlight"><span>05</span> Files</div>
+            <div class="song-form-strip-item"><span>06</span> Contact</div>
+          </div>
+
+          <div class="song-google-form-shell">
+            <div class="song-google-form-chrome">
+              <span class="song-google-form-chrome-label">
+                <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
+                Radio Now submission form
+              </span>
+              <span class="song-google-form-chrome-meta">Stays on this page — scroll inside the form for all sections</span>
+            </div>
+            <iframe
+              id="song-google-form-iframe"
+              title="Submit a song to Radio Now"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+
+          <div class="song-form-footer-bar">
+            <p class="song-form-footer-note">
+              <i class="fa-solid fa-folder-tree" aria-hidden="true"></i>
+              Files save to your MP3, WAV, and Cover Art folders in Google Drive.
+            </p>
+            <a
+              id="song-google-form-open-link"
+              class="btn btn-secondary song-form-open-btn"
+              href="https://forms.gle/zFExL6otU1e7hJF59"
+              target="_blank"
+              rel="noopener"
+            >
+              <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i>
+              Open in new tab
+            </a>
+          </div>
+        </div>
 
         <div id="song-submissions-list" class="song-submissions-list hidden"></div>
 
-        <form id="song-submit-form" class="song-submit-form dashboard-form dashboard-form--accessible dashboard-form--song-submit">
+        <form id="song-submit-form" class="song-submit-form dashboard-form dashboard-form--accessible dashboard-form--song-submit hidden">
           <input type="hidden" id="submit-editing-id" value="">
           <div class="login-error" id="song-submit-error"></div>
           <div class="song-submit-success hidden" id="song-submit-success"></div>

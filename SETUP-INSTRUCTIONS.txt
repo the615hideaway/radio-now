@@ -17,6 +17,22 @@ ARTIST SONG SUBMISSIONS (Google Form)
 Form: https://forms.gle/zFExL6otU1e7hJF59
 Embedded on the artist dashboard for reliable file uploads (100 MB per file).
 
+Drive folders (each file type has its own folder):
+  MP3:       1B0XflDxcTJYcKkvzOYpdHvWLyTHZNAN37O1Q65wLg_rHu6xuxrSfKl8DDvr_BLsVo5Ft6lb-
+  WAV:       137edNXYOv3xTVy7q4o1NKcTGMyshzR7MtN1BthqeXydD1Gwq-0V7JsRQR-9tXSYR45rsILzX
+  Cover Art: 1ahg11e6XCaYXensbKRhhu-JyfYI72SKjUEgAHuDUClS9T8yBFwnokk4jvb9Q2qs5y9A_kRis
+
+In Google Forms, set each file-upload question to save into the matching folder
+(MP3 question → MP3 folder, WAV → WAV folder, Cover Art → Cover Art folder).
+
+After updating Code.gs, add one Apps Script trigger:
+  Triggers → Add → onArtistSongFormSubmit → From form → On form submit
+This renames files and moves them into the correct folder if Google puts them
+elsewhere.
+
+_RadioNowUploadChunks is only for old dashboard uploads — not needed for the
+Google Form workflow. You can leave it empty or delete stray temp files there.
+
 Responses go to spreadsheet tab "Form Responses 1" (you can rename that tab
 to "Artist Submissions" — renaming does not break the form link).
 
