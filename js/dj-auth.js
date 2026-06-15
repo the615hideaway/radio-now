@@ -89,6 +89,7 @@ const DjAuth = {
       programTimezone: String(fields.programTimezone || '').trim(),
       programDays: String(fields.programDays || '').trim(),
       email: String(fields.email || '').trim(),
+      contactEmail: String(fields.contactEmail || '').trim(),
       password: String(fields.password || ''),
       shareEmail: !!fields.shareEmail,
     });

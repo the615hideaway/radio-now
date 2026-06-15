@@ -502,9 +502,105 @@ a:hover { color: var(--white); }
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.dashboard-form .form-field {
+  margin-bottom: 0;
+}
+
+.dashboard-form .form-field > label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-form input:not([type="checkbox"]),
+.dashboard-form select,
+.dashboard-form textarea,
+.file-upload-link {
+  width: 100%;
+}
+
+.dashboard-form textarea {
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-input);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.form-section-label {
+  margin: 0.35rem 0 1rem;
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.field-help {
+  margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.file-upload-field .file-upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 1rem 1.1rem;
+  border: 1.5px dashed var(--border-light);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.file-upload-btn {
+  min-width: 8.5rem;
+}
+
+.file-upload-status {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.file-upload-status.has-file {
+  color: var(--success);
+}
+
+.file-upload-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.file-upload-link-label {
+  display: block;
+  margin: 0.75rem 0 0.45rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.file-upload-link {
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-input);
+  color: var(--text);
+  font: inherit;
+}
+
+.file-upload-link:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-dim);
+}
+
 .song-submit-form textarea {
   width: 100%;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0;
   padding: 0.65rem 0.75rem;
   border-radius: 10px;
   border: 1px solid var(--border-light);
@@ -512,6 +608,40 @@ a:hover { color: var(--white); }
   color: var(--text);
   font: inherit;
   resize: vertical;
+}
+
+@media (min-width: 900px) {
+  .dashboard-form .form-grid,
+  .form-grid {
+    gap: 1.35rem;
+    margin-bottom: 1.35rem;
+  }
+
+  .dashboard-form .form-field,
+  .dashboard-form > label + input,
+  .dashboard-form > label + textarea {
+    margin-bottom: 1.5rem;
+  }
+
+  .dj-signup-form {
+    gap: 1.35rem;
+  }
+
+  .dj-signup-grid {
+    gap: 1.15rem;
+  }
+
+  .dj-profile-form {
+    gap: 1.35rem;
+  }
+
+  .login-card label {
+    margin-bottom: 0.55rem;
+  }
+
+  .login-card input {
+    margin-bottom: 1.35rem;
+  }
 }
 
 .song-submit-success {

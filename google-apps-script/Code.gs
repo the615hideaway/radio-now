@@ -12,7 +12,8 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-14-email-v1';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-form-upload-v1';
+var RADIO_NOW_LABEL_SETUP_KEY = 'rn-615-hideaway-setup';
 var RADIO_NOW_ADMIN_EMAIL = 'the615hideaway@gmail.com';
 var RADIO_NOW_SITE_URL = 'https://the615hideaway.github.io/radio-now';
 var RADIO_NOW_FROM_NAME = 'Radio Now — (615) Hideaway Entertainment';
@@ -641,6 +642,7 @@ var DJ_HEADERS = [
   'dj_id', 'name', 'email', 'password_hash', 'password_salt', 'station', 'show_name', 'share_email', 'status', 'created_at',
   'first_name', 'last_name', 'program_name', 'program_format', 'station_call_letters', 'station_frequency', 'state',
   'station_website', 'program_website', 'program_start_time', 'program_end_time', 'program_timezone', 'program_days',
+  'dj_contact_email',
 ];
 var ACTIVITY_SHEET_NAME = 'DJ Activity';
 var ACTIVITY_HEADERS = [
@@ -797,6 +799,7 @@ function djRowToObject_(row, headerMap) {
     program_end_time: pick('program_end_time'),
     program_timezone: pick('program_timezone'),
     program_days: pick('program_days'),
+    dj_contact_email: pick('dj_contact_email'),
   };
 }
 
@@ -833,13 +836,19 @@ function formatSheetTime_(value) {
   return (hour < 10 ? '0' : '') + hour + ':' + minute;
 }
 
+function djContactEmail_(dj) {
+  var contact = normalizeEmail_(dj.dj_contact_email);
+  if (contact) return contact;
+  return normalizeEmail_(dj.email);
+}
+
 function djActivitySnapshot_(dj, shareEmailEnabled) {
   return {
     dj_name: dj.name,
     dj_station: dj.station || dj.station_call_letters,
     dj_show_name: dj.show_name || dj.program_name,
     share_email: shareEmailValue_(shareEmailEnabled),
-    contact_email: shareEmailEnabled ? dj.email : '',
+    contact_email: shareEmailEnabled ? djContactEmail_(dj) : '',
     dj_first_name: dj.first_name,
     dj_last_name: dj.last_name,
     dj_program_name: dj.program_name || dj.show_name,
@@ -892,6 +901,7 @@ function buildDjFromSignup_(payload, djId, hashed, createdAt) {
     program_end_time: String(payload.programEndTime || payload.program_end_time || '').trim(),
     program_timezone: String(payload.programTimezone || payload.program_timezone || '').trim(),
     program_days: String(payload.programDays || payload.program_days || '').trim(),
+    dj_contact_email: normalizeEmail_(payload.contactEmail || payload.dj_contact_email || payload.email),
   };
 }
 
@@ -1065,7 +1075,9 @@ function requireMemberSession_(token) {
 
 function directoryDj_(dj) {
   var pub = publicDj_(dj);
-  if (!shareEmailFlag_(dj.share_email)) {
+  if (shareEmailFlag_(dj.share_email)) {
+    pub.email = djContactEmail_(dj);
+  } else {
     pub.email = '';
   }
   return pub;
@@ -1101,6 +1113,7 @@ function publicDj_(dj) {
     id: dj.dj_id,
     name: dj.name,
     email: dj.email,
+    contactEmail: djContactEmail_(dj),
     station: dj.station || dj.station_call_letters || '',
     showName: dj.show_name || dj.program_name || '',
     shareEmail: shareEmailFlag_(dj.share_email),
@@ -1433,6 +1446,11 @@ function djProfilePatchFromPayload_(dj, payload) {
     program_timezone: String(payload.programTimezone || payload.program_timezone || dj.program_timezone || '').trim(),
     program_days: String(payload.programDays || payload.program_days || dj.program_days || '').trim(),
     share_email: shareEmailValue_(shareEmail),
+    dj_contact_email: normalizeEmail_(
+      payload.contactEmail !== undefined
+        ? payload.contactEmail
+        : (payload.dj_contact_email !== undefined ? payload.dj_contact_email : dj.dj_contact_email || dj.email)
+    ),
   };
 }
 
@@ -2391,6 +2409,64 @@ function artistSignup_(payload) {
   };
 }
 
+function adminResetLabelAccount_(labelName, email, password) {
+  labelName = String(labelName || '').trim();
+  email = normalizeEmail_(email);
+  password = String(password || '');
+
+  if (!labelName || !email || !password) {
+    throw new Error('Label name, email, and password are required.');
+  }
+
+  if (password.length < 8) {
+    throw new Error('Password must be at least 8 characters.');
+  }
+
+  var found = findArtistByName_(labelName);
+  if (!found) {
+    throw new Error('No account found for label name: ' + labelName);
+  }
+
+  var account = found.artist;
+  if (String(account.account_type || '').toLowerCase() !== 'label') {
+    throw new Error('Account is not a label account.');
+  }
+
+  var emailOwner = findArtistByEmail_(email);
+  if (emailOwner && emailOwner.artist.artist_account_id !== account.artist_account_id) {
+    throw new Error('Email is already used by another account.');
+  }
+
+  var sheet = getArtistSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var hashed = hashPassword_(password);
+
+  sheet.getRange(found.rowIndex, headerMap.email + 1).setValue(email);
+  sheet.getRange(found.rowIndex, headerMap.password_hash + 1).setValue(hashed.hash);
+  sheet.getRange(found.rowIndex, headerMap.password_salt + 1).setValue(hashed.salt);
+  sheet.getRange(found.rowIndex, headerMap.status + 1).setValue('active');
+
+  return {
+    success: true,
+    accountId: account.artist_account_id,
+    labelName: labelName,
+    email: email,
+    accountType: 'label',
+  };
+}
+
+/**
+ * Run once from Apps Script editor (Run menu) to claim the 615 Hideaway Records label account.
+ * Does not require redeploying the web app.
+ */
+function setup615HideawayLabelAccount() {
+  return adminResetLabelAccount_(
+    '615 Hideaway Records',
+    'sammy@the615hideaway.com',
+    'Hide@2020'
+  );
+}
+
 function labelSignup_(payload) {
   var labelName = String(payload.labelName || '').trim();
   var email = normalizeEmail_(payload.email);
@@ -2871,6 +2947,14 @@ function doGet(e) {
           'submission_email',
         ],
       });
+    }
+
+    if (action === 'setup_615_label') {
+      var setupKey = String(e.parameter.key || '');
+      if (setupKey !== RADIO_NOW_LABEL_SETUP_KEY) {
+        throw new Error('Unauthorized setup request.');
+      }
+      return jsonResponse_(setup615HideawayLabelAccount());
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });

@@ -438,10 +438,38 @@
     }
   }
 
+  function mountSongUploadFields() {
+    const host = document.getElementById('song-upload-fields');
+    if (!host || host.dataset.mounted === 'true' || typeof FileUploadField === 'undefined') return;
+    host.dataset.mounted = 'true';
+    host.innerHTML = [
+      FileUploadField.render({
+        id: 'submit-mp3',
+        label: 'MP3',
+        accept: 'audio/mpeg,.mp3',
+        hint: 'Choose your MP3, upload it to Google Drive (Anyone with the link can view), then paste the share link.',
+      }),
+      FileUploadField.render({
+        id: 'submit-wav',
+        label: 'WAV',
+        accept: 'audio/wav,.wav,audio/x-wav',
+        hint: 'Choose your WAV, upload it to Google Drive (Anyone with the link can view), then paste the share link.',
+      }),
+      FileUploadField.render({
+        id: 'submit-cover',
+        label: 'Cover art',
+        accept: 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp',
+        hint: 'Choose your cover image, upload it to Google Drive (Anyone with the link can view), then paste the share link.',
+      }),
+    ].join('');
+    FileUploadField.bind(host);
+  }
+
   function bindSongSubmitForm() {
     const form = document.getElementById('song-submit-form');
     if (!form || form.dataset.bound === 'true') return;
     form.dataset.bound = 'true';
+    mountSongUploadFields();
 
     const errorEl = document.getElementById('song-submit-error');
     const successEl = document.getElementById('song-submit-success');
@@ -451,8 +479,8 @@
       errorEl?.classList.remove('show');
       successEl?.classList.add('hidden');
 
-      const mp3 = document.getElementById('submit-mp3-link')?.value || '';
-      const wav = document.getElementById('submit-wav-link')?.value || '';
+      const mp3 = FileUploadField.value('submit-mp3');
+      const wav = FileUploadField.value('submit-wav');
       if (!mp3 && !wav) {
         if (errorEl) {
           errorEl.textContent = 'Add at least one audio link (MP3 or WAV Google Drive link).';
@@ -479,10 +507,11 @@
           contactEmail: document.getElementById('submit-contact-email')?.value || '',
           mp3Link: mp3,
           wavLink: wav,
-          coverLink: document.getElementById('submit-cover-link')?.value || '',
+          coverLink: FileUploadField.value('submit-cover'),
         });
 
         form.reset();
+        FileUploadField.resetAll(['submit-mp3', 'submit-wav', 'submit-cover']);
         configureSongSubmitForm(ArtistAuth.getArtist());
 
         if (successEl) {

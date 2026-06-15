@@ -40,16 +40,33 @@ const DjSignupForm = {
     ).join('');
 
     const note = isProfile
-      ? 'Artists see these details when they download your music. Your login email never appears here — only if you enable sharing below.'
-      : 'Artists see your station and program details when they download your music. Your email stays private unless you turn on sharing below.';
+      ? 'Artists see these station and program details when they download your music. Your login email stays private — only your DJ contact email can be shared below.'
+      : 'Artists see your station and program details when they download your music. Set a DJ contact email if you want artists to reach you on a different address than your login.';
 
-    const accountSection = isProfile ? '' : `
+    const contactSection = `
+        <fieldset class="dj-signup-section">
+          <legend>Contact</legend>
+          <div class="dj-signup-grid">
+            <div>
+              <label for="${p('contact-email')}">DJ Contact Email</label>
+              <input type="email" id="${p('contact-email')}" placeholder="promo@station.com" autocomplete="email">
+              <p class="field-help">Email artists and labels can use to reach you when you download their music.</p>
+            </div>
+          </div>
+        </fieldset>`;
+
+    const accountSection = isProfile ? contactSection : `
         <fieldset class="dj-signup-section">
           <legend>Account</legend>
           <div class="dj-signup-grid">
             <div>
-              <label for="${p('email')}">Email</label>
+              <label for="${p('email')}">Login Email</label>
               <input type="email" id="${p('email')}" placeholder="you@station.com" autocomplete="email" required>
+            </div>
+            <div>
+              <label for="${p('contact-email')}">DJ Contact Email</label>
+              <input type="email" id="${p('contact-email')}" placeholder="promo@station.com" autocomplete="email">
+              <p class="field-help">Can differ from your login. Artists see this when sharing is enabled.</p>
             </div>
             <div>
               <label for="${p('password')}">Password</label>
@@ -57,13 +74,13 @@ const DjSignupForm = {
             </div>
             <label class="checkbox-field">
               <input type="checkbox" id="${p('share-email')}">
-              <span>Share my email with artists when I download their music (so they can say thank you)</span>
+              <span>Share my DJ contact email with artists when I download their music</span>
             </label>
           </div>
         </fieldset>`;
 
     return `
-      <div class="dj-signup-form ${isProfile ? 'dj-signup-form--profile' : ''}">
+      <div class="dj-signup-form dashboard-form ${isProfile ? 'dj-signup-form--profile' : ''}">
         <p class="auth-panel-note">${note}</p>
 
         <fieldset class="dj-signup-section">
@@ -197,6 +214,7 @@ const DjSignupForm = {
       programEndTime: this.fieldValue(p('program-end')),
       programTimezone: this.fieldValue(p('program-timezone')),
       programDays: this.fieldValue(p('program-days')),
+      contactEmail: this.fieldValue(p('contact-email')),
     };
   },
 
@@ -242,6 +260,7 @@ const DjSignupForm = {
       'profile-station-frequency': dj.stationFrequency || '',
       'profile-state': dj.state || '',
       'profile-station-website': dj.stationWebsite || '',
+      'profile-contact-email': dj.contactEmail || dj.email || '',
     };
 
     Object.entries(values).forEach(([id, value]) => {

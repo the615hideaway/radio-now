@@ -183,14 +183,14 @@
         </div>
         <p class="dj-panel-note">Create artist profiles for your roster. Artists can claim their profile later and keep chart history if they switch labels.</p>
         <div id="label-roster-list"></div>
-        <form id="create-profile-form" class="create-profile-form">
+        <form id="create-profile-form" class="create-profile-form dashboard-form">
           <div class="login-error" id="create-profile-error"></div>
           <div class="form-grid form-grid--two">
-            <div>
+            <div class="form-field">
               <label for="create-profile-artist-name">Artist Name</label>
               <input type="text" id="create-profile-artist-name" placeholder="As it will appear on Radio Now" required>
             </div>
-            <div>
+            <div class="form-field">
               <label for="create-profile-claim-email">Artist email <span class="label-optional">(for claim)</span></label>
               <input type="email" id="create-profile-claim-email" placeholder="artist@email.com">
             </div>
@@ -223,58 +223,52 @@
           <h2><i class="fa-solid fa-cloud-arrow-up"></i> Submit a New Song</h2>
         </div>
         <p class="dj-panel-note">Send your track details and Google Drive links. Radio Now reviews submissions and adds approved songs to the catalog.</p>
-        <form id="song-submit-form" class="song-submit-form">
+        <form id="song-submit-form" class="song-submit-form dashboard-form">
           <div class="login-error" id="song-submit-error"></div>
           <div class="song-submit-success hidden" id="song-submit-success"></div>
           <div class="form-grid form-grid--two">
-            <div>
+            <div class="form-field">
               <label for="submit-artist-name">Artist Name</label>
               <input type="text" id="submit-artist-name" list="submit-artist-options" placeholder="Artist as listed on Radio Now" required>
               <datalist id="submit-artist-options"></datalist>
             </div>
-            <div>
+            <div class="form-field">
               <label for="submit-song-title">Song Title</label>
               <input type="text" id="submit-song-title" placeholder="Song title" required>
             </div>
-            <div>
+            <div class="form-field">
               <label for="submit-year">Year</label>
               <input type="text" id="submit-year" placeholder="2026" inputmode="numeric">
             </div>
-            <div>
+            <div class="form-field">
               <label for="submit-music-style">Music Style</label>
               <input type="text" id="submit-music-style" placeholder="Bluegrass, Americana…">
             </div>
-            <div>
+            <div class="form-field">
               <label for="submit-songwriter">Songwriter</label>
               <input type="text" id="submit-songwriter" placeholder="Writer names">
             </div>
-            <div id="submit-label-field">
+            <div class="form-field" id="submit-label-field">
               <label for="submit-record-label">Record Label</label>
               <input type="text" id="submit-record-label" placeholder="Label name">
             </div>
           </div>
-          <label for="submit-description">Description / Press blurb</label>
-          <textarea id="submit-description" rows="3" placeholder="One paragraph about the release"></textarea>
+          <div class="form-field">
+            <label for="submit-description">Description / Press blurb</label>
+            <textarea id="submit-description" rows="4" placeholder="One paragraph about the release"></textarea>
+          </div>
+          <div class="form-section-label">Audio &amp; artwork</div>
+          <div class="form-grid form-grid--two form-grid--uploads" id="song-upload-fields"></div>
           <div class="form-grid form-grid--two">
-            <div>
-              <label for="submit-mp3-link">MP3 Google Drive link</label>
-              <input type="url" id="submit-mp3-link" placeholder="https://drive.google.com/...">
-            </div>
-            <div>
-              <label for="submit-wav-link">WAV Google Drive link</label>
-              <input type="url" id="submit-wav-link" placeholder="https://drive.google.com/...">
-            </div>
-            <div>
-              <label for="submit-cover-link">Cover art Google Drive link</label>
-              <input type="url" id="submit-cover-link" placeholder="https://drive.google.com/...">
-            </div>
-            <div>
+            <div class="form-field">
               <label for="submit-website">Website</label>
               <input type="url" id="submit-website" placeholder="https://">
             </div>
+            <div class="form-field">
+              <label for="submit-contact-email">Contact email</label>
+              <input type="email" id="submit-contact-email" placeholder="promo@label.com">
+            </div>
           </div>
-          <label for="submit-contact-email">Contact email</label>
-          <input type="email" id="submit-contact-email" placeholder="promo@label.com">
           <button type="submit" class="btn btn-primary">
             <i class="fa-solid fa-paper-plane"></i>
             Submit for Review
@@ -302,7 +296,7 @@
           <h2>Spins</h2>
           <span class="dj-panel-meta" id="history-count"></span>
         </div>
-        <p class="dj-panel-note">Each spin (DJ download) shows the station and program details. Email appears only if they opt in to share it.</p>
+        <p class="dj-panel-note">Each spin (DJ download) shows the station and program details. A DJ contact email appears only if they opt in to share it.</p>
           <div id="dashboard-history"></div>
         </div>
       </section>
@@ -323,6 +317,7 @@
   <script src="js/artist-activity.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/file-upload-field.js"></script>
   <script src="js/one-sheet.js"></script>
   <script src="js/database.js"></script>
   <script src="js/artist-dashboard-app.js"></script>

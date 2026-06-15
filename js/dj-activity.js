@@ -67,6 +67,7 @@ const DjActivity = {
       programEndTime: String(fields.programEndTime || '').trim(),
       programTimezone: String(fields.programTimezone || '').trim(),
       programDays: String(fields.programDays || '').trim(),
+      contactEmail: String(fields.contactEmail || '').trim(),
       shareEmail: !!fields.shareEmail,
     });
     DjAuth.updateDjProfile(data.dj);

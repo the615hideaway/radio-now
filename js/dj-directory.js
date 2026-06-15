@@ -57,7 +57,7 @@ const DjDirectory = {
     ];
 
     if (dj.email) {
-      fields.push({ label: 'Email', value: dj.email, isEmail: true });
+      fields.push({ label: 'Contact email', value: dj.email, isEmail: true });
     }
 
     return fields.filter((field) => field.value);

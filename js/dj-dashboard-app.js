@@ -86,9 +86,10 @@
     const enabled = !!dj?.shareEmail;
     if (shareEmailToggle) shareEmailToggle.checked = enabled;
     if (shareEmailStatus) {
+      const contact = dj?.contactEmail || dj?.email || 'your DJ contact email';
       shareEmailStatus.textContent = enabled
-        ? 'Artists can see your email on future downloads.'
-        : 'Your email is hidden from artists.';
+        ? `Artists can see ${contact} on future downloads.`
+        : 'Your DJ contact email is hidden from artists.';
     }
   }
 
@@ -172,6 +173,13 @@
         </div>`;
     }
   }
+
+  shareEmailToggle?.addEventListener('change', () => {
+    updateShareEmailUi({
+      ...DjAuth.getDj(),
+      shareEmail: !!shareEmailToggle.checked,
+    });
+  });
 
   editProfileBtn?.addEventListener('click', openProfileEditor);
   closeProfileBtn?.addEventListener('click', closeProfileEditor);
