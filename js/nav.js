@@ -1,11 +1,12 @@
 const SiteNav = {
   links: [
-    { key: 'catalog', href: 'index.html', label: 'Catalog', roles: ['dj', 'artist', 'guest'] },
+    { key: 'catalog', href: 'index.html', label: 'Catalog', roles: ['dj', 'guest'] },
+    { key: 'yourMusic', href: 'artist-promo.html', label: 'Your Music', roles: ['artist'] },
     { key: 'artists', href: 'artists.html', label: 'Artists', roles: ['dj'] },
     { key: 'charts', href: 'charts.html', label: 'Charts', roles: ['dj', 'artist', 'guest'] },
     { key: 'djs', href: 'djs.html', label: 'DJs', roles: ['dj', 'artist'] },
     { key: 'djDashboard', href: 'dj-dashboard.html', label: 'DJ Dashboard', roles: ['dj'] },
-    { key: 'artistDashboard', href: 'artist-dashboard.html', label: 'Artist Dashboard', roles: ['artist'] },
+    { key: 'artistDashboard', href: 'artist-dashboard.html', label: 'Spins', roles: ['artist'] },
   ],
 
   getRole() {

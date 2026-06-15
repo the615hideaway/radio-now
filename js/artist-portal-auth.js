@@ -33,7 +33,8 @@ const ArtistPortalAuth = {
       } else {
         ArtistAuthUI.updateWelcome();
       }
-      SiteNav.init(options.siteNavKey || 'artistDashboard');
+      const siteNav = document.querySelector('[data-site-nav]');
+      SiteNav.init(options.siteNavKey || siteNav?.dataset.navActive || 'artistDashboard');
       if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
 
       const account = this.isDemoMode() ? null : ArtistAuth.getArtist();
