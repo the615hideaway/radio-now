@@ -13,7 +13,9 @@ const CONFIG = {
   googleScriptUrl: 'https://script.google.com/macros/s/AKfycbxhREXi6EDdwIfIunoXbZfuBjbHPIDCoFLye-o51dJss4bvhOQQjMH23WHraY1Af2JRVw/exec',
 
   // Artist song submissions — Google Form (reliable file uploads up to 100 MB each).
+  // Song submissions use your Google Form (link opens in new tab).
   useGoogleFormForSubmissions: true,
+  artistSongFormEmbed: false,
   artistSongFormUrl: 'https://forms.gle/zFExL6otU1e7hJF59',
   artistSongFormEmbedUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfN8NL5Dg5Vs1VKifayK8itcCfmlPQmYiyhf5nvEmfi-qwYWQ/viewform?embedded=true',
   // Optional pre-fill after you create a pre-filled link in Google Forms (⋮ → Get pre-filled link).

@@ -582,7 +582,11 @@
   }
 
   function usesGoogleSongForm() {
-    return !!CONFIG.useGoogleFormForSubmissions && !!CONFIG.artistSongFormEmbedUrl;
+    return !!CONFIG.useGoogleFormForSubmissions;
+  }
+
+  function usesGoogleSongFormEmbed() {
+    return usesGoogleSongForm() && !!CONFIG.artistSongFormEmbed && !!CONFIG.artistSongFormEmbedUrl;
   }
 
   function buildGoogleSongFormUrl(account) {
@@ -610,29 +614,34 @@
   }
 
   function mountGoogleSongForm(account) {
-    const iframe = document.getElementById('song-google-form-iframe');
     const openLink = document.getElementById('song-google-form-open-link');
     const panelNote = document.getElementById('song-submit-panel-note');
-    if (!iframe) return;
+    const simpleWrap = document.getElementById('song-submit-simple');
+    const embedWrap = document.getElementById('song-submit-google-form');
+    const iframe = document.getElementById('song-google-form-iframe');
+    const nativeForm = document.getElementById('song-submit-form');
 
-    const embedUrl = buildGoogleSongFormUrl(account);
-    if (iframe.dataset.src !== embedUrl) {
-      iframe.src = embedUrl;
-      iframe.dataset.src = embedUrl;
-    }
-
-    if (openLink) {
-      openLink.href = CONFIG.artistSongFormUrl || embedUrl.replace('?embedded=true', '').replace('&embedded=true', '');
-    }
+    const formUrl = CONFIG.artistSongFormUrl || 'https://forms.gle/zFExL6otU1e7hJF59';
+    if (openLink) openLink.href = formUrl;
 
     if (panelNote) {
-      panelNote.textContent = 'Complete the form below on this page. MP3, WAV, and cover art upload directly to your Drive folders — up to 100 MB each.';
+      panelNote.textContent = 'Use your Google Form to submit songs. Files go to your MP3, WAV, and Cover Art folders; song details are copied to the catalog sheet automatically.';
     }
 
-    const googleWrap = document.getElementById('song-submit-google-form');
-    const nativeForm = document.getElementById('song-submit-form');
-    googleWrap?.classList.remove('hidden');
+    simpleWrap?.classList.remove('hidden');
     nativeForm?.classList.add('hidden');
+
+    if (usesGoogleSongFormEmbed() && iframe && embedWrap) {
+      embedWrap.classList.remove('hidden');
+      simpleWrap?.classList.add('hidden');
+      const embedUrl = buildGoogleSongFormUrl(account);
+      if (iframe.dataset.src !== embedUrl) {
+        iframe.src = embedUrl;
+        iframe.dataset.src = embedUrl;
+      }
+    } else {
+      embedWrap?.classList.add('hidden');
+    }
   }
 
   function configureSongSubmitForm(account) {
@@ -646,11 +655,12 @@
       panel.classList.remove('hidden');
       mountGoogleSongForm(account);
       document.getElementById('song-submissions-list')?.classList.add('hidden');
-      document.getElementById('song-submit-google-form')?.classList.remove('hidden');
+      document.getElementById('song-submit-simple')?.classList.remove('hidden');
       document.getElementById('song-submit-form')?.classList.add('hidden');
       return;
     }
 
+    document.getElementById('song-submit-simple')?.classList.add('hidden');
     document.getElementById('song-submit-google-form')?.classList.add('hidden');
     document.getElementById('song-submit-form')?.classList.remove('hidden');
 

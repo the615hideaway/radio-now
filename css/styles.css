@@ -874,6 +874,34 @@ a:hover { color: var(--white); }
   margin-bottom: 0.25rem;
 }
 
+.song-submit-simple {
+  margin-top: 1rem;
+  padding: 1.35rem 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.song-submit-simple-steps {
+  margin-bottom: 1.25rem;
+}
+
+.song-submit-simple-steps p {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.song-submit-open-btn {
+  margin-bottom: 0.85rem;
+}
+
+.song-submit-sync-note {
+  margin: 0;
+  max-width: 62ch;
+}
+
 .song-submit-google-form {
   margin-top: 1rem;
 }

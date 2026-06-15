@@ -12,7 +12,7 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v5';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v6';
 var SUBMISSION_CHUNK_FOLDER_ID = '1uSIu4QKuy1CkvaoksiA8eBJpFNHeZSdD';
 var SUBMISSION_MP3_FOLDER_ID = '1B0XflDxcTJYcKkvzOYpdHvWLyTHZNAN37O1Q65wLg_rHu6xuxrSfKl8DDvr_BLsVo5Ft6lb-';
 var SUBMISSION_WAV_FOLDER_ID = '137edNXYOv3xTVy7q4o1NKcTGMyshzR7MtN1BthqeXydD1Gwq-0V7JsRQR-9tXSYR45rsILzX';
@@ -438,40 +438,170 @@ function moveUploadedFileToAssetFolder_(fileUrl, assetType, artistName, songTitl
   return driveFileShareUrl_(file.getId());
 }
 
-function routeFormSubmissionFiles_(response) {
+function normalizeFormQuestionTitle_(questionTitle) {
+  return String(questionTitle || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function formQuestionToSheetColumn_(questionTitle) {
+  var key = normalizeFormQuestionTitle_(questionTitle);
+  var map = {
+    'artist name': 'Artist Name',
+    'song title': 'Song Title',
+    'year': 'Year',
+    'song time': 'Song Time',
+    'music style': 'Music Style',
+    'description': 'Description',
+    'songwriter': 'Songwriter',
+    'lead vocals': 'Lead Vocals',
+    'featured artist': 'Featured Artist',
+    'harmony vocals 1': 'Harmony Vocals 1',
+    'harmony vocals 2': 'Harmony Vocals 2',
+    'harmony vocals 3': 'Harmony Vocals 3',
+    'harmony vocals 4': 'Harmony Vocals 4',
+    'instrument player 1': 'Instrument Player 1',
+    'instrument player 2': 'Instrument Player 2',
+    'instrument player 3': 'Instrument Player 3',
+    'instrument player 4': 'Instrument Player 4',
+    'instrument player 5': 'Instrument Player 5',
+    'instrument player 6': 'Instrument Player 6',
+    'instrument player 7': 'Instrument Player 7',
+    'instrument player 8': 'Instrument Player 8',
+    'website': 'Website',
+    'record label': 'Record Label',
+    'contact e-mail': 'Contact E-Mail',
+    'contact email': 'Contact E-Mail',
+    'mp3': 'MP3',
+    'wav': 'WAV',
+  };
+
+  if (key.indexOf('cover') >= 0) return 'Cover Art';
+  return map[key] || '';
+}
+
+function parseArtistSongFormResponse_(response) {
+  var rowValues = {};
   var artistName = '';
   var songTitle = '';
-  var files = { mp3: '', wav: '', cover: '' };
 
   response.getItemResponses().forEach(function (item) {
-    var title = String(item.getItem().getTitle() || '').trim().toLowerCase();
-    var value = item.getResponse();
+    var question = String(item.getItem().getTitle() || '').trim();
+    var col = formQuestionToSheetColumn_(question);
+    if (!col) return;
 
-    if (title === 'artist name') artistName = String(value || '').trim();
-    if (title === 'song title') songTitle = String(value || '').trim();
-    if (title === 'mp3') files.mp3 = extractFirstFileUrl_(value);
-    if (title === 'wav') files.wav = extractFirstFileUrl_(value);
-    if (title.indexOf('cover') >= 0) files.cover = extractFirstFileUrl_(value);
+    var value = item.getResponse();
+    if (col === 'MP3' || col === 'WAV' || col === 'Cover Art') {
+      value = extractFirstFileUrl_(value);
+    } else {
+      value = String(value || '').trim();
+    }
+
+    rowValues[col] = value;
+    if (col === 'Artist Name') artistName = value;
+    if (col === 'Song Title') songTitle = value;
   });
 
-  if (!artistName || !songTitle) return;
+  return {
+    artistName: artistName,
+    songTitle: songTitle,
+    rowValues: rowValues,
+  };
+}
 
-  if (files.mp3) moveUploadedFileToAssetFolder_(files.mp3, 'mp3', artistName, songTitle);
-  if (files.wav) moveUploadedFileToAssetFolder_(files.wav, 'wav', artistName, songTitle);
-  if (files.cover) moveUploadedFileToAssetFolder_(files.cover, 'cover', artistName, songTitle);
+function routeFormSubmissionFiles_(parsed) {
+  var artistName = parsed.artistName;
+  var songTitle = parsed.songTitle;
+  if (!artistName || !songTitle) return parsed.rowValues;
+
+  [
+    { col: 'MP3', type: 'mp3' },
+    { col: 'WAV', type: 'wav' },
+    { col: 'Cover Art', type: 'cover' },
+  ].forEach(function (entry) {
+    var url = parsed.rowValues[entry.col];
+    if (!url) return;
+    var link = moveUploadedFileToAssetFolder_(url, entry.type, artistName, songTitle);
+    if (link) parsed.rowValues[entry.col] = link;
+  });
+
+  return parsed.rowValues;
+}
+
+function catalogSongExists_(sheet, headerMap, artistName, songTitle) {
+  var data = sheet.getDataRange().getValues();
+  var artistCol = headerMap['Artist Name'];
+  var titleCol = headerMap['Song Title'];
+  if (artistCol === undefined || titleCol === undefined) return false;
+
+  var artistKey = String(artistName || '').trim().toLowerCase();
+  var titleKey = String(songTitle || '').trim().toLowerCase();
+
+  for (var r = 1; r < data.length; r++) {
+    if (String(data[r][artistCol] || '').trim().toLowerCase() === artistKey
+      && String(data[r][titleCol] || '').trim().toLowerCase() === titleKey) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function appendFormRowToCatalogSheet_(rowValues) {
+  var sheet = getSheet_();
+  var headerMap = getHeaderMap_(sheet);
+  var artistName = rowValues['Artist Name'] || '';
+  var songTitle = rowValues['Song Title'] || '';
+
+  if (!artistName || !songTitle) {
+    throw new Error('Artist Name and Song Title are required.');
+  }
+
+  if (catalogSongExists_(sheet, headerMap, artistName, songTitle)) {
+    Logger.log('Catalog already has: ' + artistName + ' - ' + songTitle);
+    return false;
+  }
+
+  var lastCol = sheet.getLastColumn();
+  var row = new Array(lastCol);
+  for (var i = 0; i < lastCol; i++) row[i] = '';
+
+  Object.keys(rowValues).forEach(function (col) {
+    if (headerMap[col] === undefined) return;
+    row[headerMap[col]] = rowValues[col];
+  });
+
+  var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/Chicago', 'yyyy-MM-dd');
+  if (headerMap['Release Date'] !== undefined && !row[headerMap['Release Date']]) {
+    row[headerMap['Release Date']] = today;
+  }
+  if (headerMap['Radio Now Release'] !== undefined && !row[headerMap['Radio Now Release']]) {
+    row[headerMap['Radio Now Release']] = today;
+  }
+
+  sheet.appendRow(row);
+  return true;
+}
+
+function processArtistSongFormSubmission_(response) {
+  var parsed = parseArtistSongFormResponse_(response);
+  parsed.rowValues = routeFormSubmissionFiles_(parsed);
+  return appendFormRowToCatalogSheet_(parsed.rowValues);
 }
 
 /**
  * Install once: Apps Script → Triggers → Add trigger
  *   Function: onArtistSongFormSubmit
  *   Event: From form → On form submit → pick your artist song form
+ *
+ * On submit: moves files to MP3/WAV/Cover folders, then appends a row to Sheet1
+ * (the live catalog source). Run GitHub Action "Sync Google Sheet to JSON" to
+ * update the website, or wait for the daily noon UTC sync.
  */
 function onArtistSongFormSubmit(e) {
   if (!e || !e.response) return;
   try {
-    routeFormSubmissionFiles_(e.response);
+    processArtistSongFormSubmission_(e.response);
   } catch (err) {
-    Logger.log('Artist song form file routing failed: ' + err.message);
+    Logger.log('Artist song form submit failed: ' + err.message);
   }
 }
 

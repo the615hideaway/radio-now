@@ -12,10 +12,25 @@ YOUR GOOGLE SHEET
 -----------------
 https://docs.google.com/spreadsheets/d/1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU/edit
 
+HOW SONGS GET ON THE WEBSITE
+----------------------------
+  Google Form submit
+    → Form Responses 1 (raw log)
+    → Apps Script onArtistSongFormSubmit
+        moves MP3/WAV/Cover to type folders
+        appends row to Sheet1 (catalog)
+    → GitHub Action "Sync Google Sheet to JSON"
+        builds data/songs.json
+    → Live site at the615hideaway.github.io/radio-now
+
+Uploads are FREE for now (no Stripe payment required). Payment tracking
+(Stripe / Google Pay) can be added later — not needed this week.
+
 ARTIST SONG SUBMISSIONS (Google Form)
 -------------------------------------
 Form: https://forms.gle/zFExL6otU1e7hJF59
-Embedded on the artist dashboard for reliable file uploads (100 MB per file).
+Linked from the artist dashboard (opens in a new tab). Reliable file uploads
+(100 MB per file).
 
 Drive folders (each file type has its own folder):
   MP3:       1B0XflDxcTJYcKkvzOYpdHvWLyTHZNAN37O1Q65wLg_rHu6xuxrSfKl8DDvr_BLsVo5Ft6lb-
