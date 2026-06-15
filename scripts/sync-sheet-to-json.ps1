@@ -188,6 +188,8 @@ foreach ($row in $rows) {
     featuredArtist     = $record['Featured Artist']
     website            = $record['Website']
     recordLabel        = $record['Record Label']
+    releaseType        = if ($record['TAG - Album/Single']) { $record['TAG - Album/Single'] } elseif ($record['Album/Single']) { $record['Album/Single'] } else { '' }
+    albumName          = if ($record['Album Name']) { $record['Album Name'] } elseif ($record['Album']) { $record['Album'] } else { '' }
     contactEmail       = $record['Contact E-Mail']
     releaseDate        = $record['Release Date']
     if (-not $releaseDate) { $releaseDate = $record['Radio Now Release'] }

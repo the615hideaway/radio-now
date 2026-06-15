@@ -12,7 +12,8 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-form-upload-v1';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-drive-upload-v1';
+var SUBMISSION_UPLOAD_FOLDER_ID = '1A74Xv1UosXF34hlzZ_c6gEjbER8DH5PvDNONa6f_gDPfZXSVOfCMF-jqYfOn0xryhwP7BxT4';
 var RADIO_NOW_LABEL_SETUP_KEY = 'rn-615-hideaway-setup';
 var RADIO_NOW_ADMIN_EMAIL = 'the615hideaway@gmail.com';
 var RADIO_NOW_SITE_URL = 'https://the615hideaway.github.io/radio-now';
@@ -169,8 +170,10 @@ function notifySongSubmissionEmails_(submission, account) {
       '<strong>Year:</strong> ' + escapeEmailHtml_(submission.year || '—'),
       '<strong>Style:</strong> ' + escapeEmailHtml_(submission.musicStyle || '—'),
       '<strong>Label:</strong> ' + escapeEmailHtml_(submission.recordLabel || '—'),
+      '<strong>Release:</strong> ' + escapeEmailHtml_(submission.releaseType || 'Single'),
+      '<strong>Album:</strong> ' + escapeEmailHtml_(submission.albumName || '—'),
       '<strong>Contact:</strong> ' + escapeEmailHtml_(submission.contactEmail || account.email || '—'),
-      'Check the <strong>Song Submissions</strong> tab in your sheet.',
+      'Files are in your Radio Now Drive submissions folder. Check the <strong>Song Submissions</strong> tab in your sheet.',
     ],
     { href: 'https://docs.google.com/spreadsheets/', label: 'Open Google Sheet' }
   ));
@@ -194,6 +197,8 @@ const COLUMN_MAP = {
   website: ['Website'],
   recordLabel: ['Record Label', 'Label'],
   contactEmail: ['Contact E-Mail', 'Contact Email', 'Email'],
+  releaseType: ['TAG - Album/Single', 'Album/Single', 'Release Type'],
+  albumName: ['Album Name', 'Album'],
   releaseDate: ['Release Date', 'Radio Now Release', 'Added Date'],
   spotlightPriority: ['Spotlight Priority', 'Spotlight'],
   spotlightUntil: ['Spotlight Until', 'Spotlight End'],
@@ -366,6 +371,67 @@ function folderName_(artist, title) {
     .replace(/[<>:"/\\|?*]/g, '')
     .replace(/\s+/g, ' ')
     .trim() || 'Track';
+}
+
+function driveFileShareUrl_(fileId) {
+  return 'https://drive.google.com/file/d/' + fileId + '/view?usp=sharing';
+}
+
+function getSubmissionUploadFolder_(artistName, songTitle) {
+  var root = DriveApp.getFolderById(SUBMISSION_UPLOAD_FOLDER_ID);
+  var name = folderName_(artistName, songTitle);
+  var folders = root.getFoldersByName(name);
+  if (folders.hasNext()) return folders.next();
+  return root.createFolder(name);
+}
+
+function submissionAssetFileName_(artistName, songTitle, assetType, originalName) {
+  var ext = String(originalName || '').split('.').pop() || '';
+  if (!ext) {
+    if (assetType === 'mp3') ext = 'mp3';
+    else if (assetType === 'wav') ext = 'wav';
+    else ext = 'jpg';
+  }
+  return safeName_(artistName, songTitle, ext);
+}
+
+function uploadSubmissionAsset_(token, payload) {
+  requireArtistSession_(token);
+
+  var artistName = String(payload.artistName || '').trim();
+  var songTitle = String(payload.songTitle || '').trim();
+  var assetType = String(payload.assetType || '').trim().toLowerCase();
+  var fileName = String(payload.fileName || '').trim();
+  var mimeType = String(payload.mimeType || '').trim() || 'application/octet-stream';
+  var fileBase64 = String(payload.fileBase64 || '').trim();
+
+  if (!artistName || !songTitle) {
+    throw new Error('Artist name and song title are required before uploading files.');
+  }
+
+  if (!fileBase64) {
+    throw new Error('File data is missing.');
+  }
+
+  if (assetType !== 'mp3' && assetType !== 'wav' && assetType !== 'cover') {
+    throw new Error('Unsupported file type.');
+  }
+
+  var folder = getSubmissionUploadFolder_(artistName, songTitle);
+  var targetName = submissionAssetFileName_(artistName, songTitle, assetType, fileName);
+  var bytes = Utilities.base64Decode(fileBase64);
+  var blob = Utilities.newBlob(bytes, mimeType, targetName);
+  var file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  return {
+    success: true,
+    assetType: assetType,
+    fileId: file.getId(),
+    fileName: targetName,
+    link: driveFileShareUrl_(file.getId()),
+    downloadLink: toDriveDownload_(driveFileShareUrl_(file.getId())),
+  };
 }
 
 function escapeHtml_(value) {
@@ -1482,8 +1548,8 @@ var ARTIST_HEADERS = [
 var SONG_SUBMISSION_SHEET_NAME = 'Song Submissions';
 var SONG_SUBMISSION_HEADERS = [
   'submission_id', 'account_id', 'account_type', 'account_name', 'artist_name', 'song_title',
-  'year', 'music_style', 'songwriter', 'record_label', 'description', 'website', 'contact_email',
-  'mp3_link', 'wav_link', 'cover_link', 'status', 'submitted_at', 'profile_id',
+  'year', 'music_style', 'songwriter', 'record_label', 'release_type', 'album_name', 'description',
+  'website', 'contact_email', 'mp3_link', 'wav_link', 'cover_link', 'status', 'submitted_at', 'profile_id',
 ];
 var ARTIST_PROFILE_SHEET_NAME = 'Artist Profiles';
 var ARTIST_PROFILE_HEADERS = [
@@ -2676,12 +2742,22 @@ function submitSong_(token, payload) {
   var description = String(payload.description || '').trim();
   var website = String(payload.website || '').trim();
   var contactEmail = normalizeEmail_(payload.contactEmail);
+  var releaseType = String(payload.releaseType || 'single').trim().toLowerCase();
+  var albumName = String(payload.albumName || '').trim();
   var mp3Link = String(payload.mp3Link || '').trim();
   var wavLink = String(payload.wavLink || '').trim();
   var coverLink = String(payload.coverLink || '').trim();
 
   if (!artistName || !songTitle) {
     throw new Error('Artist name and song title are required.');
+  }
+
+  if (releaseType !== 'single' && releaseType !== 'album_track') {
+    throw new Error('Release type must be Single or Album track.');
+  }
+
+  if (releaseType === 'album_track' && !albumName) {
+    throw new Error('Album name is required for album tracks.');
   }
 
   if (accountType === 'artist') {
@@ -2707,7 +2783,7 @@ function submitSong_(token, payload) {
   }
 
   if (!mp3Link && !wavLink) {
-    throw new Error('Add at least one audio link (MP3 or WAV Google Drive link).');
+    throw new Error('Add at least one audio file (MP3 or WAV).');
   }
 
   var profile = requireProfileManageAccess_(account, artistName);
@@ -2716,27 +2792,29 @@ function submitSong_(token, payload) {
   var submissionId = 'sub-' + Utilities.getUuid().slice(0, 8);
   var submittedAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
 
-  sheet.appendRow([
-    submissionId,
-    account.artist_account_id,
-    accountType,
-    accountName,
-    artistName,
-    songTitle,
-    year,
-    musicStyle,
-    songwriter,
-    recordLabel,
-    description,
-    website,
-    contactEmail,
-    mp3Link,
-    wavLink,
-    coverLink,
-    'pending',
-    submittedAt,
-    profile.profile_id,
-  ]);
+  appendRowByHeaders_(sheet, {
+    submission_id: submissionId,
+    account_id: account.artist_account_id,
+    account_type: accountType,
+    account_name: accountName,
+    artist_name: artistName,
+    song_title: songTitle,
+    year: year,
+    music_style: musicStyle,
+    songwriter: songwriter,
+    record_label: recordLabel,
+    release_type: releaseType === 'album_track' ? 'Album' : 'Single',
+    album_name: albumName,
+    description: description,
+    website: website,
+    contact_email: contactEmail,
+    mp3_link: mp3Link,
+    wav_link: wavLink,
+    cover_link: coverLink,
+    status: 'pending',
+    submitted_at: submittedAt,
+    profile_id: profile.profile_id,
+  });
 
   var submission = {
     id: submissionId,
@@ -2747,6 +2825,8 @@ function submitSong_(token, payload) {
     accountName: accountName,
     accountType: accountType,
     recordLabel: recordLabel,
+    releaseType: releaseType === 'album_track' ? 'Album track' : 'Single',
+    albumName: albumName,
     year: year,
     musicStyle: musicStyle,
     contactEmail: contactEmail,
@@ -3024,6 +3104,10 @@ function doPost(e) {
 
     if (action === 'artist_dashboard') {
       return jsonResponse_(artistDashboard_(body.token));
+    }
+
+    if (action === 'song_upload_asset') {
+      return jsonResponse_(uploadSubmissionAsset_(body.token, body));
     }
 
     if (action === 'song_submit') {

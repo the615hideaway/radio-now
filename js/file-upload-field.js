@@ -1,15 +1,15 @@
 const FileUploadField = {
+  files: new Map(),
+
   render(options = {}) {
     const id = String(options.id || '').trim();
     const label = options.label || 'File';
     const accept = options.accept || '';
-    const hint = options.hint || 'Choose your file, upload it to Google Drive (Anyone with the link can view), then paste the share link below.';
-    const required = !!options.required;
-    const placeholder = options.placeholder || 'https://drive.google.com/...';
+    const hint = options.hint || 'Choose your file — it uploads to Radio Now when you submit.';
 
     return `
       <div class="form-field file-upload-field" data-file-upload="${Utils.escapeHtml(id)}">
-        <label for="${Utils.escapeHtml(id)}-link">${Utils.escapeHtml(label)}</label>
+        <label for="${Utils.escapeHtml(id)}-file">${Utils.escapeHtml(label)}</label>
         <div class="file-upload-dropzone" id="${Utils.escapeHtml(id)}-dropzone">
           <input
             type="file"
@@ -20,20 +20,11 @@ const FileUploadField = {
           >
           <button type="button" class="btn btn-secondary file-upload-btn" data-file-trigger="${Utils.escapeHtml(id)}-file">
             <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
-            Add file
+            Choose file
           </button>
           <p class="file-upload-status" id="${Utils.escapeHtml(id)}-status" aria-live="polite">No file selected</p>
           <p class="file-upload-hint">${Utils.escapeHtml(hint)}</p>
         </div>
-        <label class="file-upload-link-label" for="${Utils.escapeHtml(id)}-link">Google Drive link</label>
-        <input
-          type="url"
-          class="file-upload-link"
-          id="${Utils.escapeHtml(id)}-link"
-          placeholder="${Utils.escapeHtml(placeholder)}"
-          autocomplete="off"
-          ${required ? 'required' : ''}
-        >
       </div>`;
   },
 
@@ -42,16 +33,17 @@ const FileUploadField = {
       if (field.dataset.bound === 'true') return;
       field.dataset.bound = 'true';
 
+      const id = field.dataset.fileUpload;
       const fileInput = field.querySelector('.file-upload-input');
       const trigger = field.querySelector('[data-file-trigger]');
       const status = field.querySelector('.file-upload-status');
-      const linkInput = field.querySelector('.file-upload-link');
 
       trigger?.addEventListener('click', () => fileInput?.click());
 
       fileInput?.addEventListener('change', () => {
         const file = fileInput.files?.[0];
         if (!file) {
+          this.files.delete(id);
           if (status) {
             status.textContent = 'No file selected';
             status.classList.remove('has-file');
@@ -59,26 +51,45 @@ const FileUploadField = {
           return;
         }
 
+        this.files.set(id, file);
         if (status) {
-          status.innerHTML = `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> ${Utils.escapeHtml(file.name)} — now paste your Drive link below`;
+          status.innerHTML = `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> ${Utils.escapeHtml(file.name)} ready to upload`;
           status.classList.add('has-file');
         }
-        linkInput?.focus();
       });
     });
   },
 
-  value(id) {
-    return String(document.getElementById(`${id}-link`)?.value || '').trim();
+  getFile(id) {
+    return this.files.get(id) || null;
+  },
+
+  hasFile(id) {
+    return this.files.has(id);
+  },
+
+  readBase64(id) {
+    const file = this.getFile(id);
+    if (!file) return Promise.resolve('');
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result || '');
+        const base64 = result.includes(',') ? result.split(',')[1] : result;
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error(`Could not read ${file.name}.`));
+      reader.readAsDataURL(file);
+    });
   },
 
   reset(id) {
     const fileInput = document.getElementById(`${id}-file`);
-    const linkInput = document.getElementById(`${id}-link`);
     const status = document.getElementById(`${id}-status`);
 
+    this.files.delete(id);
     if (fileInput) fileInput.value = '';
-    if (linkInput) linkInput.value = '';
     if (status) {
       status.textContent = 'No file selected';
       status.classList.remove('has-file');

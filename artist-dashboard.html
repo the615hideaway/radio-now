@@ -222,7 +222,7 @@
         <div class="dj-panel-header">
           <h2><i class="fa-solid fa-cloud-arrow-up"></i> Submit a New Song</h2>
         </div>
-        <p class="dj-panel-note">Send your track details and Google Drive links. Radio Now reviews submissions and adds approved songs to the catalog.</p>
+        <p class="dj-panel-note">Upload your MP3, WAV, and cover art — files go straight to Radio Now’s Drive. We review submissions and add approved songs to the catalog.</p>
         <form id="song-submit-form" class="song-submit-form dashboard-form">
           <div class="login-error" id="song-submit-error"></div>
           <div class="song-submit-success hidden" id="song-submit-success"></div>
@@ -251,6 +251,18 @@
             <div class="form-field" id="submit-label-field">
               <label for="submit-record-label">Record Label</label>
               <input type="text" id="submit-record-label" placeholder="Label name">
+            </div>
+            <div class="form-field">
+              <label for="submit-release-type">Release type</label>
+              <select id="submit-release-type">
+                <option value="single">Single</option>
+                <option value="album_track">Album track</option>
+              </select>
+            </div>
+            <div class="form-field" id="submit-album-field">
+              <label for="submit-album-name">Album name</label>
+              <input type="text" id="submit-album-name" placeholder="e.g. So, What'd I Miss?">
+              <p class="field-help" id="submit-album-help">Optional for singles — use the same album name on each track when building a full album.</p>
             </div>
           </div>
           <div class="form-field">

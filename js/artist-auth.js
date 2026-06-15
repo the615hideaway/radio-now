@@ -109,6 +109,17 @@ const ArtistAuth = {
     });
   },
 
+  async uploadSubmissionAsset(fields) {
+    return this.authRequest('song_upload_asset', {
+      artistName: String(fields.artistName || '').trim(),
+      songTitle: String(fields.songTitle || '').trim(),
+      assetType: String(fields.assetType || '').trim(),
+      fileName: String(fields.fileName || '').trim(),
+      mimeType: String(fields.mimeType || '').trim(),
+      fileBase64: String(fields.fileBase64 || ''),
+    });
+  },
+
   async submitSong(fields) {
     return this.authRequest('song_submit', {
       artistName: String(fields.artistName || '').trim(),
@@ -117,6 +128,8 @@ const ArtistAuth = {
       musicStyle: String(fields.musicStyle || '').trim(),
       songwriter: String(fields.songwriter || '').trim(),
       recordLabel: String(fields.recordLabel || '').trim(),
+      releaseType: String(fields.releaseType || 'single').trim(),
+      albumName: String(fields.albumName || '').trim(),
       description: String(fields.description || '').trim(),
       website: String(fields.website || '').trim(),
       contactEmail: String(fields.contactEmail || '').trim(),

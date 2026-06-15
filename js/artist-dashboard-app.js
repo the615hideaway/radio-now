@@ -447,22 +447,71 @@
         id: 'submit-mp3',
         label: 'MP3',
         accept: 'audio/mpeg,.mp3',
-        hint: 'Choose your MP3, upload it to Google Drive (Anyone with the link can view), then paste the share link.',
+        hint: 'MP3 audio file for DJs and radio.',
       }),
       FileUploadField.render({
         id: 'submit-wav',
         label: 'WAV',
         accept: 'audio/wav,.wav,audio/x-wav',
-        hint: 'Choose your WAV, upload it to Google Drive (Anyone with the link can view), then paste the share link.',
+        hint: 'High-quality WAV audio file.',
       }),
       FileUploadField.render({
         id: 'submit-cover',
         label: 'Cover art',
         accept: 'image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp',
-        hint: 'Choose your cover image, upload it to Google Drive (Anyone with the link can view), then paste the share link.',
+        hint: 'Square cover image (JPG or PNG).',
       }),
     ].join('');
     FileUploadField.bind(host);
+  }
+
+  function bindReleaseTypeField() {
+    const releaseType = document.getElementById('submit-release-type');
+    const albumInput = document.getElementById('submit-album-name');
+    const albumHelp = document.getElementById('submit-album-help');
+    if (!releaseType || releaseType.dataset.bound === 'true') return;
+    releaseType.dataset.bound = 'true';
+
+    const sync = () => {
+      const isAlbumTrack = releaseType.value === 'album_track';
+      if (albumInput) albumInput.required = isAlbumTrack;
+      if (albumHelp) {
+        albumHelp.textContent = isAlbumTrack
+          ? 'Required — use the same album name on every track for this album.'
+          : 'Optional for singles — use the same album name on each track when building a full album later.';
+      }
+    };
+
+    releaseType.addEventListener('change', sync);
+    sync();
+  }
+
+  async function uploadSubmissionAsset(assetType, fieldId, artistName, songTitle, statusEl) {
+    const file = FileUploadField.getFile(fieldId);
+    if (!file) return '';
+
+    if (statusEl) {
+      statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Uploading ${Utils.escapeHtml(file.name)}…`;
+      statusEl.classList.add('is-uploading');
+    }
+
+    const fileBase64 = await FileUploadField.readBase64(fieldId);
+    const result = await ArtistAuth.uploadSubmissionAsset({
+      artistName,
+      songTitle,
+      assetType,
+      fileName: file.name,
+      mimeType: file.type,
+      fileBase64,
+    });
+
+    if (statusEl) {
+      statusEl.innerHTML = `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> ${Utils.escapeHtml(file.name)} uploaded`;
+      statusEl.classList.remove('is-uploading');
+      statusEl.classList.add('has-file');
+    }
+
+    return result.link || result.downloadLink || '';
   }
 
   function bindSongSubmitForm() {
@@ -470,6 +519,7 @@
     if (!form || form.dataset.bound === 'true') return;
     form.dataset.bound = 'true';
     mountSongUploadFields();
+    bindReleaseTypeField();
 
     const errorEl = document.getElementById('song-submit-error');
     const successEl = document.getElementById('song-submit-success');
@@ -479,11 +529,32 @@
       errorEl?.classList.remove('show');
       successEl?.classList.add('hidden');
 
-      const mp3 = FileUploadField.value('submit-mp3');
-      const wav = FileUploadField.value('submit-wav');
-      if (!mp3 && !wav) {
+      const artistName = document.getElementById('submit-artist-name')?.value || '';
+      const songTitle = document.getElementById('submit-song-title')?.value || '';
+      const releaseType = document.getElementById('submit-release-type')?.value || 'single';
+      const albumName = document.getElementById('submit-album-name')?.value || '';
+      const hasMp3 = FileUploadField.hasFile('submit-mp3');
+      const hasWav = FileUploadField.hasFile('submit-wav');
+
+      if (!artistName || !songTitle) {
         if (errorEl) {
-          errorEl.textContent = 'Add at least one audio link (MP3 or WAV Google Drive link).';
+          errorEl.textContent = 'Artist name and song title are required before uploading files.';
+          errorEl.classList.add('show');
+        }
+        return;
+      }
+
+      if (!hasMp3 && !hasWav) {
+        if (errorEl) {
+          errorEl.textContent = 'Add at least one audio file (MP3 or WAV).';
+          errorEl.classList.add('show');
+        }
+        return;
+      }
+
+      if (releaseType === 'album_track' && !albumName.trim()) {
+        if (errorEl) {
+          errorEl.textContent = 'Album name is required for album tracks.';
           errorEl.classList.add('show');
         }
         return;
@@ -492,22 +563,36 @@
       const submitBtn = form.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
       const originalHtml = submitBtn.innerHTML;
-      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting…';
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading files…';
 
       try {
+        const mp3 = hasMp3
+          ? await uploadSubmissionAsset('mp3', 'submit-mp3', artistName, songTitle, document.getElementById('submit-mp3-status'))
+          : '';
+        const wav = hasWav
+          ? await uploadSubmissionAsset('wav', 'submit-wav', artistName, songTitle, document.getElementById('submit-wav-status'))
+          : '';
+        const cover = FileUploadField.hasFile('submit-cover')
+          ? await uploadSubmissionAsset('cover', 'submit-cover', artistName, songTitle, document.getElementById('submit-cover-status'))
+          : '';
+
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting…';
+
         const result = await ArtistAuth.submitSong({
-          artistName: document.getElementById('submit-artist-name')?.value || '',
-          songTitle: document.getElementById('submit-song-title')?.value || '',
+          artistName,
+          songTitle,
           year: document.getElementById('submit-year')?.value || '',
           musicStyle: document.getElementById('submit-music-style')?.value || '',
           songwriter: document.getElementById('submit-songwriter')?.value || '',
           recordLabel: document.getElementById('submit-record-label')?.value || '',
+          releaseType,
+          albumName,
           description: document.getElementById('submit-description')?.value || '',
           website: document.getElementById('submit-website')?.value || '',
           contactEmail: document.getElementById('submit-contact-email')?.value || '',
           mp3Link: mp3,
           wavLink: wav,
-          coverLink: FileUploadField.value('submit-cover'),
+          coverLink: cover,
         });
 
         form.reset();

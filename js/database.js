@@ -39,6 +39,8 @@ const RadioDB = {
       featuredArtist: raw.featuredArtist || '',
       website: raw.website || '',
       recordLabel: raw.recordLabel || '',
+      releaseType: raw.releaseType || '',
+      albumName: raw.albumName || '',
       contactEmail: raw.contactEmail || '',
       releaseDate: String(raw.releaseDate || '').trim(),
       spotlightPriority: parseInt(raw.spotlightPriority, 10) || 0,
