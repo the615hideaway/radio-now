@@ -687,24 +687,85 @@
     sync();
   }
 
+  const UPLOAD_CHUNK_BYTES = 1536 * 1024;
+
+  function makeUploadId() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID().replace(/-/g, '');
+    }
+    return String(Date.now()) + Math.random().toString(36).slice(2, 10);
+  }
+
+  function readFileSliceBase64(file, start, end) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result || '');
+        resolve(result.includes(',') ? result.split(',')[1] : result);
+      };
+      reader.onerror = () => reject(new Error(`Could not read ${file.name}.`));
+      reader.readAsDataURL(file.slice(start, end));
+    });
+  }
+
+  function setUploadStatus(statusEl, html) {
+    if (!statusEl) return;
+    statusEl.innerHTML = html;
+    statusEl.classList.add('is-uploading');
+  }
+
   async function uploadSubmissionAsset(assetType, fieldId, artistName, songTitle, statusEl) {
     const file = FileUploadField.getFile(fieldId);
     if (!file) return '';
 
-    if (statusEl) {
-      statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Uploading ${Utils.escapeHtml(file.name)}…`;
-      statusEl.classList.add('is-uploading');
-    }
+    setUploadStatus(
+      statusEl,
+      `<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Uploading ${Utils.escapeHtml(file.name)}…`,
+    );
 
-    const fileBase64 = await FileUploadField.readBase64(fieldId);
-    const result = await ArtistAuth.uploadSubmissionAsset({
-      artistName,
-      songTitle,
-      assetType,
-      fileName: file.name,
-      mimeType: file.type,
-      fileBase64,
-    });
+    let result;
+    if (file.size <= UPLOAD_CHUNK_BYTES) {
+      const fileBase64 = await FileUploadField.readBase64(fieldId);
+      result = await ArtistAuth.uploadSubmissionAsset({
+        artistName,
+        songTitle,
+        assetType,
+        fileName: file.name,
+        mimeType: file.type,
+        fileBase64,
+      });
+    } else {
+      const uploadId = makeUploadId();
+      const totalChunks = Math.ceil(file.size / UPLOAD_CHUNK_BYTES);
+
+      await ArtistAuth.uploadSubmissionAssetStart({
+        uploadId,
+        artistName,
+        songTitle,
+        assetType,
+        fileName: file.name,
+        mimeType: file.type,
+        totalChunks,
+      });
+
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex += 1) {
+        const start = chunkIndex * UPLOAD_CHUNK_BYTES;
+        const end = Math.min(start + UPLOAD_CHUNK_BYTES, file.size);
+        setUploadStatus(
+          statusEl,
+          `<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Uploading ${Utils.escapeHtml(file.name)} (part ${chunkIndex + 1} of ${totalChunks})…`,
+        );
+        const chunkBase64 = await readFileSliceBase64(file, start, end);
+        await ArtistAuth.uploadSubmissionAssetChunk({
+          uploadId,
+          chunkIndex,
+          totalChunks,
+          chunkBase64,
+        });
+      }
+
+      result = await ArtistAuth.uploadSubmissionAssetFinish({ uploadId });
+    }
 
     if (statusEl) {
       statusEl.innerHTML = `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> ${Utils.escapeHtml(file.name)} uploaded`;
@@ -763,15 +824,15 @@
       submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading files…';
 
       try {
+        const cover = FileUploadField.hasFile('submit-cover')
+          ? await uploadSubmissionAsset('cover', 'submit-cover', artistName, songTitle, document.getElementById('submit-cover-status'))
+          : existingAssetLinks.cover;
         const mp3 = FileUploadField.hasFile('submit-mp3')
           ? await uploadSubmissionAsset('mp3', 'submit-mp3', artistName, songTitle, document.getElementById('submit-mp3-status'))
           : existingAssetLinks.mp3;
         const wav = FileUploadField.hasFile('submit-wav')
           ? await uploadSubmissionAsset('wav', 'submit-wav', artistName, songTitle, document.getElementById('submit-wav-status'))
           : existingAssetLinks.wav;
-        const cover = FileUploadField.hasFile('submit-cover')
-          ? await uploadSubmissionAsset('cover', 'submit-cover', artistName, songTitle, document.getElementById('submit-cover-status'))
-          : existingAssetLinks.cover;
 
         submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${isEditing ? 'Saving…' : 'Submitting…'}`;
 

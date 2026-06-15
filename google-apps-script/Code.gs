@@ -12,7 +12,8 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v2';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v3';
+var SUBMISSION_CHUNK_FOLDER_NAME = '_RadioNowUploadChunks';
 var RADIO_NOW_MUSIC_STYLES = [
   'Bluegrass',
   'Traditional Bluegrass',
@@ -408,32 +409,19 @@ function submissionAssetFileName_(artistName, songTitle, assetType, originalName
   return safeName_(artistName, songTitle, ext);
 }
 
-function uploadSubmissionAsset_(token, payload) {
-  requireArtistSession_(token);
-
-  var artistName = String(payload.artistName || '').trim();
-  var songTitle = String(payload.songTitle || '').trim();
-  var assetType = String(payload.assetType || '').trim().toLowerCase();
-  var fileName = String(payload.fileName || '').trim();
-  var mimeType = String(payload.mimeType || '').trim() || 'application/octet-stream';
-  var fileBase64 = String(payload.fileBase64 || '').trim();
-
+function validateSubmissionAssetMeta_(artistName, songTitle, assetType) {
   if (!artistName || !songTitle) {
     throw new Error('Artist name and song title are required before uploading files.');
   }
-
-  if (!fileBase64) {
-    throw new Error('File data is missing.');
-  }
-
   if (assetType !== 'mp3' && assetType !== 'wav' && assetType !== 'cover') {
     throw new Error('Unsupported file type.');
   }
+}
 
+function saveSubmissionAssetToFolder_(artistName, songTitle, assetType, fileName, mimeType, bytes) {
   var folder = getSubmissionUploadFolder_(artistName, songTitle);
   var targetName = submissionAssetFileName_(artistName, songTitle, assetType, fileName);
-  var bytes = Utilities.base64Decode(fileBase64);
-  var blob = Utilities.newBlob(bytes, mimeType, targetName);
+  var blob = Utilities.newBlob(bytes, mimeType || 'application/octet-stream', targetName);
   var file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
@@ -445,6 +433,183 @@ function uploadSubmissionAsset_(token, payload) {
     link: driveFileShareUrl_(file.getId()),
     downloadLink: toDriveDownload_(driveFileShareUrl_(file.getId())),
   };
+}
+
+function uploadSubmissionAsset_(token, payload) {
+  requireArtistSession_(token);
+
+  var artistName = String(payload.artistName || '').trim();
+  var songTitle = String(payload.songTitle || '').trim();
+  var assetType = String(payload.assetType || '').trim().toLowerCase();
+  var fileName = String(payload.fileName || '').trim();
+  var mimeType = String(payload.mimeType || '').trim() || 'application/octet-stream';
+  var fileBase64 = String(payload.fileBase64 || '').trim();
+
+  validateSubmissionAssetMeta_(artistName, songTitle, assetType);
+
+  if (!fileBase64) {
+    throw new Error('File data is missing.');
+  }
+
+  var bytes = Utilities.base64Decode(fileBase64);
+  return saveSubmissionAssetToFolder_(artistName, songTitle, assetType, fileName, mimeType, bytes);
+}
+
+function getSubmissionChunkFolder_() {
+  var root = DriveApp.getFolderById(SUBMISSION_UPLOAD_FOLDER_ID);
+  var folders = root.getFoldersByName(SUBMISSION_CHUNK_FOLDER_NAME);
+  if (folders.hasNext()) return folders.next();
+  return root.createFolder(SUBMISSION_CHUNK_FOLDER_NAME);
+}
+
+function cleanupUploadChunks_(uploadId) {
+  var folder = getSubmissionChunkFolder_();
+  var files = folder.getFilesByName(uploadId + '_chunk_');
+  var prefix = uploadId + '_chunk_';
+  var all = folder.getFiles();
+  while (all.hasNext()) {
+    var file = all.next();
+    if (String(file.getName()).indexOf(prefix) === 0) {
+      file.setTrashed(true);
+    }
+  }
+}
+
+function readUploadSessionMeta_(uploadId) {
+  var props = PropertiesService.getScriptProperties();
+  var raw = props.getProperty('upload_' + uploadId);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    return null;
+  }
+}
+
+function writeUploadSessionMeta_(uploadId, meta) {
+  PropertiesService.getScriptProperties().setProperty('upload_' + uploadId, JSON.stringify(meta));
+}
+
+function clearUploadSessionMeta_(uploadId) {
+  PropertiesService.getScriptProperties().deleteProperty('upload_' + uploadId);
+}
+
+function uploadSubmissionStart_(token, payload) {
+  var found = requireArtistSession_(token);
+  var uploadId = String(payload.uploadId || '').trim();
+  var artistName = String(payload.artistName || '').trim();
+  var songTitle = String(payload.songTitle || '').trim();
+  var assetType = String(payload.assetType || '').trim().toLowerCase();
+  var fileName = String(payload.fileName || '').trim();
+  var mimeType = String(payload.mimeType || '').trim() || 'application/octet-stream';
+  var totalChunks = parseInt(payload.totalChunks, 10);
+
+  if (!uploadId || uploadId.length < 8) {
+    throw new Error('Upload session id is required.');
+  }
+  if (!totalChunks || totalChunks < 1) {
+    throw new Error('Upload chunk count is required.');
+  }
+
+  validateSubmissionAssetMeta_(artistName, songTitle, assetType);
+  cleanupUploadChunks_(uploadId);
+
+  writeUploadSessionMeta_(uploadId, {
+    uploadId: uploadId,
+    accountId: found.artist.artist_account_id,
+    artistName: artistName,
+    songTitle: songTitle,
+    assetType: assetType,
+    fileName: fileName,
+    mimeType: mimeType,
+    totalChunks: totalChunks,
+    startedAt: new Date().toISOString(),
+  });
+
+  return { success: true, uploadId: uploadId, totalChunks: totalChunks };
+}
+
+function uploadSubmissionChunk_(token, payload) {
+  var found = requireArtistSession_(token);
+  var uploadId = String(payload.uploadId || '').trim();
+  var chunkIndex = parseInt(payload.chunkIndex, 10);
+  var totalChunks = parseInt(payload.totalChunks, 10);
+  var chunkBase64 = String(payload.chunkBase64 || '').trim();
+
+  if (!uploadId || isNaN(chunkIndex) || chunkIndex < 0 || !chunkBase64) {
+    throw new Error('Invalid upload chunk.');
+  }
+
+  var meta = readUploadSessionMeta_(uploadId);
+  if (!meta || meta.accountId !== found.artist.artist_account_id) {
+    throw new Error('Upload session expired. Please try again.');
+  }
+  if (totalChunks && meta.totalChunks !== totalChunks) {
+    throw new Error('Upload session mismatch. Please try again.');
+  }
+
+  var bytes = Utilities.base64Decode(chunkBase64);
+  var folder = getSubmissionChunkFolder_();
+  folder.createFile(Utilities.newBlob(bytes, 'application/octet-stream', uploadId + '_chunk_' + chunkIndex));
+
+  return {
+    success: true,
+    uploadId: uploadId,
+    chunkIndex: chunkIndex,
+    receivedChunks: chunkIndex + 1,
+    totalChunks: meta.totalChunks,
+  };
+}
+
+function uploadSubmissionFinish_(token, payload) {
+  var found = requireArtistSession_(token);
+  var uploadId = String(payload.uploadId || '').trim();
+  if (!uploadId) throw new Error('Upload session id is required.');
+
+  var meta = readUploadSessionMeta_(uploadId);
+  if (!meta || meta.accountId !== found.artist.artist_account_id) {
+    throw new Error('Upload session expired. Please try again.');
+  }
+
+  var folder = getSubmissionChunkFolder_();
+  var prefix = uploadId + '_chunk_';
+  var chunks = [];
+  var files = folder.getFiles();
+  while (files.hasNext()) {
+    var file = files.next();
+    var name = String(file.getName());
+    if (name.indexOf(prefix) !== 0) continue;
+    var idx = parseInt(name.slice(prefix.length), 10);
+    if (isNaN(idx)) continue;
+    chunks.push({ index: idx, bytes: file.getBlob().getBytes() });
+  }
+
+  chunks.sort(function (a, b) { return a.index - b.index; });
+
+  if (!chunks.length || chunks.length !== meta.totalChunks) {
+    throw new Error('Upload incomplete (' + chunks.length + ' of ' + meta.totalChunks + ' parts). Please try again.');
+  }
+
+  var combined = [];
+  chunks.forEach(function (chunk) {
+    chunk.bytes.forEach(function (byte) {
+      combined.push(byte < 0 ? byte + 256 : byte);
+    });
+  });
+
+  var result = saveSubmissionAssetToFolder_(
+    meta.artistName,
+    meta.songTitle,
+    meta.assetType,
+    meta.fileName,
+    meta.mimeType,
+    combined
+  );
+
+  cleanupUploadChunks_(uploadId);
+  clearUploadSessionMeta_(uploadId);
+
+  return result;
 }
 
 function escapeHtml_(value) {
@@ -3409,6 +3574,18 @@ function doPost(e) {
 
     if (action === 'song_upload_asset') {
       return jsonResponse_(uploadSubmissionAsset_(body.token, body));
+    }
+
+    if (action === 'song_upload_start') {
+      return jsonResponse_(uploadSubmissionStart_(body.token, body));
+    }
+
+    if (action === 'song_upload_chunk') {
+      return jsonResponse_(uploadSubmissionChunk_(body.token, body));
+    }
+
+    if (action === 'song_upload_finish') {
+      return jsonResponse_(uploadSubmissionFinish_(body.token, body));
     }
 
     if (action === 'song_submit') {

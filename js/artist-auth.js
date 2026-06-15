@@ -8,11 +8,16 @@ const ArtistAuth = {
       throw new Error('Artist sign-in is not configured yet. Redeploy Apps Script with the latest Code.gs.');
     }
 
-    const response = await fetch(CONFIG.googleScriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action, ...payload }),
-    });
+    let response;
+    try {
+      response = await fetch(CONFIG.googleScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...payload }),
+      });
+    } catch (err) {
+      throw new Error('Could not reach the upload service. Check your internet connection and try again.');
+    }
 
     let data;
     try {
@@ -117,6 +122,33 @@ const ArtistAuth = {
       fileName: String(fields.fileName || '').trim(),
       mimeType: String(fields.mimeType || '').trim(),
       fileBase64: String(fields.fileBase64 || ''),
+    });
+  },
+
+  async uploadSubmissionAssetStart(fields) {
+    return this.authRequest('song_upload_start', {
+      uploadId: String(fields.uploadId || '').trim(),
+      artistName: String(fields.artistName || '').trim(),
+      songTitle: String(fields.songTitle || '').trim(),
+      assetType: String(fields.assetType || '').trim(),
+      fileName: String(fields.fileName || '').trim(),
+      mimeType: String(fields.mimeType || '').trim(),
+      totalChunks: fields.totalChunks,
+    });
+  },
+
+  async uploadSubmissionAssetChunk(fields) {
+    return this.authRequest('song_upload_chunk', {
+      uploadId: String(fields.uploadId || '').trim(),
+      chunkIndex: fields.chunkIndex,
+      totalChunks: fields.totalChunks,
+      chunkBase64: String(fields.chunkBase64 || ''),
+    });
+  },
+
+  async uploadSubmissionAssetFinish(fields) {
+    return this.authRequest('song_upload_finish', {
+      uploadId: String(fields.uploadId || '').trim(),
     });
   },
 
