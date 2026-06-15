@@ -31,7 +31,7 @@ const CONFIG = {
 
   // Used only by scripts/sync-sheet-to-json.ps1 (not loaded live by the site).
   googleSheetId: '1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU',
-  sheetName: 'Sheet1',
+  sheetName: 'Form Responses 1',
 
   queueKey: 'radio_now_queue',
   downloadQueueKey: 'radio_now_download_queue',

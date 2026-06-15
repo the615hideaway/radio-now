@@ -2,10 +2,8 @@ name: Sync Google Sheet to JSON
 
 on:
   workflow_dispatch:
-  repository_dispatch:
-    types: [sync-catalog]
   schedule:
-    # Backup sync every 5 minutes if the Apps Script dispatch fails
+    # Form Responses 1 → songs.json every 5 minutes (live catalog within ~5 min)
     - cron: '*/5 * * * *'
 
 permissions:

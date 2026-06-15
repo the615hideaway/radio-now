@@ -1,7 +1,7 @@
 # Syncs the Radio Now Google Sheet into data/songs.json
 param(
   [string]$SheetId = '1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU',
-  [string]$SheetName = 'Sheet1',
+  [string[]]$SheetNames = @('Form Responses 1', 'Sheet1'),
   [string]$OutPath = "$PSScriptRoot\..\data\songs.json"
 )
 
@@ -111,40 +111,21 @@ if (-not (Test-Path $outDir)) { New-Item -ItemType Directory -Path $outDir | Out
 $coversDir = Join-Path $outDir 'covers'
 if (-not (Test-Path $coversDir)) { New-Item -ItemType Directory -Path $coversDir | Out-Null }
 
-$gvizUrl = "https://docs.google.com/spreadsheets/d/$SheetId/gviz/tq?tqx=out:json&sheet=$([uri]::EscapeDataString($SheetName))"
-$text = (Invoke-WebRequest -Uri $gvizUrl -UseBasicParsing).Content
+function Build-SongFromRecord {
+  param(
+    [hashtable]$Record,
+    [int]$Index
+  )
 
-if ($text -notmatch 'google\.visualization\.Query\.setResponse\(([\s\S]+)\);?') {
-  throw 'Could not parse Google Sheet response'
-}
+  $artist = $Record['Artist Name']
+  $title = $Record['Song Title']
+  if (-not $artist -and -not $title) { return $null }
 
-$payload = $matches[1] | ConvertFrom-Json
-$cols = @($payload.table.cols | ForEach-Object { $_.label })
-$rows = @($payload.table.rows)
-
-$songs = New-Object System.Collections.Generic.List[object]
-$index = 0
-
-foreach ($row in $rows) {
-  $record = @{}
-  for ($i = 0; $i -lt $cols.Count; $i++) {
-    $label = $cols[$i]
-    if (-not $label) { continue }
-    $cell = $null
-    if ($row.c.Count -gt $i) { $cell = $row.c[$i] }
-    $record[$label] = Get-CellValue $cell
-  }
-
-  $artist = $record['Artist Name']
-  $title = $record['Song Title']
-  if (-not $artist -and -not $title) { continue }
-
-  $index++
-  $mp3 = $record['MP3']
-  if (-not $mp3) { $mp3 = $record['MP3s'] }
-  $cover = $record['Cover Art']
-  if (-not $cover) { $cover = $record['Cover'] }
-  $wav = $record['WAV']
+  $mp3 = $Record['MP3']
+  if (-not $mp3) { $mp3 = $Record['MP3s'] }
+  $cover = $Record['Cover Art']
+  if (-not $cover) { $cover = $Record['Cover'] }
+  $wav = $Record['WAV']
 
   $previewDriveId = Get-DriveId $mp3
   $previewStreamUrl = ''
@@ -154,22 +135,14 @@ foreach ($row in $rows) {
     $previewStreamUrl = $mp3
   }
 
-  $bandMemberLines = Build-BandMemberLines $record
+  $bandMemberLines = Build-BandMemberLines $Record
   $coverDriveId = Get-DriveId $cover
-  $coverLocal = ''
 
-  if ($coverDriveId) {
-    $coverFile = Join-Path $coversDir "song-$index.jpg"
-    if (Save-CoverArt -DriveId $coverDriveId -DestPath $coverFile) {
-      $coverLocal = "data/covers/song-$index.jpg"
-    }
-  }
-
-  $songs.Add([ordered]@{
-    id                 = "song-$index"
+  return [ordered]@{
+    id                 = "song-$Index"
     artistName         = $artist
     songTitle          = $title
-    year               = $record['Year']
+    year               = $Record['Year']
     mp3                = Get-DriveDownload $mp3
     previewLink        = $mp3
     previewStreamUrl   = $previewStreamUrl
@@ -177,38 +150,98 @@ foreach ($row in $rows) {
     wav                = Get-DriveDownload $wav
     cover              = $cover
     coverDriveId       = $coverDriveId
-    coverLocal         = $coverLocal
+    coverLocal         = ''
     coverThumbnailUrl  = Get-DriveThumbnail $cover
-    songTime           = $record['Song Time']
-    description        = Strip-Html $record['Description']
-    musicStyle         = $record['Music Style']
+    songTime           = $Record['Song Time']
+    description        = Strip-Html $Record['Description']
+    musicStyle         = $Record['Music Style']
     bandMemberLines    = $bandMemberLines
     bandMembers        = ($bandMemberLines -join '; ')
-    songwriter         = $record['Songwriter']
-    featuredArtist     = $record['Featured Artist']
-    website            = $record['Website']
-    recordLabel        = $record['Record Label']
-    releaseType        = if ($record['TAG - Album/Single']) { $record['TAG - Album/Single'] } elseif ($record['Album/Single']) { $record['Album/Single'] } else { '' }
-    albumName          = if ($record['Album Name']) { $record['Album Name'] } elseif ($record['Album']) { $record['Album'] } else { '' }
-    contactEmail       = $record['Contact E-Mail']
-    releaseDate        = $record['Release Date']
-    if (-not $releaseDate) { $releaseDate = $record['Radio Now Release'] }
-    if (-not $releaseDate) { $releaseDate = $record['Added Date'] }
-    spotlightPriority  = $record['Spotlight Priority']
-    if (-not $spotlightPriority) { $spotlightPriority = $record['Spotlight'] }
-    spotlightUntil     = $record['Spotlight Until']
-    if (-not $spotlightUntil) { $spotlightUntil = $record['Spotlight End'] }
-  })
+    songwriter         = $Record['Songwriter']
+    featuredArtist     = $Record['Featured Artist']
+    website            = $Record['Website']
+    recordLabel        = $Record['Record Label']
+    releaseType        = if ($Record['TAG - Album/Single']) { $Record['TAG - Album/Single'] } elseif ($Record['Album/Single']) { $Record['Album/Single'] } else { '' }
+    albumName          = if ($Record['Album Name']) { $Record['Album Name'] } elseif ($Record['Album']) { $Record['Album'] } else { '' }
+    contactEmail       = $Record['Contact E-Mail']
+    releaseDate        = $Record['Release Date']
+    if (-not $releaseDate) { $releaseDate = $Record['Radio Now Release'] }
+    if (-not $releaseDate) { $releaseDate = $Record['Added Date'] }
+    spotlightPriority  = $Record['Spotlight Priority']
+    if (-not $spotlightPriority) { $spotlightPriority = $Record['Spotlight'] }
+    spotlightUntil     = $Record['Spotlight Until']
+    if (-not $spotlightUntil) { $spotlightUntil = $Record['Spotlight End'] }
+  }
+}
+
+$catalog = @{}
+$index = 0
+
+foreach ($sheetName in $SheetNames) {
+  $gvizUrl = "https://docs.google.com/spreadsheets/d/$SheetId/gviz/tq?tqx=out:json&sheet=$([uri]::EscapeDataString($sheetName))"
+  try {
+    $text = (Invoke-WebRequest -Uri $gvizUrl -UseBasicParsing).Content
+  } catch {
+    Write-Warning "Skipping sheet '$sheetName': $($_.Exception.Message)"
+    continue
+  }
+
+  if ($text -notmatch 'google\.visualization\.Query\.setResponse\(([\s\S]+)\);?') {
+    Write-Warning "Skipping sheet '$sheetName': could not parse response"
+    continue
+  }
+
+  $payload = $matches[1] | ConvertFrom-Json
+  $cols = @($payload.table.cols | ForEach-Object { $_.label })
+  $rows = @($payload.table.rows)
+
+  foreach ($row in $rows) {
+    $record = @{}
+    for ($i = 0; $i -lt $cols.Count; $i++) {
+      $label = $cols[$i]
+      if (-not $label) { continue }
+      $cell = $null
+      if ($row.c.Count -gt $i) { $cell = $row.c[$i] }
+      $record[$label] = Get-CellValue $cell
+    }
+
+    $artist = $record['Artist Name']
+    $title = $record['Song Title']
+    if (-not $artist -and -not $title) { continue }
+
+    $index++
+    $song = Build-SongFromRecord -Record $record -Index $index
+    if (-not $song) { continue }
+
+    $key = ("$artist|$title").ToLower()
+    $catalog[$key] = $song
+  }
+}
+
+$songs = [System.Collections.Generic.List[object]]::new()
+$sortIndex = 1
+foreach ($entry in ($catalog.GetEnumerator() | Sort-Object { $_.Value.artistName }, { $_.Value.songTitle })) {
+  $entry.Value.id = "song-$sortIndex"
+  if ($entry.Value.coverDriveId) {
+    $coverFile = Join-Path $coversDir "song-$sortIndex.jpg"
+    if (Save-CoverArt -DriveId $entry.Value.coverDriveId -DestPath $coverFile) {
+      $entry.Value.coverLocal = "data/covers/song-$sortIndex.jpg"
+    } else {
+      $entry.Value.coverLocal = ''
+    }
+  }
+  $songs.Add($entry.Value)
+  $sortIndex++
 }
 
 $output = [ordered]@{
-  success   = $true
-  source    = 'google-sheet'
-  sheetId   = $SheetId
-  sheetName = $SheetName
-  syncedAt  = (Get-Date).ToUniversalTime().ToString('o')
-  songCount = $songs.Count
-  songs     = $songs
+  success    = $true
+  source     = 'google-sheet'
+  sheetId    = $SheetId
+  sheetNames = $SheetNames
+  syncedAt   = (Get-Date).ToUniversalTime().ToString('o')
+  songCount  = $songs.Count
+  songs      = $songs
 }
 
 $json = $output | ConvertTo-Json -Depth 8

@@ -12,9 +12,7 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v7';
-var RADIO_NOW_GITHUB_REPO = 'the615hideaway/radio-now';
-var RADIO_NOW_GITHUB_SYNC_EVENT = 'sync-catalog';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v8';
 var SUBMISSION_CHUNK_FOLDER_ID = '1uSIu4QKuy1CkvaoksiA8eBJpFNHeZSdD';
 var SUBMISSION_MP3_FOLDER_ID = '1B0XflDxcTJYcKkvzOYpdHvWLyTHZNAN37O1Q65wLg_rHu6xuxrSfKl8DDvr_BLsVo5Ft6lb-';
 var SUBMISSION_WAV_FOLDER_ID = '137edNXYOv3xTVy7q4o1NKcTGMyshzR7MtN1BthqeXydD1Gwq-0V7JsRQR-9tXSYR45rsILzX';
@@ -583,77 +581,16 @@ function appendFormRowToCatalogSheet_(rowValues) {
   return true;
 }
 
-function getGithubCatalogSyncToken_() {
-  return PropertiesService.getScriptProperties().getProperty('GITHUB_CATALOG_SYNC_TOKEN') || '';
-}
-
-function isSongSubmissionPaid_(rowValues) {
-  // Free uploads for now. Later: set Payment Status on the form/Sheet1 (e.g. "paid").
-  var paymentStatus = String(rowValues['Payment Status'] || rowValues['Paid'] || '').trim().toLowerCase();
-  if (!paymentStatus) return true;
-  if (paymentStatus === 'unpaid' || paymentStatus === 'pending' || paymentStatus === 'no') return false;
-  return true;
-}
-
-function triggerCatalogWebsiteSync_(reason) {
-  var token = getGithubCatalogSyncToken_();
-  if (!token) {
-    Logger.log('Catalog website sync skipped — add GITHUB_CATALOG_SYNC_TOKEN to Script Properties.');
-    return false;
-  }
-
-  var response = UrlFetchApp.fetch('https://api.github.com/repos/' + RADIO_NOW_GITHUB_REPO + '/dispatches', {
-    method: 'post',
-    contentType: 'application/json',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-    payload: JSON.stringify({
-      event_type: RADIO_NOW_GITHUB_SYNC_EVENT,
-      client_payload: {
-        reason: String(reason || 'song-submitted'),
-        at: new Date().toISOString(),
-      },
-    }),
-    muteHttpExceptions: true,
-  });
-
-  var code = response.getResponseCode();
-  if (code < 200 || code >= 300) {
-    Logger.log('GitHub catalog sync dispatch failed (' + code + '): ' + response.getContentText());
-    return false;
-  }
-
-  return true;
-}
-
 function processArtistSongFormSubmission_(response) {
   var parsed = parseArtistSongFormResponse_(response);
-  parsed.rowValues = routeFormSubmissionFiles_(parsed);
-
-  if (!isSongSubmissionPaid_(parsed.rowValues)) {
-    Logger.log('Song held for payment: ' + parsed.artistName + ' - ' + parsed.songTitle);
-    return false;
-  }
-
-  var added = appendFormRowToCatalogSheet_(parsed.rowValues);
-  if (added) {
-    triggerCatalogWebsiteSync_('form-submit:' + parsed.artistName + ' - ' + parsed.songTitle);
-  }
-  return added;
+  routeFormSubmissionFiles_(parsed);
+  return true;
 }
 
 /**
- * Install once: Apps Script → Triggers → Add trigger
- *   Function: onArtistSongFormSubmit
- *   Event: From form → On form submit → pick your artist song form
- *
- * On submit: moves files to MP3/WAV/Cover folders, appends Sheet1, then triggers
- * the GitHub catalog sync (live site within ~5 minutes).
- *
- * One-time setup: Script Properties → GITHUB_CATALOG_SYNC_TOKEN = GitHub PAT (repo scope).
+ * Optional trigger: onArtistSongFormSubmit → On form submit
+ * Renames/moves uploaded files into MP3, WAV, and Cover Art folders.
+ * Catalog comes from Form Responses 1 (website sync every 5 min).
  */
 function onArtistSongFormSubmit(e) {
   if (!e || !e.response) return;
