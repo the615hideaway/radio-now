@@ -583,6 +583,111 @@ a:hover { color: var(--white); }
   font: inherit;
 }
 
+.dashboard-form--accessible.dashboard-form--song-submit {
+  font-size: 1.05rem;
+}
+
+.dashboard-form--accessible.dashboard-form--song-submit label,
+.dashboard-form--accessible.dashboard-form--song-submit legend {
+  font-size: 1rem;
+}
+
+.dashboard-form--accessible.dashboard-form--song-submit input:not([type="checkbox"]),
+.dashboard-form--accessible.dashboard-form--song-submit select,
+.dashboard-form--accessible.dashboard-form--song-submit textarea,
+.dashboard-form--accessible .file-upload-link {
+  font-size: 1.08rem;
+  padding: 0.95rem 1.05rem;
+  min-height: 3.1rem;
+}
+
+.dashboard-form--accessible.dashboard-form--song-submit textarea {
+  min-height: 9rem;
+  line-height: 1.55;
+}
+
+.dashboard-form--accessible .file-upload-btn {
+  font-size: 1rem;
+  padding: 0.8rem 1.2rem;
+}
+
+.dashboard-form--accessible .btn-lg {
+  font-size: 1.08rem;
+  padding: 0.95rem 1.35rem;
+}
+
+.label-required {
+  color: var(--gold-bright);
+}
+
+.song-form-section {
+  margin: 0 0 1.5rem;
+  padding: 0 0 1.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.song-form-section legend {
+  font-family: 'Oswald', system-ui, sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  margin-bottom: 1rem;
+  padding: 0;
+}
+
+.form-field--wide {
+  grid-column: 1 / -1;
+}
+
+.checkbox-field--inline {
+  margin: 0.5rem 0 0.75rem;
+}
+
+.song-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.song-submissions-list {
+  margin-bottom: 1.5rem;
+}
+
+.song-submission-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  margin-bottom: 0.75rem;
+}
+
+.song-submission-item h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.08rem;
+}
+
+.song-submission-item p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.song-submission-status {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gold-bright);
+}
+
 .file-upload-hint {
   margin: 0;
   font-size: 0.8rem;

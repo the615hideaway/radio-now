@@ -12,7 +12,20 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-drive-upload-v1';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v2';
+var RADIO_NOW_MUSIC_STYLES = [
+  'Bluegrass',
+  'Traditional Bluegrass',
+  'Modern Bluegrass',
+  'Progressive Bluegrass',
+  'Bluegrass Gospel',
+  'Gospel',
+  'Country',
+  'Americana',
+  'Folk',
+  'Holiday Music',
+  'Instrumental',
+];
 var SUBMISSION_UPLOAD_FOLDER_ID = '1A74Xv1UosXF34hlzZ_c6gEjbER8DH5PvDNONa6f_gDPfZXSVOfCMF-jqYfOn0xryhwP7BxT4';
 var RADIO_NOW_LABEL_SETUP_KEY = 'rn-615-hideaway-setup';
 var RADIO_NOW_ADMIN_EMAIL = 'the615hideaway@gmail.com';
@@ -1548,8 +1561,12 @@ var ARTIST_HEADERS = [
 var SONG_SUBMISSION_SHEET_NAME = 'Song Submissions';
 var SONG_SUBMISSION_HEADERS = [
   'submission_id', 'account_id', 'account_type', 'account_name', 'artist_name', 'song_title',
-  'year', 'music_style', 'songwriter', 'record_label', 'release_type', 'album_name', 'description',
-  'website', 'contact_email', 'mp3_link', 'wav_link', 'cover_link', 'status', 'submitted_at', 'profile_id',
+  'year', 'song_time', 'music_style', 'songwriter', 'featured_artist', 'lead_vocals',
+  'harmony_vocals_1', 'harmony_vocals_2', 'harmony_vocals_3', 'harmony_vocals_4',
+  'instrument_player_1', 'instrument_player_2', 'instrument_player_3', 'instrument_player_4',
+  'instrument_player_5', 'instrument_player_6', 'instrument_player_7', 'instrument_player_8',
+  'record_label', 'release_type', 'album_name', 'description', 'website', 'contact_email',
+  'mp3_link', 'wav_link', 'cover_link', 'status', 'submitted_at', 'updated_at', 'profile_id',
 ];
 var ARTIST_PROFILE_SHEET_NAME = 'Artist Profiles';
 var ARTIST_PROFILE_HEADERS = [
@@ -1713,6 +1730,287 @@ function getSongSubmissionSheet_() {
 
   ensureSheetHeaders_(sheet, SONG_SUBMISSION_HEADERS);
   return sheet;
+}
+
+function isAllowedMusicStyle_(style) {
+  var target = String(style || '').trim().toLowerCase();
+  if (!target) return false;
+  for (var i = 0; i < RADIO_NOW_MUSIC_STYLES.length; i++) {
+    if (String(RADIO_NOW_MUSIC_STYLES[i]).toLowerCase() === target) return true;
+  }
+  return false;
+}
+
+function submissionRowToObject_(row, headerMap) {
+  function pick(key) {
+    var idx = headerMap[key];
+    if (idx === undefined) return '';
+    return String(row[idx] || '').trim();
+  }
+
+  return {
+    submission_id: pick('submission_id'),
+    account_id: pick('account_id'),
+    account_type: pick('account_type'),
+    account_name: pick('account_name'),
+    artist_name: pick('artist_name'),
+    song_title: pick('song_title'),
+    year: pick('year'),
+    song_time: pick('song_time'),
+    music_style: pick('music_style'),
+    songwriter: pick('songwriter'),
+    featured_artist: pick('featured_artist'),
+    lead_vocals: pick('lead_vocals'),
+    harmony_vocals_1: pick('harmony_vocals_1'),
+    harmony_vocals_2: pick('harmony_vocals_2'),
+    harmony_vocals_3: pick('harmony_vocals_3'),
+    harmony_vocals_4: pick('harmony_vocals_4'),
+    instrument_player_1: pick('instrument_player_1'),
+    instrument_player_2: pick('instrument_player_2'),
+    instrument_player_3: pick('instrument_player_3'),
+    instrument_player_4: pick('instrument_player_4'),
+    instrument_player_5: pick('instrument_player_5'),
+    instrument_player_6: pick('instrument_player_6'),
+    instrument_player_7: pick('instrument_player_7'),
+    instrument_player_8: pick('instrument_player_8'),
+    record_label: pick('record_label'),
+    release_type: pick('release_type'),
+    album_name: pick('album_name'),
+    description: pick('description'),
+    website: pick('website'),
+    contact_email: pick('contact_email'),
+    mp3_link: pick('mp3_link'),
+    wav_link: pick('wav_link'),
+    cover_link: pick('cover_link'),
+    status: pick('status') || 'pending',
+    submitted_at: pick('submitted_at'),
+    updated_at: pick('updated_at'),
+    profile_id: pick('profile_id'),
+  };
+}
+
+function publicSubmission_(row) {
+  return {
+    id: row.submission_id,
+    artistName: row.artist_name,
+    songTitle: row.song_title,
+    year: row.year,
+    songTime: row.song_time,
+    musicStyle: row.music_style,
+    songwriter: row.songwriter,
+    featuredArtist: row.featured_artist,
+    leadVocals: row.lead_vocals,
+    harmonyVocals: [
+      row.harmony_vocals_1,
+      row.harmony_vocals_2,
+      row.harmony_vocals_3,
+      row.harmony_vocals_4,
+    ].filter(function (value) { return !!value; }),
+    instrumentPlayers: [
+      row.instrument_player_1,
+      row.instrument_player_2,
+      row.instrument_player_3,
+      row.instrument_player_4,
+      row.instrument_player_5,
+      row.instrument_player_6,
+      row.instrument_player_7,
+      row.instrument_player_8,
+    ].filter(function (value) { return !!value; }),
+    recordLabel: row.record_label,
+    releaseType: row.release_type,
+    albumName: row.album_name,
+    description: row.description,
+    website: row.website,
+    contactEmail: row.contact_email,
+    mp3Link: row.mp3_link,
+    wavLink: row.wav_link,
+    coverLink: row.cover_link,
+    status: row.status,
+    submittedAt: row.submitted_at,
+    updatedAt: row.updated_at,
+    canEdit: String(row.status).toLowerCase() === 'pending',
+  };
+}
+
+function submissionPayloadFromRequest_(payload) {
+  return {
+    artistName: String(payload.artistName || '').trim(),
+    songTitle: String(payload.songTitle || '').trim(),
+    year: String(payload.year || '').trim(),
+    songTime: String(payload.songTime || '').trim(),
+    musicStyle: String(payload.musicStyle || '').trim(),
+    songwriter: String(payload.songwriter || '').trim(),
+    featuredArtist: String(payload.featuredArtist || '').trim(),
+    leadVocals: String(payload.leadVocals || '').trim(),
+    harmonyVocals: Array.isArray(payload.harmonyVocals) ? payload.harmonyVocals : [],
+    instrumentPlayers: Array.isArray(payload.instrumentPlayers) ? payload.instrumentPlayers : [],
+    recordLabel: String(payload.recordLabel || '').trim(),
+    independent: !!payload.independent,
+    releaseType: String(payload.releaseType || 'single').trim().toLowerCase(),
+    albumName: String(payload.albumName || '').trim(),
+    description: String(payload.description || '').trim(),
+    website: String(payload.website || '').trim(),
+    contactEmail: normalizeEmail_(payload.contactEmail),
+    mp3Link: String(payload.mp3Link || '').trim(),
+    wavLink: String(payload.wavLink || '').trim(),
+    coverLink: String(payload.coverLink || '').trim(),
+  };
+}
+
+function validateSubmissionPayload_(data, options) {
+  options = options || {};
+
+  if (!data.artistName || !data.songTitle) {
+    throw new Error('Artist name and song title are required.');
+  }
+  if (!data.year) throw new Error('Year is required.');
+  if (!data.songTime) throw new Error('Song time is required.');
+  if (!data.musicStyle) throw new Error('Music style is required.');
+  if (!isAllowedMusicStyle_(data.musicStyle)) {
+    throw new Error('Choose a music style from the list.');
+  }
+  if (!data.description) throw new Error('Description is required.');
+  if (!data.songwriter) throw new Error('Songwriter is required.');
+  if (!data.leadVocals) throw new Error('Lead vocals are required.');
+
+  if (data.releaseType !== 'single' && data.releaseType !== 'album_track') {
+    throw new Error('Release type must be Single or Album track.');
+  }
+  if (data.releaseType === 'album_track' && !data.albumName) {
+    throw new Error('Album name is required for album tracks.');
+  }
+
+  if (!data.mp3Link) throw new Error('MP3 file is required.');
+  if (!data.wavLink) throw new Error('WAV file is required.');
+  if (!data.coverLink) throw new Error('Cover art is required.');
+
+  if (data.independent) {
+    data.recordLabel = 'Independent';
+  } else if (!data.recordLabel) {
+    throw new Error('Record label is required, or check Independent.');
+  }
+}
+
+function submissionRowValues_(data, meta) {
+  var harmony = data.harmonyVocals || [];
+  var players = data.instrumentPlayers || [];
+
+  return {
+    submission_id: meta.submissionId,
+    account_id: meta.accountId,
+    account_type: meta.accountType,
+    account_name: meta.accountName,
+    artist_name: data.artistName,
+    song_title: data.songTitle,
+    year: data.year,
+    song_time: data.songTime,
+    music_style: data.musicStyle,
+    songwriter: data.songwriter,
+    featured_artist: data.featuredArtist,
+    lead_vocals: data.leadVocals,
+    harmony_vocals_1: String(harmony[0] || '').trim(),
+    harmony_vocals_2: String(harmony[1] || '').trim(),
+    harmony_vocals_3: String(harmony[2] || '').trim(),
+    harmony_vocals_4: String(harmony[3] || '').trim(),
+    instrument_player_1: String(players[0] || '').trim(),
+    instrument_player_2: String(players[1] || '').trim(),
+    instrument_player_3: String(players[2] || '').trim(),
+    instrument_player_4: String(players[3] || '').trim(),
+    instrument_player_5: String(players[4] || '').trim(),
+    instrument_player_6: String(players[5] || '').trim(),
+    instrument_player_7: String(players[6] || '').trim(),
+    instrument_player_8: String(players[7] || '').trim(),
+    record_label: data.recordLabel,
+    release_type: data.releaseType === 'album_track' ? 'Album' : 'Single',
+    album_name: data.albumName,
+    description: data.description,
+    website: data.website,
+    contact_email: data.contactEmail,
+    mp3_link: data.mp3Link,
+    wav_link: data.wavLink,
+    cover_link: data.coverLink,
+    status: meta.status || 'pending',
+    submitted_at: meta.submittedAt,
+    updated_at: meta.updatedAt || '',
+    profile_id: meta.profileId || '',
+  };
+}
+
+function resolveSubmissionRecordLabel_(account, data) {
+  var accountType = String(account.account_type || 'artist').toLowerCase();
+  var accountName = String(account.artist_name || '').trim();
+
+  if (data.independent) {
+    data.recordLabel = 'Independent';
+    return data;
+  }
+
+  if (accountType === 'artist') {
+    if (normalizeArtistName_(data.artistName) !== normalizeArtistName_(accountName)) {
+      throw new Error('Artist name must match your account name.');
+    }
+    if (!data.recordLabel) {
+      var songs = listSongs_().songs || [];
+      for (var i = 0; i < songs.length; i++) {
+        if (normalizeArtistName_(songs[i].artistName) === normalizeArtistName_(accountName) && songs[i].recordLabel) {
+          data.recordLabel = String(songs[i].recordLabel).trim();
+          break;
+        }
+      }
+    }
+  } else if (accountType === 'label') {
+    if (!data.recordLabel) data.recordLabel = accountName;
+    if (normalizeArtistName_(data.recordLabel) !== normalizeArtistName_(accountName)) {
+      throw new Error('Record label must match your label account name.');
+    }
+  } else {
+    throw new Error('This account cannot submit songs.');
+  }
+
+  return data;
+}
+
+function listSubmissionsForAccount_(accountId, limit) {
+  var sheet = getSongSubmissionSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var items = [];
+
+  for (var i = rows.length - 1; i >= 1; i--) {
+    var row = submissionRowToObject_(rows[i], headerMap);
+    if (row.account_id !== accountId) continue;
+    items.push(publicSubmission_(row));
+    if (items.length >= (limit || 100)) break;
+  }
+
+  return items;
+}
+
+function findSubmissionForAccount_(submissionId, accountId) {
+  var targetId = String(submissionId || '').trim();
+  if (!targetId) return null;
+
+  var sheet = getSongSubmissionSheet_();
+  var headerMap = getDjHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+
+  for (var i = 1; i < rows.length; i++) {
+    var row = submissionRowToObject_(rows[i], headerMap);
+    if (row.submission_id === targetId && row.account_id === accountId) {
+      return { rowIndex: i + 1, submission: row };
+    }
+  }
+
+  return null;
+}
+
+function updateSubmissionRow_(sheet, rowIndex, valuesByHeader) {
+  var headerMap = getDjHeaderMap_(sheet);
+  Object.keys(valuesByHeader).forEach(function (key) {
+    var col = headerMap[key];
+    if (col === undefined) return;
+    sheet.getRange(rowIndex, col + 1).setValue(valuesByHeader[key]);
+  });
 }
 
 function getArtistProfileSheet_() {
@@ -2727,112 +3025,113 @@ function computeLabelCharts_(labelName, limit) {
   };
 }
 
+function buildSubmissionResponseMeta_(data, meta, account) {
+  return {
+    id: meta.submissionId,
+    artistName: data.artistName,
+    songTitle: data.songTitle,
+    status: meta.status || 'pending',
+    submittedAt: meta.submittedAt,
+    updatedAt: meta.updatedAt || '',
+    accountName: meta.accountName,
+    accountType: meta.accountType,
+    recordLabel: data.recordLabel,
+    releaseType: data.releaseType === 'album_track' ? 'Album track' : 'Single',
+    albumName: data.albumName,
+    year: data.year,
+    songTime: data.songTime,
+    musicStyle: data.musicStyle,
+    contactEmail: data.contactEmail,
+    canEdit: String(meta.status || 'pending').toLowerCase() === 'pending',
+  };
+}
+
 function submitSong_(token, payload) {
   var found = requireArtistSession_(token);
   var account = found.artist;
   var accountType = String(account.account_type || 'artist').toLowerCase();
   var accountName = String(account.artist_name || '').trim();
+  var data = submissionPayloadFromRequest_(payload);
 
-  var artistName = String(payload.artistName || '').trim();
-  var songTitle = String(payload.songTitle || '').trim();
-  var year = String(payload.year || '').trim();
-  var musicStyle = String(payload.musicStyle || '').trim();
-  var songwriter = String(payload.songwriter || '').trim();
-  var recordLabel = String(payload.recordLabel || '').trim();
-  var description = String(payload.description || '').trim();
-  var website = String(payload.website || '').trim();
-  var contactEmail = normalizeEmail_(payload.contactEmail);
-  var releaseType = String(payload.releaseType || 'single').trim().toLowerCase();
-  var albumName = String(payload.albumName || '').trim();
-  var mp3Link = String(payload.mp3Link || '').trim();
-  var wavLink = String(payload.wavLink || '').trim();
-  var coverLink = String(payload.coverLink || '').trim();
+  resolveSubmissionRecordLabel_(account, data);
+  validateSubmissionPayload_(data);
 
-  if (!artistName || !songTitle) {
-    throw new Error('Artist name and song title are required.');
-  }
-
-  if (releaseType !== 'single' && releaseType !== 'album_track') {
-    throw new Error('Release type must be Single or Album track.');
-  }
-
-  if (releaseType === 'album_track' && !albumName) {
-    throw new Error('Album name is required for album tracks.');
-  }
-
-  if (accountType === 'artist') {
-    if (normalizeArtistName_(artistName) !== normalizeArtistName_(accountName)) {
-      throw new Error('Artist name must match your account name.');
-    }
-    if (!recordLabel) {
-      var songs = listSongs_().songs || [];
-      for (var i = 0; i < songs.length; i++) {
-        if (normalizeArtistName_(songs[i].artistName) === normalizeArtistName_(accountName) && songs[i].recordLabel) {
-          recordLabel = String(songs[i].recordLabel).trim();
-          break;
-        }
-      }
-    }
-  } else if (accountType === 'label') {
-    if (!recordLabel) recordLabel = accountName;
-    if (normalizeArtistName_(recordLabel) !== normalizeArtistName_(accountName)) {
-      throw new Error('Record label must match your label account name.');
-    }
-  } else {
-    throw new Error('This account cannot submit songs.');
-  }
-
-  if (!mp3Link && !wavLink) {
-    throw new Error('Add at least one audio file (MP3 or WAV).');
-  }
-
-  var profile = requireProfileManageAccess_(account, artistName);
-
+  var profile = requireProfileManageAccess_(account, data.artistName);
   var sheet = getSongSubmissionSheet_();
   var submissionId = 'sub-' + Utilities.getUuid().slice(0, 8);
   var submittedAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
 
-  appendRowByHeaders_(sheet, {
-    submission_id: submissionId,
-    account_id: account.artist_account_id,
-    account_type: accountType,
-    account_name: accountName,
-    artist_name: artistName,
-    song_title: songTitle,
-    year: year,
-    music_style: musicStyle,
-    songwriter: songwriter,
-    record_label: recordLabel,
-    release_type: releaseType === 'album_track' ? 'Album' : 'Single',
-    album_name: albumName,
-    description: description,
-    website: website,
-    contact_email: contactEmail,
-    mp3_link: mp3Link,
-    wav_link: wavLink,
-    cover_link: coverLink,
-    status: 'pending',
-    submitted_at: submittedAt,
-    profile_id: profile.profile_id,
-  });
-
-  var submission = {
-    id: submissionId,
-    artistName: artistName,
-    songTitle: songTitle,
+  appendRowByHeaders_(sheet, submissionRowValues_(data, {
+    submissionId: submissionId,
+    accountId: account.artist_account_id,
+    accountType: accountType,
+    accountName: accountName,
     status: 'pending',
     submittedAt: submittedAt,
+    profileId: profile.profile_id,
+  }));
+
+  var submission = buildSubmissionResponseMeta_(data, {
+    submissionId: submissionId,
     accountName: accountName,
     accountType: accountType,
-    recordLabel: recordLabel,
-    releaseType: releaseType === 'album_track' ? 'Album track' : 'Single',
-    albumName: albumName,
-    year: year,
-    musicStyle: musicStyle,
-    contactEmail: contactEmail,
-  };
+    status: 'pending',
+    submittedAt: submittedAt,
+  }, account);
 
   notifySongSubmissionEmails_(submission, account);
+
+  return {
+    success: true,
+    submission: submission,
+  };
+}
+
+function updateSongSubmission_(token, payload) {
+  var found = requireArtistSession_(token);
+  var account = found.artist;
+  var accountType = String(account.account_type || 'artist').toLowerCase();
+  var accountName = String(account.artist_name || '').trim();
+  var submissionId = String(payload.submissionId || '').trim();
+  if (!submissionId) throw new Error('Submission ID is required.');
+
+  var located = findSubmissionForAccount_(submissionId, account.artist_account_id);
+  if (!located) throw new Error('Submission not found.');
+  if (String(located.submission.status).toLowerCase() !== 'pending') {
+    throw new Error('Only pending submissions can be edited.');
+  }
+
+  var data = submissionPayloadFromRequest_(payload);
+  if (!data.mp3Link) data.mp3Link = located.submission.mp3_link;
+  if (!data.wavLink) data.wavLink = located.submission.wav_link;
+  if (!data.coverLink) data.coverLink = located.submission.cover_link;
+
+  resolveSubmissionRecordLabel_(account, data);
+  validateSubmissionPayload_(data);
+
+  var profile = requireProfileManageAccess_(account, data.artistName);
+  var updatedAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+  var sheet = getSongSubmissionSheet_();
+
+  updateSubmissionRow_(sheet, located.rowIndex, submissionRowValues_(data, {
+    submissionId: submissionId,
+    accountId: account.artist_account_id,
+    accountType: accountType,
+    accountName: accountName,
+    status: 'pending',
+    submittedAt: located.submission.submitted_at,
+    updatedAt: updatedAt,
+    profileId: profile.profile_id,
+  }));
+
+  var submission = buildSubmissionResponseMeta_(data, {
+    submissionId: submissionId,
+    accountName: accountName,
+    accountType: accountType,
+    status: 'pending',
+    submittedAt: located.submission.submitted_at,
+    updatedAt: updatedAt,
+  }, account);
 
   return {
     success: true,
@@ -2976,6 +3275,8 @@ function artistDashboard_(token) {
     chartHistory: chartHistory,
     labelAccess: labelAccess,
     managedProfiles: managedProfiles,
+    submissions: listSubmissionsForAccount_(account.artist_account_id, 100),
+    musicStyles: RADIO_NOW_MUSIC_STYLES,
   };
 }
 
@@ -3112,6 +3413,10 @@ function doPost(e) {
 
     if (action === 'song_submit') {
       return jsonResponse_(submitSong_(body.token, body));
+    }
+
+    if (action === 'song_update') {
+      return jsonResponse_(updateSongSubmission_(body.token, body));
     }
 
     if (action === 'artist_profile_create') {

@@ -99,4 +99,12 @@ const FileUploadField = {
   resetAll(ids = []) {
     ids.forEach((id) => this.reset(id));
   },
+
+  setOnFileStatus(id, message) {
+    const status = document.getElementById(`${id}-status`);
+    if (!status) return;
+    status.innerHTML = `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> ${Utils.escapeHtml(message)}`;
+    status.classList.add('has-file');
+    status.classList.remove('is-uploading');
+  },
 };

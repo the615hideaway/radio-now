@@ -120,14 +120,20 @@ const ArtistAuth = {
     });
   },
 
-  async submitSong(fields) {
-    return this.authRequest('song_submit', {
+  buildSongPayload(fields) {
+    return {
       artistName: String(fields.artistName || '').trim(),
       songTitle: String(fields.songTitle || '').trim(),
       year: String(fields.year || '').trim(),
+      songTime: String(fields.songTime || '').trim(),
       musicStyle: String(fields.musicStyle || '').trim(),
       songwriter: String(fields.songwriter || '').trim(),
+      featuredArtist: String(fields.featuredArtist || '').trim(),
+      leadVocals: String(fields.leadVocals || '').trim(),
+      harmonyVocals: Array.isArray(fields.harmonyVocals) ? fields.harmonyVocals : [],
+      instrumentPlayers: Array.isArray(fields.instrumentPlayers) ? fields.instrumentPlayers : [],
       recordLabel: String(fields.recordLabel || '').trim(),
+      independent: !!fields.independent,
       releaseType: String(fields.releaseType || 'single').trim(),
       albumName: String(fields.albumName || '').trim(),
       description: String(fields.description || '').trim(),
@@ -136,6 +142,17 @@ const ArtistAuth = {
       mp3Link: String(fields.mp3Link || '').trim(),
       wavLink: String(fields.wavLink || '').trim(),
       coverLink: String(fields.coverLink || '').trim(),
+    };
+  },
+
+  async submitSong(fields) {
+    return this.authRequest('song_submit', this.buildSongPayload(fields));
+  },
+
+  async updateSong(submissionId, fields) {
+    return this.authRequest('song_update', {
+      submissionId: String(submissionId || '').trim(),
+      ...this.buildSongPayload(fields),
     });
   },
 
