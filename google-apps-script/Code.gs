@@ -12,7 +12,7 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-spotlight-v12';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-wav-request-v13';
 var SPOTLIGHT_SHEET_NAME = 'Spotlights';
 var SPOTLIGHT_ADMIN_DJS = ['Sammy Passamano'];
 var SPOTLIGHT_ADMIN_EMAILS = ['the615hideaway@gmail.com'];
@@ -38,6 +38,7 @@ var RADIO_NOW_MUSIC_STYLES = [
 var SUBMISSION_UPLOAD_FOLDER_ID = '1A74Xv1UosXF34hlzZ_c6gEjbER8DH5PvDNONa6f_gDPfZXSVOfCMF-jqYfOn0xryhwP7BxT4';
 var RADIO_NOW_LABEL_SETUP_KEY = 'rn-615-hideaway-setup';
 var RADIO_NOW_ADMIN_EMAIL = 'the615hideaway@gmail.com';
+var RADIO_NOW_WAV_FROM_EMAIL = 'radio@the615hideaway.com';
 var RADIO_NOW_SITE_URL = 'https://the615hideaway.github.io/radio-now';
 var RADIO_NOW_FROM_NAME = 'Radio Now — (615) Hideaway Entertainment';
 
@@ -91,6 +92,118 @@ function sendRadioNowEmailSafe_(to, subject, htmlBody) {
   } catch (err) {
     Logger.log('Radio Now email failed (' + subject + '): ' + err.message);
   }
+}
+
+function sendRadioNowEmailWithReply_(to, subject, htmlBody, replyTo, fromEmail) {
+  if (!to) throw new Error('Recipient email is required.');
+
+  var options = {
+    htmlBody: htmlBody,
+    name: RADIO_NOW_FROM_NAME,
+    replyTo: replyTo || '',
+  };
+
+  if (fromEmail) {
+    try {
+      GmailApp.sendEmail(to, subject, '', Object.assign({ from: fromEmail }, options));
+      return;
+    } catch (err) {
+      Logger.log('GmailApp send failed, falling back to MailApp: ' + err.message);
+    }
+  }
+
+  MailApp.sendEmail(Object.assign({
+    to: to,
+    subject: subject,
+  }, options));
+}
+
+function wavRequestPlainBody_(songTitle, artistName, recordLabel, dj) {
+  var djName = String(dj.name || '').trim() || 'Radio Now DJ';
+  var station = String(dj.station_call_letters || dj.station || '').trim() || '—';
+  var show = String(dj.program_name || dj.show_name || '').trim() || '—';
+  var djEmail = djContactEmail_(dj) || normalizeEmail_(dj.email) || '—';
+  var labelLine = recordLabel ? ('Label: ' + recordLabel + '\n') : '';
+
+  return ''
+    + 'Hello,\n\n'
+    + 'A Radio Now DJ is requesting a broadcast WAV file for airplay:\n\n'
+    + 'Song: ' + songTitle + '\n'
+    + 'Artist: ' + artistName + '\n'
+    + labelLine
+    + '\nDJ details:\n'
+    + '• DJ name: ' + djName + '\n'
+    + '• Station: ' + station + '\n'
+    + '• Show: ' + show + '\n'
+    + '• Email: ' + djEmail + '\n'
+    + '\nPlease reply with the WAV file or a download link when you can.\n\n'
+    + 'Thank you!\n'
+    + 'Radio Now — (615) Hideaway Entertainment';
+}
+
+function wavRequestSend_(token, payload) {
+  var found = requireDjSession_(token);
+  var dj = found.dj;
+
+  var artistName = String(payload.artistName || '').trim();
+  var songTitle = String(payload.songTitle || '').trim();
+  var recordLabel = String(payload.recordLabel || '').trim();
+  var contactEmail = normalizeEmail_(String(payload.contactEmail || '').trim());
+
+  if (!artistName || !songTitle) {
+    throw new Error('Song info is required.');
+  }
+  if (!contactEmail) {
+    throw new Error('This song has no contact email listed.');
+  }
+
+  var track = songTitle + ' — ' + artistName;
+  var subject = 'DJ requests WAV for your song — ' + track;
+  var replyTo = djContactEmail_(dj) || normalizeEmail_(dj.email);
+  var plainBody = wavRequestPlainBody_(songTitle, artistName, recordLabel, dj);
+
+  var lines = [
+    'A Radio Now DJ is requesting a broadcast WAV file for airplay.',
+    '<strong>Song:</strong> ' + escapeEmailHtml_(songTitle),
+    '<strong>Artist:</strong> ' + escapeEmailHtml_(artistName),
+  ];
+  if (recordLabel) {
+    lines.push('<strong>Label:</strong> ' + escapeEmailHtml_(recordLabel));
+  }
+  lines.push(
+    '<strong>DJ name:</strong> ' + escapeEmailHtml_(dj.name || 'Radio Now DJ'),
+    '<strong>Station:</strong> ' + escapeEmailHtml_(dj.station_call_letters || dj.station || '—'),
+    '<strong>Show:</strong> ' + escapeEmailHtml_(dj.program_name || dj.show_name || '—'),
+    '<strong>DJ email:</strong> ' + escapeEmailHtml_(replyTo || '—'),
+    'Please reply with the WAV file or a download link when you can.'
+  );
+
+  var htmlBody = radioNowEmailShell_('WAV request from a Radio Now DJ', lines);
+
+  sendRadioNowEmailWithReply_(
+    contactEmail,
+    subject,
+    htmlBody,
+    replyTo,
+    RADIO_NOW_WAV_FROM_EMAIL
+  );
+
+  logDjActivity_(token, {
+    eventType: 'wav_request',
+    songId: String(payload.songId || '').trim(),
+    songTitle: songTitle,
+    artistName: artistName,
+    musicStyle: String(payload.musicStyle || '').trim(),
+    format: 'email',
+  });
+
+  return {
+    success: true,
+    sentTo: contactEmail,
+    replyTo: replyTo,
+    subject: subject,
+    body: plainBody,
+  };
 }
 
 function notifySignupEmails_(accountType, userEmail, displayName, extra) {
@@ -3849,6 +3962,7 @@ function doGet(e) {
           'signup_email',
           'submission_email',
           'spotlight_admin',
+          'wav_request',
         ],
       });
     }
@@ -3968,6 +4082,10 @@ function doPost(e) {
 
     if (action === 'spotlight_admin_save') {
       return jsonResponse_(spotlightAdminSave_(body.token, body));
+    }
+
+    if (action === 'wav_request_send') {
+      return jsonResponse_(wavRequestSend_(body.token, body));
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });

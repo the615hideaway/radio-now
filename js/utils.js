@@ -355,22 +355,20 @@ const Utils = {
     return value.split(/[;,]/)[0].trim();
   },
 
-  wavRequestMailtoHref(song) {
+  wavRequestMailtoHref(song, dj) {
+    if (typeof WavRequest === 'undefined') return '';
     const email = this.normalizeContactEmail(song?.contactEmail);
     if (!email) return '';
-    const title = this.songArtistName(song.songTitle, song.artistName);
+    const draft = WavRequest.draft(song, dj);
     const params = new URLSearchParams();
-    params.set('subject', `WAV request — ${title}`);
-    params.set(
-      'body',
-      `Hi,\n\nI'm programming on Radio Now and would like a broadcast WAV for airplay:\n\n${title}\n\nThank you!`,
-    );
+    params.set('subject', draft.subject);
+    params.set('body', draft.body);
     return `mailto:${email}?${params.toString()}`;
   },
 
-  openWavRequestMailto(song) {
+  openWavRequestMailto(song, dj) {
     const email = this.normalizeContactEmail(song?.contactEmail);
-    const href = this.wavRequestMailtoHref(song);
+    const href = this.wavRequestMailtoHref(song, dj);
     if (!email || !href) return { ok: false, email: '' };
 
     const link = document.createElement('a');

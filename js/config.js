@@ -45,6 +45,11 @@ const CONFIG = {
   wavFolderId: '137edNXYOv3xTVy7q4o1NKcTGMyshzR7MtN1BthqeXydD1Gwq-0V7JsRQR-9tXSYR45rsILzX',
   wavNamingExample: 'Song Title - Artist Name.wav',
 
+  wavRequest: {
+    fromEmail: 'radio@the615hideaway.com',
+    fromName: 'Radio Now',
+  },
+
   spotlight: {
     houseArtist: 'David Parmley',
     labelName: '615 Hideaway Records',

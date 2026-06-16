@@ -4839,19 +4839,29 @@ select { min-width: 130px; width: auto; }
   line-height: 1.55;
 }
 
-.detail-wav-request-btn {
+.detail-wav-request-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.detail-wav-send-btn,
+.detail-wav-copy-btn {
   width: 100%;
 }
 
-.detail-wav-request-status {
-  margin: 0.55rem 0 0;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  line-height: 1.45;
+.detail-wav-request-note {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 
-.detail-wav-copy-btn {
-  margin-top: 0.45rem;
+.detail-wav-request-status {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--gold-bright);
+  line-height: 1.45;
 }
 
 .spotlight-admin-loading {

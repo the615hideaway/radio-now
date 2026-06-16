@@ -5,6 +5,7 @@ const DjActivity = {
     download_zip: 'Downloaded',
     downloaded: 'Downloaded',
     download_onesheet: 'One-sheet PDF',
+    wav_request: 'WAV request sent',
   },
 
   formatLabel(eventType, format) {
