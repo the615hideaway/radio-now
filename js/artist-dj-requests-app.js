@@ -2,19 +2,12 @@
   const exampleHost = document.getElementById('dj-request-example');
   const fromEmailEl = document.getElementById('dj-request-from-email');
   const namingEl = document.getElementById('dj-request-naming-example');
-  const folderLink = document.getElementById('dj-request-wav-folder-link');
 
   const fromEmail = CONFIG.wavRequest?.fromEmail || 'radio@the615hideaway.com';
   const namingExample = CONFIG.wavNamingExample || 'Song Title - Artist Name.wav';
-  const folderId = CONFIG.wavFolderId || '';
 
   if (fromEmailEl) fromEmailEl.textContent = fromEmail;
   if (namingEl) namingEl.textContent = namingExample;
-  if (folderLink && folderId) {
-    folderLink.href = `https://drive.google.com/drive/folders/${folderId}`;
-  } else if (folderLink) {
-    folderLink.classList.add('hidden');
-  }
 
   if (exampleHost) {
     exampleHost.innerHTML = `
