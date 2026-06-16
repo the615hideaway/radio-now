@@ -121,8 +121,9 @@ function sendRadioNowEmailWithReply_(to, subject, htmlBody, replyTo, fromEmail) 
 /**
  * Run once from the Apps Script editor (Run menu) while signed in as the sheet owner.
  * Grants MailApp / GmailApp permission for WAV request emails and other Radio Now mail.
+ * (No trailing underscore — Apps Script only lists public functions in the Run dropdown.)
  */
-function authorizeRadioNowMail_() {
+function authorizeRadioNowMail() {
   var to = Session.getActiveUser().getEmail();
   if (!to) {
     throw new Error('Could not detect your Google account email. Run this while logged into the sheet owner account.');
