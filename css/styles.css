@@ -5115,6 +5115,114 @@ select { min-width: 130px; width: auto; }
   color: var(--text-muted);
 }
 
+.artist-dj-requests-banner {
+  margin-bottom: 1rem;
+}
+
+.artist-dj-requests-banner-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 1.1rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.artist-dj-requests-banner-inner h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.artist-dj-requests-banner-inner p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  max-width: 36rem;
+}
+
+.artist-dj-requests-card + .artist-dj-requests-card {
+  margin-top: 0.85rem;
+}
+
+.artist-dj-request-example {
+  margin-top: 0.75rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.artist-dj-request-example-from,
+.artist-dj-request-example-subject {
+  margin: 0 0 0.55rem;
+  color: var(--text-secondary);
+}
+
+.artist-dj-request-example-body {
+  padding: 0.75rem 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.artist-dj-request-example-body ul {
+  margin: 0.65rem 0;
+  padding-left: 1.1rem;
+}
+
+.artist-dj-request-example-body li {
+  margin-bottom: 0.25rem;
+}
+
+.artist-dj-request-example-tip {
+  margin: 0.75rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px dashed rgba(244, 196, 48, 0.35);
+  color: var(--gold-bright);
+  font-size: 0.84rem;
+}
+
+.artist-dj-requests-steps {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.artist-dj-requests-steps code {
+  font-size: 0.86em;
+  color: var(--gold-bright);
+}
+
+.artist-dj-requests-faq {
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.artist-dj-requests-faq dt {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.artist-dj-requests-faq dd {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 @media (max-width: 640px) {
   .spotlight-pick-item {
     grid-template-columns: minmax(0, 1fr) auto;
