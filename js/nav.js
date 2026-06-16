@@ -6,6 +6,7 @@ const SiteNav = {
     { key: 'charts', href: 'charts.html', label: 'Charts', roles: ['dj', 'artist', 'guest'] },
     { key: 'djs', href: 'djs.html', label: 'DJs', roles: ['dj', 'artist'] },
     { key: 'djDashboard', href: 'dj-dashboard.html', label: 'DJ Dashboard', roles: ['dj'] },
+    { key: 'djSpotlight', href: 'dj-spotlight.html', label: 'Spotlight', roles: ['dj'], spotlightAdmin: true },
     { key: 'artistDashboard', href: 'artist-dashboard.html', label: 'Spins', roles: ['artist'] },
   ],
 
@@ -23,7 +24,13 @@ const SiteNav = {
     const key = activeKey || nav.dataset.navActive || '';
 
     nav.innerHTML = this.links
-      .filter((link) => link.roles.includes(role))
+      .filter((link) => {
+        if (!link.roles.includes(role)) return false;
+        if (link.spotlightAdmin) {
+          return typeof Spotlight !== 'undefined' && Spotlight.isAdminDj(DjAuth.getDj());
+        }
+        return true;
+      })
       .map((link) => {
         const active = link.key === key ? ' active' : '';
         return `<a href="${link.href}" class="nav-link${active}">${link.label}</a>`;

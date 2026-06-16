@@ -12,9 +12,10 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-spotlight-v9';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-spotlight-v11';
 var SPOTLIGHT_SHEET_NAME = 'Spotlights';
-var SPOTLIGHT_ADMIN_LABELS = ['615 Hideaway Records'];
+var SPOTLIGHT_ADMIN_DJS = ['Sammy Passamano'];
+var SPOTLIGHT_ADMIN_EMAILS = ['the615hideaway@gmail.com'];
 var SUBMISSION_CHUNK_FOLDER_ID = '1uSIu4QKuy1CkvaoksiA8eBJpFNHeZSdD';
 var SUBMISSION_MP3_FOLDER_ID = '1B0XflDxcTJYcKkvzOYpdHvWLyTHZNAN37O1Q65wLg_rHu6xuxrSfKl8DDvr_BLsVo5Ft6lb-';
 var SUBMISSION_WAV_FOLDER_ID = '137edNXYOv3xTVy7q4o1NKcTGMyshzR7MtN1BthqeXydD1Gwq-0V7JsRQR-9tXSYR45rsILzX';
@@ -3705,25 +3706,30 @@ function listSpotlightsFromSheet_() {
 }
 
 function requireSpotlightAdmin_(token) {
-  var found = requireArtistSession_(token);
-  var account = found.artist;
-  if (String(account.account_type || '').toLowerCase() !== 'label') {
-    throw new Error('Only label accounts can manage catalog spotlights.');
-  }
-
-  var labelName = String(account.artist_name || '').trim();
+  var found = requireDjSession_(token);
+  var dj = found.dj;
+  var djName = String(dj.name || '').trim();
+  var djEmail = normalizeEmail_(dj.email || dj.contact_email || '');
   var allowed = false;
-  for (var i = 0; i < SPOTLIGHT_ADMIN_LABELS.length; i++) {
-    if (normalizeArtistName_(labelName) === normalizeArtistName_(SPOTLIGHT_ADMIN_LABELS[i])) {
+  for (var i = 0; i < SPOTLIGHT_ADMIN_DJS.length; i++) {
+    if (normalizeArtistName_(djName) === normalizeArtistName_(SPOTLIGHT_ADMIN_DJS[i])) {
       allowed = true;
       break;
     }
   }
   if (!allowed) {
-    throw new Error('Your label account is not authorized to manage spotlights.');
+    for (var j = 0; j < SPOTLIGHT_ADMIN_EMAILS.length; j++) {
+      if (djEmail && djEmail === normalizeEmail_(SPOTLIGHT_ADMIN_EMAILS[j])) {
+        allowed = true;
+        break;
+      }
+    }
+  }
+  if (!allowed) {
+    throw new Error('Your DJ account is not authorized to manage catalog spotlights.');
   }
 
-  return account;
+  return dj;
 }
 
 function spotlightAdminList_(token) {
@@ -3832,6 +3838,7 @@ function doGet(e) {
           'artist_dashboard',
           'signup_email',
           'submission_email',
+          'spotlight_admin',
         ],
       });
     }

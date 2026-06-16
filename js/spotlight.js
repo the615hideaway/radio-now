@@ -50,6 +50,24 @@ const Spotlight = {
     return days >= 0 && days <= (cfg.labelNewReleaseDays ?? 30);
   },
 
+  isAdminDj(dj) {
+    if (!dj) return false;
+    const cfg = this.config();
+    const name = String(dj.name || '').trim().toLowerCase();
+    const email = String(dj.email || dj.contactEmail || '').trim().toLowerCase();
+    const names = cfg.spotlightAdminDjs || [];
+    const emails = cfg.spotlightAdminEmails || [];
+    return names.some((entry) => String(entry || '').trim().toLowerCase() === name)
+      || emails.some((entry) => String(entry || '').trim().toLowerCase() === email);
+  },
+
+  isManualPick(song) {
+    const manualPriority = parseInt(song?.spotlightPriority, 10) || 0;
+    const until = this.parseDateOnly(song?.spotlightUntil);
+    const today = this.startOfDay(new Date());
+    return manualPriority > 0 && (!until || until >= today);
+  },
+
   score(song) {
     const cfg = this.config();
     const today = this.startOfDay(new Date());

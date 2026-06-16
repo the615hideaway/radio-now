@@ -1,36 +1,31 @@
-(function initArtistSpotlightAdmin() {
-  const host = document.getElementById('spotlight-admin-content');
+(function initArtistFeaturedSpotlight() {
+  const host = document.getElementById('artist-featured-content');
+  const intro = document.getElementById('featured-intro');
   if (!host) return;
 
-  let catalogSongs = [];
-  let picks = [];
-  let maxSlots = CONFIG.spotlight?.maxSlots || 12;
+  const curatorName = CONFIG.spotlight?.spotlightCuratorName || 'Radio Now';
 
-  function isSpotlightAdmin(account) {
-    if (!account) return false;
-    if (String(account.accountType || '').toLowerCase() !== 'label') return false;
-    const allowed = CONFIG.spotlight?.spotlightAdminLabels || [];
-    const name = String(account.artistName || '').trim().toLowerCase();
-    return allowed.some((label) => String(label || '').trim().toLowerCase() === name);
+  function songsForAccount(account, songs) {
+    if (!account) return [];
+    const isLabel = String(account.accountType || '').toLowerCase() === 'label';
+    const target = String(account.artistName || '').trim().toLowerCase();
+    return songs.filter((song) => {
+      const field = isLabel ? song.recordLabel : song.artistName;
+      return String(field || '').trim().toLowerCase() === target;
+    });
   }
 
-  function pickKey(item) {
-    return `${item.artistName}|${item.songTitle}`.toLowerCase();
-  }
-
-  function renderDenied(message) {
-    host.innerHTML = `
-      <section class="artist-portal-card">
-        <p class="queue-warning"><i class="fa-solid fa-lock"></i> ${Utils.escapeHtml(message)}</p>
-        <a href="artist-dashboard.html" class="btn btn-secondary">Back to Spins</a>
-      </section>`;
+  function featuredPicks(songs) {
+    return Spotlight.sortSongs(
+      songs.filter((song) => Spotlight.isManualPick(song)),
+    );
   }
 
   function renderLoading() {
     host.innerHTML = `
       <section class="artist-portal-card spotlight-admin-loading">
         <i class="fa-solid fa-spinner fa-spin"></i>
-        <p>Loading catalog…</p>
+        <p>Loading featured picks…</p>
       </section>`;
   }
 
@@ -38,181 +33,69 @@
     host.innerHTML = `
       <section class="artist-portal-card">
         <p class="login-error show">${Utils.escapeHtml(message)}</p>
-        <button type="button" class="btn btn-secondary" id="spotlight-retry-btn">Try again</button>
+        <button type="button" class="btn btn-secondary" id="featured-retry-btn">Try again</button>
       </section>`;
-    document.getElementById('spotlight-retry-btn')?.addEventListener('click', () => boot());
+    document.getElementById('featured-retry-btn')?.addEventListener('click', () => boot());
   }
 
-  function syncPicksFromServer(serverPicks) {
-    picks = (serverPicks || []).map((item) => ({
-      artistName: item.artistName,
-      songTitle: item.songTitle,
-      priority: item.priority || 80,
-      until: item.until || '',
-      badge: item.badge || 'Featured',
-    }));
+  function formatUntil(until) {
+    const raw = String(until || '').trim();
+    if (!raw) return '';
+    const date = Spotlight.parseDateOnly(raw);
+    if (!date) return raw;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  function render() {
-    const pickedKeys = new Set(picks.map(pickKey));
-    const query = (document.getElementById('spotlight-search')?.value || '').trim().toLowerCase();
-    const available = catalogSongs
-      .filter((song) => !pickedKeys.has(pickKey(song)))
-      .filter((song) => {
-        if (!query) return true;
-        const hay = `${song.artistName} ${song.songTitle}`.toLowerCase();
-        return hay.includes(query);
-      })
-      .slice(0, 40);
+  function renderFeatured(account, picks, isLabel) {
+    if (intro) {
+      intro.textContent = isLabel
+        ? `Songs from your roster hand-picked by ${curatorName} for the top of the DJ catalog.`
+        : `When ${curatorName} features your music at the top of the DJ catalog, it shows up here.`;
+    }
+
+    if (!picks.length) {
+      host.innerHTML = `
+        <section class="artist-portal-card artist-featured-empty">
+          <p class="spin-picker-empty"><i class="fa-solid fa-star"></i> No featured picks for ${isLabel ? 'your roster' : 'you'} right now. New label releases may still auto-feature for ${CONFIG.spotlight?.labelNewReleaseDays || 30} days on the DJ catalog.</p>
+          <a href="artist-dashboard.html" class="btn btn-secondary">Back to Spins</a>
+        </section>`;
+      return;
+    }
 
     host.innerHTML = `
-      <section class="artist-portal-card spotlight-admin-card">
-        <div class="spotlight-admin-toolbar">
-          <div>
-            <h2 class="artist-portal-card-title"><i class="fa-solid fa-star"></i> Featured picks</h2>
-            <p class="artist-portal-card-note">${picks.length} of ${maxSlots} slots used. Higher priority appears first. New releases can still auto-feature for ${CONFIG.spotlight?.labelNewReleaseDays || 30} days.</p>
-          </div>
-          <button type="button" class="btn btn-primary" id="spotlight-save-btn"${picks.length ? '' : ' disabled'}>
-            <i class="fa-solid fa-floppy-disk"></i> Save spotlight
-          </button>
+      <section class="artist-portal-card artist-featured-card">
+        <div class="artist-featured-header">
+          <h2 class="artist-portal-card-title"><i class="fa-solid fa-star"></i> ${picks.length} featured ${picks.length === 1 ? 'song' : 'songs'}</h2>
+          <p class="artist-portal-card-note">Curated by ${Utils.escapeHtml(curatorName)} · visible at the top of the DJ catalog</p>
         </div>
-
-        <div id="spotlight-save-status" class="spotlight-save-status hidden" role="status"></div>
-
-        ${picks.length
-    ? `<ul class="spotlight-pick-list">
-            ${picks.map((pick, index) => `
-              <li class="spotlight-pick-item" data-index="${index}">
-                <div class="spotlight-pick-main">
-                  <strong>${Utils.escapeHtml(pick.songTitle)}</strong>
-                  <span>${Utils.escapeHtml(pick.artistName)}</span>
+        <ul class="artist-featured-list">
+          ${picks.map((song) => {
+            const badge = Spotlight.badge(song) || 'Featured';
+            const until = formatUntil(song.spotlightUntil);
+            return `
+              <li class="artist-featured-item">
+                <div class="artist-featured-main">
+                  <span class="artist-featured-badge">${Utils.escapeHtml(badge)}</span>
+                  <strong>${Utils.escapeHtml(song.songTitle)}</strong>
+                  <span>${Utils.escapeHtml(song.artistName)}</span>
+                  ${song.musicStyle ? `<span class="artist-featured-style">${Utils.escapeHtml(song.musicStyle)}</span>` : ''}
                 </div>
-                <label class="spotlight-pick-field">
-                  <span>Priority</span>
-                  <input type="number" min="1" max="100" value="${pick.priority}" data-field="priority" data-index="${index}">
-                </label>
-                <label class="spotlight-pick-field">
-                  <span>Until</span>
-                  <input type="date" value="${Utils.escapeHtml(pick.until || '')}" data-field="until" data-index="${index}">
-                </label>
-                <label class="spotlight-pick-field">
-                  <span>Badge</span>
-                  <input type="text" maxlength="24" value="${Utils.escapeHtml(pick.badge || 'Featured')}" data-field="badge" data-index="${index}">
-                </label>
-                <button type="button" class="btn btn-ghost btn-sm spotlight-pick-remove" data-index="${index}" aria-label="Remove">
-                  <i class="fa-solid fa-xmark"></i>
-                </button>
-              </li>`).join('')}
-          </ul>`
-    : `<p class="spin-picker-empty">No hand-picked spotlights yet. Add songs below to feature classics for new stations.</p>`}
-
-        <div class="spotlight-add-section">
-          <label for="spotlight-search" class="spin-picker-label">Add a song</label>
-          <input type="search" id="spotlight-search" class="spotlight-search-input" placeholder="Search artist or title…" autocomplete="off">
-          <ul class="spotlight-add-list">
-            ${available.length
-    ? available.map((song) => `
-                <li>
-                  <button type="button" class="spotlight-add-btn" data-artist="${Utils.escapeHtml(song.artistName)}" data-title="${Utils.escapeHtml(song.songTitle)}">
-                    <strong>${Utils.escapeHtml(song.songTitle)}</strong>
-                    <span>${Utils.escapeHtml(song.artistName)}</span>
-                  </button>
-                </li>`).join('')
-    : '<li class="spotlight-add-empty">No matching songs or catalog fully picked.</li>'}
-          </ul>
-        </div>
+                ${until ? `<p class="artist-featured-until">Featured until ${Utils.escapeHtml(until)}</p>` : ''}
+              </li>`;
+          }).join('')}
+        </ul>
       </section>`;
-
-    document.getElementById('spotlight-search')?.addEventListener('input', render);
-
-    host.querySelectorAll('[data-field]').forEach((input) => {
-      input.addEventListener('change', () => {
-        const index = parseInt(input.dataset.index, 10);
-        const field = input.dataset.field;
-        if (!picks[index] || !field) return;
-        if (field === 'priority') {
-          picks[index].priority = Math.min(100, Math.max(1, parseInt(input.value, 10) || 80));
-        } else {
-          picks[index][field] = input.value;
-        }
-      });
-    });
-
-    host.querySelectorAll('.spotlight-pick-remove').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const index = parseInt(btn.dataset.index, 10);
-        picks.splice(index, 1);
-        render();
-      });
-    });
-
-    host.querySelectorAll('.spotlight-add-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        if (picks.length >= maxSlots) {
-          alert(`Maximum ${maxSlots} spotlight songs. Remove one to add another.`);
-          return;
-        }
-        picks.push({
-          artistName: btn.dataset.artist || '',
-          songTitle: btn.dataset.title || '',
-          priority: 85,
-          until: '',
-          badge: 'Featured',
-        });
-        render();
-      });
-    });
-
-    document.getElementById('spotlight-save-btn')?.addEventListener('click', savePicks);
   }
 
-  async function savePicks() {
-    const btn = document.getElementById('spotlight-save-btn');
-    const status = document.getElementById('spotlight-save-status');
-    if (!btn) return;
-
-    btn.disabled = true;
-    const original = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
-
-    try {
-      const data = await ArtistAuth.request('spotlight_admin_save', {
-        token: ArtistAuth.getToken(),
-        spotlights: picks.map((pick) => ({
-          artistName: pick.artistName,
-          songTitle: pick.songTitle,
-          priority: pick.priority,
-          until: pick.until,
-          badge: pick.badge,
-        })),
-      });
-      syncPicksFromServer(data.spotlights);
-      if (status) {
-        status.classList.remove('hidden');
-        status.textContent = `Saved ${data.saved || picks.length} spotlight pick${(data.saved || picks.length) === 1 ? '' : 's'}. Refresh the DJ catalog to see changes.`;
-      }
-      render();
-    } catch (err) {
-      alert(err.message || 'Could not save spotlights.');
-    } finally {
-      btn.disabled = picks.length === 0;
-      btn.innerHTML = original;
-    }
-  }
-
-  async function boot() {
+  async function boot(account, isLabel) {
     renderLoading();
     try {
-      const [songs, spotlightData] = await Promise.all([
-        RadioDB.getAllSongs(),
-        ArtistAuth.request('spotlight_admin_list', { token: ArtistAuth.getToken() }),
-      ]);
-      catalogSongs = songs;
-      maxSlots = spotlightData.maxSlots || maxSlots;
-      syncPicksFromServer(spotlightData.spotlights);
-      render();
+      const catalog = await RadioDB.getAllSongs();
+      const roster = songsForAccount(account, catalog);
+      const picks = featuredPicks(roster);
+      renderFeatured(account, picks, isLabel);
     } catch (err) {
-      renderError(err.message || 'Could not load spotlight admin.');
+      renderError(err.message || 'Could not load featured spotlight.');
     }
   }
 
@@ -220,14 +103,14 @@
     activeNav: 'spotlight',
     onReady({ account, isDemoMode, isLabel }) {
       if (isDemoMode) {
-        renderDenied('Spotlight admin is not available in demo mode.');
+        renderFeatured(
+          { artistName: CONFIG.spotlight?.houseArtist || 'David Parmley', accountType: 'artist' },
+          [],
+          false,
+        );
         return;
       }
-      if (!isLabel || !isSpotlightAdmin(account)) {
-        renderDenied('Spotlight picks are managed from your label account (615 Hideaway Records).');
-        return;
-      }
-      boot();
+      boot(account, isLabel);
     },
   });
 })();

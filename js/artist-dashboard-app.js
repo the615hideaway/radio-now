@@ -10,6 +10,7 @@
   const songInfographic = document.getElementById('song-infographic');
   const spinLines = document.getElementById('spin-lines');
   const spinLinesMeta = document.getElementById('spin-lines-meta');
+  const featuredBanner = document.getElementById('artist-featured-banner');
 
   let dashboardData = null;
   let selectedSongKey = '';
@@ -405,6 +406,45 @@
     }).join('');
   }
 
+  function renderFeaturedBanner(account) {
+    if (!featuredBanner || typeof Spotlight === 'undefined') return;
+
+    const curatorName = CONFIG.spotlight?.spotlightCuratorName || 'Radio Now';
+
+    fetchCatalogOnce().then((catalog) => {
+      const roster = songsForAccount(account, catalog);
+      const picks = Spotlight.sortSongs(roster.filter((song) => Spotlight.isManualPick(song)));
+
+      if (!picks.length) {
+        featuredBanner.classList.add('hidden');
+        featuredBanner.innerHTML = '';
+        return;
+      }
+
+      const preview = picks.slice(0, 3);
+      const more = picks.length - preview.length;
+
+      featuredBanner.classList.remove('hidden');
+      featuredBanner.innerHTML = `
+        <div class="artist-featured-banner-inner">
+          <div class="artist-featured-banner-head">
+            <h2><i class="fa-solid fa-star"></i> Featured by ${Utils.escapeHtml(curatorName)}</h2>
+            <a href="artist-spotlight.html" class="btn btn-ghost btn-sm">View all</a>
+          </div>
+          <div class="artist-featured-banner-chips">
+            ${preview.map((song) => `
+              <div class="artist-featured-chip">
+                <strong>${Utils.escapeHtml(song.songTitle)}</strong>
+                <span>${Utils.escapeHtml(song.artistName)}</span>
+              </div>`).join('')}
+            ${more > 0 ? `<div class="artist-featured-chip"><strong>+${more} more</strong><span>on Featured tab</span></div>` : ''}
+          </div>
+        </div>`;
+    }).catch(() => {
+      featuredBanner.classList.add('hidden');
+    });
+  }
+
   function renderLabelAccess(items) {
     const panel = document.getElementById('label-access-panel');
     const list = document.getElementById('label-access-list');
@@ -494,6 +534,12 @@
 
       if (!resolvedIsLabel) {
         renderLabelAccess(data.labelAccess || []);
+      }
+
+      if (resolved && !isDemoMode) {
+        renderFeaturedBanner(resolved);
+      } else if (featuredBanner) {
+        featuredBanner.classList.add('hidden');
       }
     } catch (err) {
       if (spinLines) {

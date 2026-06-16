@@ -17,6 +17,12 @@
   const profileSaveStatus = document.getElementById('profile-save-status');
   const saveProfileBtn = document.getElementById('save-profile-btn');
 
+  function showSpotlightAdminLink() {
+    const link = document.getElementById('spotlight-admin-link');
+    if (!link || typeof Spotlight === 'undefined') return;
+    link.classList.toggle('hidden', !Spotlight.isAdminDj(DjAuth.getDj()));
+  }
+
   function showApp() {
     loginGate.classList.add('hidden');
     appShell.classList.remove('hidden');
@@ -27,6 +33,7 @@
     } else {
       DjAuthUI.updateWelcome();
       SiteNav.init('djDashboard');
+      showSpotlightAdminLink();
       if (typeof TurnkeyPitch !== 'undefined') TurnkeyPitch.hideAppPromo();
       if (typeof DjSignupForm !== 'undefined') DjSignupForm.mountProfile();
     }
