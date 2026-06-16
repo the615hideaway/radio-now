@@ -4793,6 +4793,193 @@ select { min-width: 130px; width: auto; }
   grid-template-columns: 52px minmax(0, 1fr) auto;
 }
 
+.detail-wav-request {
+  margin-bottom: 1.15rem;
+  padding: 0.95rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(244, 196, 48, 0.35);
+  background: rgba(244, 196, 48, 0.08);
+}
+
+.detail-wav-request label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold-bright);
+}
+
+.detail-wav-request p {
+  margin: 0 0 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.detail-wav-request-btn {
+  width: 100%;
+}
+
+.spotlight-admin-loading {
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.spotlight-admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.spotlight-save-status {
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.08);
+  color: var(--success);
+  font-size: 0.88rem;
+}
+
+.spotlight-pick-list {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.spotlight-pick-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 120px 100px auto;
+  gap: 0.45rem 0.55rem;
+  align-items: center;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.spotlight-pick-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.spotlight-pick-main strong {
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.spotlight-pick-main span {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.spotlight-pick-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.spotlight-pick-field input {
+  width: 100%;
+  padding: 0.4rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.spotlight-search-input {
+  width: 100%;
+  margin-bottom: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  font: inherit;
+}
+
+.spotlight-add-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.spotlight-add-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.spotlight-add-btn:hover {
+  border-color: rgba(244, 196, 48, 0.45);
+  background: var(--gold-dim);
+}
+
+.spotlight-add-btn span {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.spotlight-add-empty {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  padding: 0.5rem 0;
+}
+
+@media (max-width: 640px) {
+  .spotlight-pick-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto;
+  }
+
+  .spotlight-pick-field {
+    grid-column: 1;
+  }
+
+  .spotlight-pick-remove {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+}
+
 @media (max-width: 520px) {
   .artist-portal-chrome {
     flex-direction: column;

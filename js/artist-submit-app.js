@@ -8,8 +8,8 @@
     if (note) {
       const isLabel = String(account?.accountType || '').toLowerCase() === 'label';
       note.textContent = isLabel
-        ? 'Submit new releases for any artist on your roster. Songs appear on the live catalog as soon as you refresh the page after submitting.'
-        : 'Submit a new single to Radio Now. Your song appears on the live catalog as soon as you refresh the page after submitting.';
+        ? 'Submit new releases for any artist on your roster. Upload MP3 + cover on the form; drop WAV in our shared folder with matching file names.'
+        : 'Submit a new single to Radio Now. Upload MP3 + cover on the form; add WAV to our shared folder named like your MP3.';
     }
   }
 
@@ -23,8 +23,8 @@
       if (title) title.textContent = isLabel ? 'Submit a new song' : 'Submit a new song';
       if (copy && name) {
         copy.textContent = isLabel
-          ? `${name} — upload MP3, WAV, and cover art via the submission form.`
-          : `${name} — upload MP3, WAV, and cover art via the submission form.`;
+          ? `${name} — MP3 + cover on the form; WAV in our shared folder (matching file name).`
+          : `${name} — MP3 + cover on the form; WAV in our shared folder (matching file name).`;
       }
       mountSubmitPanel(account || { accountType: isDemoMode ? 'artist' : '' });
     },

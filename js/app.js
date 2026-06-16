@@ -67,13 +67,29 @@
 
   function triggerTrackedDownload(song, format) {
     if (isDemoMode) {
-      alert('Sign up for a free DJ account to download MP3 and WAV files.');
+      alert('Sign up for a free DJ account to download MP3 files.');
       return;
     }
-    const url = format === 'wav' ? song.wav : song.mp3;
-    if (!url) return;
-    RadioDB.triggerFileDownload(url, Utils.safeFilename(song.artistName, song.songTitle, format));
-    DjActivity.log(song, format === 'wav' ? 'download_wav' : 'download_mp3', format);
+    if (!song.mp3) return;
+    RadioDB.triggerFileDownload(song.mp3, Utils.safeFilename(song.artistName, song.songTitle, 'mp3'));
+    DjActivity.log(song, 'download_mp3', 'mp3');
+  }
+
+  function renderWavRequestHtml(song) {
+    const mailto = Utils.wavRequestMailto(song);
+    const contactLine = song.contactEmail
+      ? `<a href="mailto:${Utils.escapeHtml(song.contactEmail)}">${Utils.escapeHtml(song.contactEmail)}</a>`
+      : 'the artist or label listed on this track';
+    return `
+      <div class="detail-wav-request">
+        <label><i class="fa-solid fa-envelope"></i> Need WAV for airplay?</label>
+        <p>Radio Now turn-key folders include <strong>MP3</strong>, cover art, and a one-sheet PDF. Broadcast WAV files are available on request — contact ${contactLine}.</p>
+        ${mailto
+    ? `<a href="${Utils.escapeHtml(mailto)}" class="btn btn-secondary detail-wav-request-btn">
+            <i class="fa-solid fa-paper-plane"></i> Email WAV request
+          </a>`
+    : ''}
+      </div>`;
   }
 
   function saveQueue() {
@@ -260,13 +276,13 @@
           <div><label>Contact E-Mail</label><p>${song.contactEmail ? `<a href="mailto:${Utils.escapeHtml(song.contactEmail)}">${Utils.escapeHtml(song.contactEmail)}</a>` : '—'}</p></div>
           <div><label>Website</label><p>${song.website ? `<a href="${Utils.escapeHtml(song.website)}" target="_blank" rel="noopener">${Utils.escapeHtml(song.website)}</a>` : '—'}</p></div>
         </div>
+        ${renderWavRequestHtml(song)}
         <div class="detail-downloads">
           ${isDemoMode ? Demo.salesNoteHtml() : (isAuthenticated() ? '' : TurnkeyPitch.detailNoteHtml(false))}
           <button class="btn btn-secondary download-onesheet-btn" type="button">
             <i class="fa-solid fa-file-pdf"></i> Download One-Sheet
           </button>
           ${song.mp3 ? `<button type="button" class="btn btn-secondary download-track-btn" data-format="mp3"><i class="fa-solid fa-download"></i> MP3</button>` : ''}
-          ${song.wav ? `<button type="button" class="btn btn-secondary download-track-btn" data-format="wav"><i class="fa-solid fa-download"></i> WAV</button>` : ''}
         </div>
         <div class="detail-panel-footer">
           <button class="btn btn-ghost detail-close-btn detail-close-btn--bottom" aria-label="Close details">
@@ -288,29 +304,7 @@
     });
 
     detailPanel.querySelectorAll('.download-track-btn').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const format = btn.dataset.format;
-        if (format === 'wav') {
-          if (isDemoMode) {
-            alert('Sign up for a free DJ account to download WAV files.');
-            return;
-          }
-          const originalHtml = btn.innerHTML;
-          btn.disabled = true;
-          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Downloading WAV…';
-          try {
-            await RadioDB.downloadSingleTrack(song, 'wav');
-            DjActivity.log(song, 'download_wav', 'wav');
-          } catch (err) {
-            alert(err.message || 'Could not download WAV.');
-          } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
-          }
-          return;
-        }
-        triggerTrackedDownload(song, format);
-      });
+      btn.addEventListener('click', () => triggerTrackedDownload(song, 'mp3'));
     });
 
     const downloadBtn = detailPanel.querySelector('.download-onesheet-btn');

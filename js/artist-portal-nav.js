@@ -3,6 +3,7 @@ const ArtistPortalNav = {
     { key: 'spins', href: 'artist-dashboard.html', label: 'Spins', icon: 'fa-chart-line' },
     { key: 'submit', href: 'artist-submit.html', label: 'Submit', icon: 'fa-cloud-arrow-up' },
     { key: 'promo', href: 'artist-promo.html', label: 'Promo', icon: 'fa-folder-open' },
+    { key: 'spotlight', href: 'artist-spotlight.html', label: 'Spotlight', icon: 'fa-star', labelOnly: true },
     { key: 'roster', href: 'artist-roster.html', label: 'Roster', icon: 'fa-users', labelOnly: true },
   ],
 

@@ -45,6 +45,7 @@ const RadioDB = {
       releaseDate: String(raw.releaseDate || '').trim(),
       spotlightPriority: parseInt(raw.spotlightPriority, 10) || 0,
       spotlightUntil: String(raw.spotlightUntil || '').trim(),
+      spotlightBadge: String(raw.spotlightBadge || '').trim(),
     };
   },
 
@@ -95,7 +96,7 @@ const RadioDB = {
   async downloadZip(songs, format = 'mp3', onProgress) {
     if (!songs.length) throw new Error('Download queue is empty.');
     if (format === 'wav') {
-      throw new Error('WAV downloads are one track at a time. Open a song and use the WAV button in track details.');
+      throw new Error('WAV is not available for download here. Email the artist from song details to request broadcast WAV.');
     }
 
     return this.downloadZipClient(songs, format, onProgress);

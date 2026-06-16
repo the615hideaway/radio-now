@@ -41,11 +41,20 @@ const CONFIG = {
 
   catalogPageSize: 40,
 
+  // WAV files stay in the label Drive folder (not DJ downloads). Match MP3 naming.
+  wavFolderId: '137edNXYOv3xTVy7q4o1NKcTGMyshzR7MtN1BthqeXydD1Gwq-0V7JsRQR-9tXSYR45rsILzX',
+  wavNamingExample: 'Song Title - Artist Name.wav',
+
   spotlight: {
     houseArtist: 'David Parmley',
     labelName: '615 Hideaway Records',
+    spotlightSheetName: 'Spotlights',
+    spotlightAdminLabels: ['615 Hideaway Records'],
+    autoFeatureHouseArtist: false,
+    autoFeatureNewReleases: true,
     labelNewReleaseDays: 30,
     labelNewReleaseScore: 75,
     houseArtistScore: 100,
+    maxSlots: 12,
   },
 };

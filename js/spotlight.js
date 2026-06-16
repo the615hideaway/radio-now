@@ -60,11 +60,12 @@ const Spotlight = {
     const manualActive = manualPriority > 0 && (!until || until >= today);
     if (manualActive) score = manualPriority;
 
-    if (this.normalize(song?.artistName) === this.normalize(cfg.houseArtist)) {
+    if (cfg.autoFeatureHouseArtist !== false
+      && this.normalize(song?.artistName) === this.normalize(cfg.houseArtist)) {
       score = Math.max(score, cfg.houseArtistScore ?? 100);
     }
 
-    if (this.isLabelNewRelease(song)) {
+    if (cfg.autoFeatureNewReleases !== false && this.isLabelNewRelease(song)) {
       score = Math.max(score, cfg.labelNewReleaseScore ?? 75);
     }
 
@@ -73,9 +74,16 @@ const Spotlight = {
 
   badge(song) {
     if (this.score(song) <= 0) return '';
+    if (song?.spotlightBadge) return String(song.spotlightBadge).trim();
     const cfg = this.config();
-    if (this.normalize(song?.artistName) === this.normalize(cfg.houseArtist)) return 'Featured';
-    if (this.isLabelNewRelease(song)) return 'New Release';
+    const manualPriority = parseInt(song?.spotlightPriority, 10) || 0;
+    const until = this.parseDateOnly(song?.spotlightUntil);
+    const today = this.startOfDay(new Date());
+    const manualActive = manualPriority > 0 && (!until || until >= today);
+    if (manualActive) return 'Featured';
+    if (cfg.autoFeatureHouseArtist !== false
+      && this.normalize(song?.artistName) === this.normalize(cfg.houseArtist)) return 'Featured';
+    if (cfg.autoFeatureNewReleases !== false && this.isLabelNewRelease(song)) return 'New Release';
     return 'Spotlight';
   },
 

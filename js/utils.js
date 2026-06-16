@@ -344,4 +344,16 @@ const Utils = {
       .replace(/^-+|-+$/g, '');
     return slug || 'artist';
   },
+
+  wavRequestMailto(song) {
+    const email = String(song?.contactEmail || '').trim();
+    if (!email) return '';
+    const title = this.songArtistName(song.songTitle, song.artistName);
+    const subject = encodeURIComponent(`WAV request — ${title}`);
+    const body = encodeURIComponent(
+      `Hi,\n\nI'm programming on Radio Now and would like a broadcast WAV for airplay:\n\n`
+      + `${title}\n\nThank you!`,
+    );
+    return `mailto:${email}?subject=${subject}&body=${body}`;
+  },
 };

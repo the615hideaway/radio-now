@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Radio Now — Submit a new song.">
-  <title>Submit Song — Radio Now</title>
+  <meta name="description" content="Radio Now — Label spotlight picks.">
+  <title>Spotlight — Radio Now</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,25 +34,12 @@
 
     <main class="artist-portal-page">
       <header class="artist-portal-hero">
-        <p class="artist-portal-eyebrow">Submit</p>
-        <h1 id="page-title">Submit a new song</h1>
-        <p id="page-copy" class="artist-portal-copy">Upload MP3 and cover art via the Google Form. Add WAV files to our shared folder separately.</p>
+        <p class="artist-portal-eyebrow">Label admin</p>
+        <h1>Catalog spotlight</h1>
+        <p class="artist-portal-copy">Hand-pick songs for the featured row at the top of the DJ catalog. Great for classic tracks new stations should hear first.</p>
       </header>
 
-      <section class="artist-portal-card">
-        <p class="artist-portal-card-note" id="song-submit-note">After you submit, refresh the DJ catalog — your song should appear right away.</p>
-        <ol class="artist-portal-steps" id="song-submit-steps">
-          <li>Open the submission form and fill in song details.</li>
-          <li>Upload <strong>MP3</strong> and <strong>cover art</strong> on the form.</li>
-          <li>Add <strong>WAV</strong> to our shared folder named <em>Song Title - Artist Name.wav</em> — stations request WAV directly; we don&apos;t host them in DJ downloads.</li>
-          <li>Refresh the catalog after submitting — your song should appear right away.</li>
-        </ol>
-        <a id="song-google-form-open-link" class="btn btn-primary btn-lg btn-full" href="https://forms.gle/zFExL6otU1e7hJF59" target="_blank" rel="noopener">
-          <i class="fa-solid fa-cloud-arrow-up"></i>
-          Open song submission form
-        </a>
-        <p class="field-help">Uploads are free this week. No technical steps on your end.</p>
-      </section>
+      <div id="spotlight-admin-content"></div>
     </main>
   </div>
 
@@ -64,8 +51,10 @@
   <script src="js/artist-auth-ui.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/utils.js"></script>
+  <script src="js/sheet-catalog.js"></script>
+  <script src="js/database.js"></script>
   <script src="js/artist-portal-nav.js"></script>
   <script src="js/artist-portal-auth.js"></script>
-  <script src="js/artist-submit-app.js"></script>
+  <script src="js/artist-spotlight-app.js"></script>
 </body>
 </html>

@@ -12,7 +12,9 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-15-submission-v8';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-spotlight-v9';
+var SPOTLIGHT_SHEET_NAME = 'Spotlights';
+var SPOTLIGHT_ADMIN_LABELS = ['615 Hideaway Records'];
 var SUBMISSION_CHUNK_FOLDER_ID = '1uSIu4QKuy1CkvaoksiA8eBJpFNHeZSdD';
 var SUBMISSION_MP3_FOLDER_ID = '1B0XflDxcTJYcKkvzOYpdHvWLyTHZNAN37O1Q65wLg_rHu6xuxrSfKl8DDvr_BLsVo5Ft6lb-';
 var SUBMISSION_WAV_FOLDER_ID = '137edNXYOv3xTVy7q4o1NKcTGMyshzR7MtN1BthqeXydD1Gwq-0V7JsRQR-9tXSYR45rsILzX';
@@ -3663,6 +3665,127 @@ function artistDashboard_(token) {
   };
 }
 
+function getSpotlightSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SPOTLIGHT_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SPOTLIGHT_SHEET_NAME);
+    sheet.appendRow(['Artist Name', 'Song Title', 'Priority', 'Until', 'Badge', 'Updated At']);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function spotlightRowToObject_(row, headerMap) {
+  function pick(key) {
+    if (headerMap[key] === undefined) return '';
+    return String(row[headerMap[key]] || '').trim();
+  }
+  return {
+    artistName: pick('Artist Name'),
+    songTitle: pick('Song Title'),
+    priority: parseInt(pick('Priority'), 10) || 0,
+    until: pick('Until'),
+    badge: pick('Badge') || 'Featured',
+    updatedAt: pick('Updated At'),
+  };
+}
+
+function listSpotlightsFromSheet_() {
+  var sheet = getSpotlightSheet_();
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  var headerMap = getHeaderMap_(sheet);
+  var rows = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  return rows
+    .map(function (row) { return spotlightRowToObject_(row, headerMap); })
+    .filter(function (item) { return item.artistName || item.songTitle; })
+    .sort(function (a, b) { return (b.priority || 0) - (a.priority || 0); });
+}
+
+function requireSpotlightAdmin_(token) {
+  var found = requireArtistSession_(token);
+  var account = found.artist;
+  if (String(account.account_type || '').toLowerCase() !== 'label') {
+    throw new Error('Only label accounts can manage catalog spotlights.');
+  }
+
+  var labelName = String(account.artist_name || '').trim();
+  var allowed = false;
+  for (var i = 0; i < SPOTLIGHT_ADMIN_LABELS.length; i++) {
+    if (normalizeArtistName_(labelName) === normalizeArtistName_(SPOTLIGHT_ADMIN_LABELS[i])) {
+      allowed = true;
+      break;
+    }
+  }
+  if (!allowed) {
+    throw new Error('Your label account is not authorized to manage spotlights.');
+  }
+
+  return account;
+}
+
+function spotlightAdminList_(token) {
+  requireSpotlightAdmin_(token);
+  return {
+    success: true,
+    spotlights: listSpotlightsFromSheet_(),
+    maxSlots: 12,
+  };
+}
+
+function spotlightAdminSave_(token, payload) {
+  requireSpotlightAdmin_(token);
+  var items = payload.spotlights || [];
+  if (!items.length) {
+    var sheet = getSpotlightSheet_();
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).clearContent();
+    }
+    return { success: true, spotlights: [], saved: 0 };
+  }
+
+  if (items.length > 12) {
+    throw new Error('Too many spotlight picks (max 12).');
+  }
+
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/Chicago', "yyyy-MM-dd'T'HH:mm:ss");
+  var rows = items.map(function (item) {
+    var artistName = String(item.artistName || '').trim();
+    var songTitle = String(item.songTitle || '').trim();
+    if (!artistName || !songTitle) {
+      throw new Error('Each spotlight needs artist name and song title.');
+    }
+    var priority = parseInt(item.priority, 10) || 0;
+    if (priority < 1 || priority > 100) {
+      throw new Error('Priority must be between 1 and 100.');
+    }
+    return [
+      artistName,
+      songTitle,
+      priority,
+      String(item.until || '').trim(),
+      String(item.badge || 'Featured').trim() || 'Featured',
+      now,
+    ];
+  });
+
+  var spotlightSheet = getSpotlightSheet_();
+  var lastRow = spotlightSheet.getLastRow();
+  if (lastRow > 1) {
+    spotlightSheet.getRange(2, 1, lastRow - 1, spotlightSheet.getLastColumn()).clearContent();
+  }
+  spotlightSheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+
+  return {
+    success: true,
+    spotlights: listSpotlightsFromSheet_(),
+    saved: rows.length,
+  };
+}
+
 function doGet(e) {
   try {
     const action = (e.parameter.action || 'list').toLowerCase();
@@ -3820,6 +3943,14 @@ function doPost(e) {
 
     if (action === 'label_access_revoke') {
       return jsonResponse_(labelAccessRevoke_(body.token, body));
+    }
+
+    if (action === 'spotlight_admin_list') {
+      return jsonResponse_(spotlightAdminList_(body.token));
+    }
+
+    if (action === 'spotlight_admin_save') {
+      return jsonResponse_(spotlightAdminSave_(body.token, body));
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });
