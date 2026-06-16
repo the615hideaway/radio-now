@@ -12,7 +12,7 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-wav-request-v13';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-wav-request-v14';
 var SPOTLIGHT_SHEET_NAME = 'Spotlights';
 var SPOTLIGHT_ADMIN_DJS = ['Sammy Passamano'];
 var SPOTLIGHT_ADMIN_EMAILS = ['the615hideaway@gmail.com'];
@@ -116,6 +116,48 @@ function sendRadioNowEmailWithReply_(to, subject, htmlBody, replyTo, fromEmail) 
     to: to,
     subject: subject,
   }, options));
+}
+
+/**
+ * Run once from the Apps Script editor (Run menu) while signed in as the sheet owner.
+ * Grants MailApp / GmailApp permission for WAV request emails and other Radio Now mail.
+ */
+function authorizeRadioNowMail_() {
+  var to = Session.getActiveUser().getEmail();
+  if (!to) {
+    throw new Error('Could not detect your Google account email. Run this while logged into the sheet owner account.');
+  }
+
+  MailApp.sendEmail({
+    to: to,
+    subject: 'Radio Now — mail permission test',
+    htmlBody: '<p>If you received this, <strong>MailApp</strong> is authorized for Radio Now.</p>'
+      + '<p>You can now use <em>Send WAV request for me</em> on the DJ catalog.</p>',
+    name: RADIO_NOW_FROM_NAME,
+  });
+
+  if (RADIO_NOW_WAV_FROM_EMAIL) {
+    try {
+      GmailApp.sendEmail(
+        to,
+        'Radio Now — Gmail send-as test',
+        'If you received this from radio@, Gmail send-as is configured.',
+        {
+          from: RADIO_NOW_WAV_FROM_EMAIL,
+          htmlBody: '<p>If this came from <strong>' + escapeEmailHtml_(RADIO_NOW_WAV_FROM_EMAIL)
+            + '</strong>, Gmail send-as is working.</p>',
+          name: RADIO_NOW_FROM_NAME,
+        }
+      );
+    } catch (err) {
+      Logger.log('GmailApp send-as test skipped: ' + err.message);
+    }
+  }
+
+  return {
+    success: true,
+    message: 'Check your inbox at ' + to + ' for the test email(s).',
+  };
 }
 
 function wavRequestPlainBody_(songTitle, artistName, recordLabel, dj) {
