@@ -8,8 +8,8 @@
     if (note) {
       const isLabel = String(account?.accountType || '').toLowerCase() === 'label';
       note.textContent = isLabel
-        ? 'Submit new releases for any artist on your roster. Songs appear on the live catalog within about 10 minutes after you submit.'
-        : 'Submit a new single to Radio Now. Your song usually appears on the live catalog within about 10 minutes after you submit.';
+        ? 'Submit new releases for any artist on your roster. Songs appear on the live catalog as soon as you refresh the page after submitting.'
+        : 'Submit a new single to Radio Now. Your song appears on the live catalog as soon as you refresh the page after submitting.';
     }
   }
 

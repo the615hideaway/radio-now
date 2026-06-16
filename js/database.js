@@ -48,26 +48,24 @@ const RadioDB = {
     };
   },
 
-  async getCatalogMeta() {
-    if (this.catalogMeta) return this.catalogMeta;
-    const response = await fetch(CONFIG.songsDataUrl, { cache: 'no-store' });
-    if (!response.ok) throw new Error('Song catalog JSON not found');
-    const data = await response.json();
-    this.catalogMeta = {
-      syncedAt: data.syncedAt || null,
-      songCount: data.songCount || (data.songs || []).length,
-      source: data.source || 'json',
-    };
-    return this.catalogMeta;
-  },
-
-  async getAllSongs() {
-    const response = await fetch(CONFIG.songsDataUrl, { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error(`Could not load ${CONFIG.songsDataUrl}. Run scripts/sync-sheet-to-json.ps1 to generate it.`);
+  async fetchCatalogData() {
+    if (CONFIG.catalogLiveFromSheet && typeof SheetCatalog !== 'undefined') {
+      try {
+        const live = await SheetCatalog.fetchCatalogPayload();
+        if ((live.songs || []).length) return live;
+      } catch (err) {
+        console.warn('Live sheet catalog failed, using songs.json fallback:', err);
+      }
     }
 
-    const data = await response.json();
+    const response = await fetch(CONFIG.songsDataUrl, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`Could not load catalog from Google Sheet or ${CONFIG.songsDataUrl}.`);
+    }
+    return response.json();
+  },
+
+  songsFromPayload(data) {
     this.catalogMeta = {
       syncedAt: data.syncedAt || null,
       songCount: data.songCount || (data.songs || []).length,
@@ -78,8 +76,20 @@ const RadioDB = {
       .map((song, i) => ({ ...this.normalizeSong(song, i), catalogIndex: i }))
       .filter((song) => song.artistName || song.songTitle);
 
-    if (!songs.length) throw new Error('Catalog JSON contains no songs.');
+    if (!songs.length) throw new Error('Catalog contains no songs.');
     return songs;
+  },
+
+  async getCatalogMeta() {
+    if (this.catalogMeta) return this.catalogMeta;
+    const data = await this.fetchCatalogData();
+    this.songsFromPayload(data);
+    return this.catalogMeta;
+  },
+
+  async getAllSongs() {
+    const data = await this.fetchCatalogData();
+    return this.songsFromPayload(data);
   },
 
   async downloadZip(songs, format = 'mp3', onProgress) {
