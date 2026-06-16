@@ -56,6 +56,9 @@
     updateDownloadSetupNotice();
     loadQueuesFromStorage();
     checkConnection();
+    if (typeof SpotlightAdmin !== 'undefined' && SpotlightAdmin.canManage()) {
+      SpotlightAdmin.ensureLoaded().catch(() => {});
+    }
     loadSongs();
   }
 
@@ -230,6 +233,46 @@
     detailPanel.innerHTML = '';
   }
 
+  function renderSpotlightAdminHtml(song) {
+    if (typeof SpotlightAdmin === 'undefined' || !SpotlightAdmin.canManage()) return '';
+    const featured = SpotlightAdmin.isSongInSpotlight(song);
+    const until = String(song.spotlightUntil || '').trim();
+    const note = featured
+      ? (until ? `In spotlight until ${until}. Click to remove.` : 'In spotlight. Click to remove.')
+      : `Adds to spotlight for ${CONFIG.spotlight?.defaultDays || 30} days. Only you see this button.`;
+    return `
+        <div class="detail-spotlight-admin">
+          <button type="button" class="btn btn-secondary detail-spotlight-btn${featured ? ' active' : ''}" id="detail-spotlight-btn">
+            <i class="fa-solid fa-star"></i> ${featured ? 'Remove from Spotlight' : 'Add to Spotlight'}
+          </button>
+          <p class="detail-spotlight-note">${Utils.escapeHtml(note)}</p>
+        </div>`;
+  }
+
+  function bindSpotlightAdminButton(song) {
+    const btn = document.getElementById('detail-spotlight-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+      const original = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…';
+      try {
+        const result = await SpotlightAdmin.toggleSong(song);
+        await loadSongs();
+        const refreshed = allSongs.find((s) => s.id === song.id) || song;
+        renderDetailPanel(refreshed, false);
+        if (result.added) {
+          detailPanel.querySelector('.detail-spotlight-note')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      } catch (err) {
+        alert(err.message || 'Could not update spotlight.');
+        btn.disabled = false;
+        btn.innerHTML = original;
+      }
+    });
+  }
+
   function renderDetailPanel(song, shouldScroll = true) {
     const inQueue = queue.some((q) => q.id === song.id);
     const inDownload = downloadQueue.some((d) => d.id === song.id);
@@ -264,6 +307,7 @@
             <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'In DJ Queue' : 'Add to DJ Queue'}
           </button>
         </div>
+        ${renderSpotlightAdminHtml(song)}
         <div class="detail-description">
           <label>Description</label>
           <p>${Utils.escapeHtml(song.description || '—')}</p>
@@ -326,6 +370,7 @@
     }
 
     bindPreviewButtons(detailPanel);
+    bindSpotlightAdminButton(song);
     detailPanel.classList.remove('hidden');
     if (shouldScroll) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }

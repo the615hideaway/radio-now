@@ -3662,6 +3662,25 @@ select { min-width: 130px; width: auto; }
   margin-bottom: 1.5rem;
 }
 
+.detail-spotlight-admin {
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(212, 168, 75, 0.08);
+  border: 1px solid rgba(212, 168, 75, 0.22);
+}
+
+.detail-spotlight-btn.active {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.detail-spotlight-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
 .detail-panel-footer {
   display: flex;
   justify-content: flex-end;

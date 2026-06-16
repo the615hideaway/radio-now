@@ -151,7 +151,7 @@
           artistName: btn.dataset.artist || '',
           songTitle: btn.dataset.title || '',
           priority: 85,
-          until: '',
+          until: Spotlight.defaultUntilDate(),
           badge: 'Featured',
         });
         render();

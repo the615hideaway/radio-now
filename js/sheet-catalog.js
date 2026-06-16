@@ -195,6 +195,10 @@ const SheetCatalog = {
         });
       });
 
+      if (typeof Spotlight !== 'undefined') {
+        Spotlight.manualPickCount = map.size;
+      }
+
       songs.forEach((song) => {
         const key = `${song.artistName}|${song.songTitle}`.toLowerCase();
         const spot = map.get(key);
@@ -203,6 +207,10 @@ const SheetCatalog = {
         song.spotlightUntil = spot.spotlightUntil;
         song.spotlightBadge = spot.spotlightBadge;
       });
+
+      if (map.size === 0 && typeof Spotlight !== 'undefined') {
+        Spotlight.applyAutoFill(songs);
+      }
     } catch (err) {
       console.warn('SheetCatalog: no spotlight overrides loaded', err);
     }

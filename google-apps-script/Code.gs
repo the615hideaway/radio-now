@@ -12,7 +12,7 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-spotlight-v11';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-spotlight-v12';
 var SPOTLIGHT_SHEET_NAME = 'Spotlights';
 var SPOTLIGHT_ADMIN_DJS = ['Sammy Passamano'];
 var SPOTLIGHT_ADMIN_EMAILS = ['the615hideaway@gmail.com'];
@@ -3732,12 +3732,20 @@ function requireSpotlightAdmin_(token) {
   return dj;
 }
 
+function spotlightDefaultUntil_() {
+  var days = 30;
+  var until = new Date();
+  until.setDate(until.getDate() + days);
+  return Utilities.formatDate(until, Session.getScriptTimeZone() || 'America/Chicago', 'yyyy-MM-dd');
+}
+
 function spotlightAdminList_(token) {
   requireSpotlightAdmin_(token);
   return {
     success: true,
     spotlights: listSpotlightsFromSheet_(),
     maxSlots: 12,
+    defaultDays: 30,
   };
 }
 
@@ -3768,11 +3776,13 @@ function spotlightAdminSave_(token, payload) {
     if (priority < 1 || priority > 100) {
       throw new Error('Priority must be between 1 and 100.');
     }
+    var until = String(item.until || '').trim();
+    if (!until) until = spotlightDefaultUntil_();
     return [
       artistName,
       songTitle,
       priority,
-      String(item.until || '').trim(),
+      until,
       String(item.badge || 'Featured').trim() || 'Featured',
       now,
     ];

@@ -58,5 +58,8 @@ const CONFIG = {
     labelNewReleaseScore: 75,
     houseArtistScore: 100,
     maxSlots: 12,
+    defaultDays: 30,
+    autoFillCount: 5,
+    autoFillScore: 80,
   },
 };

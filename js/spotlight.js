@@ -1,4 +1,6 @@
 const Spotlight = {
+  manualPickCount: 0,
+
   config() {
     return CONFIG.spotlight || {};
   },
@@ -68,6 +70,56 @@ const Spotlight = {
     return manualPriority > 0 && (!until || until >= today);
   },
 
+  defaultUntilDate() {
+    const days = this.config().defaultDays ?? 30;
+    const date = this.startOfDay(new Date());
+    date.setDate(date.getDate() + days);
+    return date.toISOString().slice(0, 10);
+  },
+
+  isNewCatalogSong(song) {
+    if (this.isLabelNewRelease(song)) return true;
+    const release = this.parseReleaseDate(song);
+    if (!release) return false;
+    const days = this.daysSince(release);
+    const windowDays = this.config().labelNewReleaseDays ?? 30;
+    return days >= 0 && days <= windowDays;
+  },
+
+  shufflePick(items, count) {
+    const pool = [...items];
+    for (let i = pool.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, count);
+  },
+
+  applyAutoFill(songs) {
+    const cfg = this.config();
+    const count = cfg.autoFillCount ?? 5;
+    const score = cfg.autoFillScore ?? 80;
+    const until = this.defaultUntilDate();
+    const badge = 'New Release';
+
+    songs.forEach((song) => {
+      song.spotlightAutoFilled = false;
+    });
+
+    let pool = songs.filter((song) => this.isNewCatalogSong(song));
+    if (pool.length < count) {
+      const extras = [...songs].sort((a, b) => Utils.compareSongsNewestFirst(a, b));
+      pool = [...new Set([...pool, ...extras])];
+    }
+
+    this.shufflePick(pool, count).forEach((song) => {
+      song.spotlightAutoFilled = true;
+      song.spotlightPriority = score;
+      song.spotlightUntil = until;
+      song.spotlightBadge = badge;
+    });
+  },
+
   score(song) {
     const cfg = this.config();
     const today = this.startOfDay(new Date());
@@ -77,6 +129,10 @@ const Spotlight = {
     const until = this.parseDateOnly(song?.spotlightUntil);
     const manualActive = manualPriority > 0 && (!until || until >= today);
     if (manualActive) score = manualPriority;
+
+    if (this.manualPickCount === 0) {
+      return song?.spotlightAutoFilled ? (cfg.autoFillScore ?? 80) : 0;
+    }
 
     if (cfg.autoFeatureHouseArtist !== false
       && this.normalize(song?.artistName) === this.normalize(cfg.houseArtist)) {
@@ -94,6 +150,7 @@ const Spotlight = {
     if (this.score(song) <= 0) return '';
     if (song?.spotlightBadge) return String(song.spotlightBadge).trim();
     const cfg = this.config();
+    if (this.manualPickCount === 0 && song?.spotlightAutoFilled) return 'New Release';
     const manualPriority = parseInt(song?.spotlightPriority, 10) || 0;
     const until = this.parseDateOnly(song?.spotlightUntil);
     const today = this.startOfDay(new Date());
