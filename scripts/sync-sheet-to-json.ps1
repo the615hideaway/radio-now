@@ -2,8 +2,13 @@
 param(
   [string]$SheetId = '1EXNdRluPjwyaY5ktt-qHI2bNF7IT5bD1udnCgkKNdkU',
   [string[]]$SheetNames = @('Form Responses 1', 'Sheet1'),
-  [string]$OutPath = "$PSScriptRoot\..\data\songs.json"
+  [string]$OutPath = ''
 )
+
+if (-not $OutPath) {
+  $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+  $OutPath = Join-Path (Join-Path $repoRoot 'data') 'songs.json'
+}
 
 function Get-CellValue($cell) {
   if (-not $cell) { return '' }
