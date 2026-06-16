@@ -95,7 +95,7 @@
     return `
       <div class="detail-wav-request">
         <label><i class="fa-solid fa-envelope"></i> Need WAV for airplay?</label>
-        <p>Turn-key folders include <strong>MP3</strong>, cover art, and a one-sheet PDF. For broadcast WAV, use one of the options below.</p>
+        <p>Turn-key folders include <strong>MP3</strong>, cover art, and a one-sheet PDF. For broadcast WAV, Radio Now can email the artist for you.</p>
         ${email
     ? `<div class="detail-wav-request-actions">
             ${canSend
@@ -103,13 +103,7 @@
                   <i class="fa-solid fa-paper-plane"></i> Send WAV request for me
                 </button>
                 <p class="detail-wav-request-note">One click — Radio Now emails ${Utils.escapeHtml(contactLine)} from <strong>${Utils.escapeHtml(fromEmail)}</strong> with your DJ name, station, show, and email so they can reply to you.</p>`
-    : `<p class="detail-wav-request-note"><a href="dj-dashboard.html">Sign in with your DJ account</a> for one-click sending, or copy the ready-to-send email below.</p>`}
-            <button type="button" class="btn btn-secondary detail-wav-copy-btn" id="detail-wav-copy-btn">
-              <i class="fa-solid fa-copy"></i> Copy ready-to-send email
-            </button>
-            <button type="button" class="btn btn-ghost btn-sm detail-wav-mailto-btn" id="detail-wav-mailto-btn">
-              <i class="fa-solid fa-envelope-open"></i> Open in my email app
-            </button>
+    : `<p class="detail-wav-request-note"><a href="dj-dashboard.html">Sign in with your DJ account</a> to send a WAV request in one click.</p>`}
             <p class="detail-wav-request-status hidden" id="detail-wav-request-status" role="status"></p>
           </div>`
     : `<p class="detail-wav-request-note">No contact email on file for this track — reach out to ${contactLine}.</p>`}
@@ -118,10 +112,7 @@
 
   function bindWavRequestButton(song) {
     const sendBtn = document.getElementById('detail-wav-send-btn');
-    const copyBtn = document.getElementById('detail-wav-copy-btn');
-    const mailtoBtn = document.getElementById('detail-wav-mailto-btn');
     const status = document.getElementById('detail-wav-request-status');
-    const dj = typeof WavRequest !== 'undefined' ? WavRequest.getDjProfile() : null;
 
     const showStatus = (message) => {
       if (!status) return;
@@ -142,24 +133,6 @@
         sendBtn.disabled = false;
         sendBtn.innerHTML = original;
       }
-    });
-
-    copyBtn?.addEventListener('click', async () => {
-      const text = WavRequest.copyBlock(song, dj);
-      const copied = await Utils.copyText(text);
-      showStatus(copied
-        ? 'Copied! Open Gmail or Outlook, start a new email, and paste (Ctrl+V).'
-        : 'Select and copy the text from the alert, then paste into your email app.');
-      if (!copied) alert(text);
-    });
-
-    mailtoBtn?.addEventListener('click', () => {
-      const result = Utils.openWavRequestMailto(song, dj);
-      if (!result.ok) {
-        alert('No contact email listed for this track.');
-        return;
-      }
-      showStatus(`Opening your email app to ${result.email}… If nothing opens, use Copy ready-to-send email.`);
     });
   }
 

@@ -108,7 +108,17 @@
       });
     });
 
-    return Array.from(map.values()).sort((a, b) => a.songTitle.localeCompare(b.songTitle));
+    const catalogByKey = new Map(roster.map((entry) => [
+      normalizeKey(entry.artistName, entry.songTitle),
+      entry,
+    ]));
+
+    return Array.from(map.values()).sort((a, b) => {
+      const scoreA = catalogSortScore(catalogByKey.get(a.key) || a);
+      const scoreB = catalogSortScore(catalogByKey.get(b.key) || b);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return a.songTitle.localeCompare(b.songTitle);
+    });
   }
 
   async function resolveLatestSongKey(songs, account) {
@@ -270,23 +280,19 @@
     }
 
       songPicker.innerHTML = `
-      <p class="spin-picker-label">Your songs — latest release shown first</p>
-      <div class="spin-song-chips">
-        ${songs.map((song) => `
-          <button
-            type="button"
-            class="spin-song-chip${selectedSongKey === song.key ? ' is-active' : ''}"
-            data-song-key="${Utils.escapeHtml(song.key)}"
-          >
-            <span class="spin-song-chip-title">${Utils.escapeHtml(song.songTitle)}</span>
-            ${song.artistName ? `<span class="spin-song-chip-artist">${Utils.escapeHtml(song.artistName)}</span>` : ''}
-          </button>`).join('')}
-      </div>`;
+      <label for="spin-song-select" class="spin-picker-label">Your songs</label>
+      <select id="spin-song-select" class="spin-song-select" aria-label="Choose a song">
+        ${songs.map((song) => {
+          const label = song.artistName
+            ? `${song.songTitle} — ${song.artistName}`
+            : song.songTitle;
+          return `<option value="${Utils.escapeHtml(song.key)}"${selectedSongKey === song.key ? ' selected' : ''}>${Utils.escapeHtml(label)}</option>`;
+        }).join('')}
+      </select>
+      <p class="spin-picker-hint">Newest releases first</p>`;
 
-    songPicker.querySelectorAll('.spin-song-chip').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        selectSong(songs, btn.dataset.songKey || '');
-      });
+    document.getElementById('spin-song-select')?.addEventListener('change', (event) => {
+      selectSong(songs, event.target.value || '');
     });
   }
 
@@ -409,7 +415,7 @@
   function renderFeaturedBanner(account) {
     if (!featuredBanner || typeof Spotlight === 'undefined') return;
 
-    const curatorName = CONFIG.spotlight?.spotlightCuratorName || 'Radio Now';
+    const brandName = 'Radio Now';
 
     fetchCatalogOnce().then((catalog) => {
       const roster = songsForAccount(account, catalog);
@@ -428,7 +434,7 @@
       featuredBanner.innerHTML = `
         <div class="artist-featured-banner-inner">
           <div class="artist-featured-banner-head">
-            <h2><i class="fa-solid fa-star"></i> Featured by ${Utils.escapeHtml(curatorName)}</h2>
+            <h2><i class="fa-solid fa-star"></i> Featured by ${Utils.escapeHtml(brandName)}</h2>
             <a href="artist-spotlight.html" class="btn btn-ghost btn-sm">View all</a>
           </div>
           <div class="artist-featured-banner-chips">

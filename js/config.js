@@ -56,7 +56,7 @@ const CONFIG = {
     spotlightSheetName: 'Spotlights',
     spotlightAdminDjs: ['Sammy Passamano'],
     spotlightAdminEmails: ['the615hideaway@gmail.com'],
-    spotlightCuratorName: 'Sammy Passamano',
+    spotlightCuratorName: 'Radio Now',
     autoFeatureHouseArtist: false,
     autoFeatureNewReleases: true,
     labelNewReleaseDays: 30,

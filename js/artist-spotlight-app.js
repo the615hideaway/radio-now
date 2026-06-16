@@ -3,8 +3,6 @@
   const intro = document.getElementById('featured-intro');
   if (!host) return;
 
-  const curatorName = CONFIG.spotlight?.spotlightCuratorName || 'Radio Now';
-
   function songsForAccount(account, songs) {
     if (!account) return [];
     const isLabel = String(account.accountType || '').toLowerCase() === 'label';
@@ -49,8 +47,8 @@
   function renderFeatured(account, picks, isLabel) {
     if (intro) {
       intro.textContent = isLabel
-        ? `Songs from your roster hand-picked by ${curatorName} for the top of the DJ catalog.`
-        : `When ${curatorName} features your music at the top of the DJ catalog, it shows up here.`;
+        ? 'Songs from your roster featured by Radio Now at the top of the DJ catalog.'
+        : 'When Radio Now features your music at the top of the DJ catalog, it shows up here.';
     }
 
     if (!picks.length) {
@@ -66,7 +64,7 @@
       <section class="artist-portal-card artist-featured-card">
         <div class="artist-featured-header">
           <h2 class="artist-portal-card-title"><i class="fa-solid fa-star"></i> ${picks.length} featured ${picks.length === 1 ? 'song' : 'songs'}</h2>
-          <p class="artist-portal-card-note">Curated by ${Utils.escapeHtml(curatorName)} · visible at the top of the DJ catalog</p>
+          <p class="artist-portal-card-note">Featured by Radio Now · visible at the top of the DJ catalog</p>
         </div>
         <ul class="artist-featured-list">
           ${picks.map((song) => {
