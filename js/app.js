@@ -78,21 +78,65 @@
     DjActivity.log(song, 'download_mp3', 'mp3');
   }
 
+  function renderContactEmailHtml(raw) {
+    const email = Utils.normalizeContactEmail(raw);
+    if (!email) return '—';
+    return `<a href="mailto:${Utils.escapeHtml(email)}">${Utils.escapeHtml(email)}</a>`;
+  }
+
   function renderWavRequestHtml(song) {
-    const mailto = Utils.wavRequestMailto(song);
-    const contactLine = song.contactEmail
-      ? `<a href="mailto:${Utils.escapeHtml(song.contactEmail)}">${Utils.escapeHtml(song.contactEmail)}</a>`
+    const email = Utils.normalizeContactEmail(song.contactEmail);
+    const contactLine = email
+      ? renderContactEmailHtml(song.contactEmail)
       : 'the artist or label listed on this track';
     return `
       <div class="detail-wav-request">
         <label><i class="fa-solid fa-envelope"></i> Need WAV for airplay?</label>
         <p>Radio Now turn-key folders include <strong>MP3</strong>, cover art, and a one-sheet PDF. Broadcast WAV files are available on request — contact ${contactLine}.</p>
-        ${mailto
-    ? `<a href="${Utils.escapeHtml(mailto)}" class="btn btn-secondary detail-wav-request-btn">
+        ${email
+    ? `<button type="button" class="btn btn-secondary detail-wav-request-btn" id="detail-wav-request-btn">
             <i class="fa-solid fa-paper-plane"></i> Email WAV request
-          </a>`
+          </button>
+          <p class="detail-wav-request-status hidden" id="detail-wav-request-status" role="status"></p>
+          <button type="button" class="btn btn-ghost btn-sm detail-wav-copy-btn hidden" id="detail-wav-copy-btn">
+            <i class="fa-solid fa-copy"></i> Copy artist email
+          </button>`
     : ''}
       </div>`;
+  }
+
+  function bindWavRequestButton(song) {
+    const btn = document.getElementById('detail-wav-request-btn');
+    const status = document.getElementById('detail-wav-request-status');
+    const copyBtn = document.getElementById('detail-wav-copy-btn');
+    if (!btn) return;
+
+    const email = Utils.normalizeContactEmail(song.contactEmail);
+    if (copyBtn && email) {
+      copyBtn.classList.remove('hidden');
+      copyBtn.addEventListener('click', async () => {
+        const copied = await Utils.copyText(email);
+        if (status) {
+          status.classList.remove('hidden');
+          status.textContent = copied
+            ? `Copied ${email} — paste into your email app.`
+            : `Email: ${email}`;
+        }
+      });
+    }
+
+    btn.addEventListener('click', () => {
+      const result = Utils.openWavRequestMailto(song);
+      if (!result.ok) {
+        alert('No contact email listed for this track.');
+        return;
+      }
+      if (status) {
+        status.classList.remove('hidden');
+        status.textContent = `Opening email to ${result.email}… If nothing opens, tap Copy artist email below.`;
+      }
+      if (copyBtn) copyBtn.classList.remove('hidden');
+    });
   }
 
   function saveQueue() {
@@ -317,7 +361,7 @@
           <div><label>Songwriter</label><p>${Utils.escapeHtml(song.songwriter || '—')}</p></div>
           <div><label>Featured Artist</label><p>${Utils.escapeHtml(song.featuredArtist || '—')}</p></div>
           <div><label>Record Label</label><p>${Utils.escapeHtml(song.recordLabel || '—')}</p></div>
-          <div><label>Contact E-Mail</label><p>${song.contactEmail ? `<a href="mailto:${Utils.escapeHtml(song.contactEmail)}">${Utils.escapeHtml(song.contactEmail)}</a>` : '—'}</p></div>
+          <div><label>Contact E-Mail</label><p>${renderContactEmailHtml(song.contactEmail)}</p></div>
           <div><label>Website</label><p>${song.website ? `<a href="${Utils.escapeHtml(song.website)}" target="_blank" rel="noopener">${Utils.escapeHtml(song.website)}</a>` : '—'}</p></div>
         </div>
         ${renderWavRequestHtml(song)}
@@ -370,6 +414,7 @@
     }
 
     bindPreviewButtons(detailPanel);
+    bindWavRequestButton(song);
     bindSpotlightAdminButton(song);
     detailPanel.classList.remove('hidden');
     if (shouldScroll) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

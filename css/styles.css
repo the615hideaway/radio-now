@@ -4843,6 +4843,17 @@ select { min-width: 130px; width: auto; }
   width: 100%;
 }
 
+.detail-wav-request-status {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.detail-wav-copy-btn {
+  margin-top: 0.45rem;
+}
+
 .spotlight-admin-loading {
   text-align: center;
   color: var(--text-muted);

@@ -345,15 +345,65 @@ const Utils = {
     return slug || 'artist';
   },
 
-  wavRequestMailto(song) {
-    const email = String(song?.contactEmail || '').trim();
+  normalizeContactEmail(raw) {
+    const value = String(raw || '').trim();
+    if (!value) return '';
+    const mailtoMatch = value.match(/mailto:([^?&\s>]+)/i);
+    if (mailtoMatch) return mailtoMatch[1].trim();
+    const emailMatch = value.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    if (emailMatch) return emailMatch[0].trim();
+    return value.split(/[;,]/)[0].trim();
+  },
+
+  wavRequestMailtoHref(song) {
+    const email = this.normalizeContactEmail(song?.contactEmail);
     if (!email) return '';
     const title = this.songArtistName(song.songTitle, song.artistName);
-    const subject = encodeURIComponent(`WAV request — ${title}`);
-    const body = encodeURIComponent(
-      `Hi,\n\nI'm programming on Radio Now and would like a broadcast WAV for airplay:\n\n`
-      + `${title}\n\nThank you!`,
+    const params = new URLSearchParams();
+    params.set('subject', `WAV request — ${title}`);
+    params.set(
+      'body',
+      `Hi,\n\nI'm programming on Radio Now and would like a broadcast WAV for airplay:\n\n${title}\n\nThank you!`,
     );
-    return `mailto:${email}?subject=${subject}&body=${body}`;
+    return `mailto:${email}?${params.toString()}`;
+  },
+
+  openWavRequestMailto(song) {
+    const email = this.normalizeContactEmail(song?.contactEmail);
+    const href = this.wavRequestMailtoHref(song);
+    if (!email || !href) return { ok: false, email: '' };
+
+    const link = document.createElement('a');
+    link.href = href;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    return { ok: true, email };
+  },
+
+  async copyText(text) {
+    const value = String(text || '').trim();
+    if (!value) return false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        return true;
+      }
+    } catch (err) {
+      /* fall through */
+    }
+
+    const input = document.createElement('textarea');
+    input.value = value;
+    input.setAttribute('readonly', '');
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    document.body.appendChild(input);
+    input.select();
+    const copied = document.execCommand('copy');
+    input.remove();
+    return copied;
   },
 };
