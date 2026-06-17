@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -46,6 +46,7 @@ jobs:
           }
 
       - name: Commit catalog updates
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -60,8 +61,21 @@ jobs:
           else
             echo "WARNING: covers changed but songs.json did not — check sync output path"
           fi
-          git commit -m "Sync catalog from Google Sheet"
-          git push
+          git commit -m "Sync catalog from Google Sheet [skip ci]"
+          pushed=0
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main
+            if git push origin main; then
+              pushed=1
+              break
+            fi
+            echo "Push attempt $attempt failed; retrying after rebase..."
+            sleep 3
+          done
+          if [ "$pushed" -ne 1 ]; then
+            echo "::warning::Could not push catalog sync commit; deploy will still use synced files from this run"
+            exit 1
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
