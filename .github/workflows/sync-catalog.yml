@@ -1,10 +1,9 @@
-name: Sync Google Sheet to JSON
+﻿name: Sync Google Sheet to JSON
 
 on:
   workflow_dispatch:
-  schedule:
-    # Kept for manual/backup runs; primary sync runs in deploy-pages.yml
-    - cron: '8,38 * * * *'
+  # Schedule removed â€” deploy-pages.yml syncs every 10 min. A second scheduled
+  # sync here raced with deploy and caused failed Pages deploys.
 
 permissions:
   contents: write
