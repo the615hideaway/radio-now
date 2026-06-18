@@ -13,7 +13,11 @@ Endpoints: artist_login, artist_signup, artist_activate, artist_dashboard
 2. ARTIST SIGN UP (self-service)
 --------------------------------
 Artist goes to artist-dashboard.html → Artist Sign Up:
-  - Artist Name — must match catalog "Artist Name" exactly (e.g. David Parmley)
+  - Artist Name — any artist or band name (claim a label-created profile with the email they listed)
+  - Email + password
+
+Label goes to artist-dashboard.html → Label Sign Up:
+  - Label Name — any label name (use the same name on the Google Form when submitting songs)
   - Email + password
 
 Dashboard shows DJ downloads for songs matching that artist name.

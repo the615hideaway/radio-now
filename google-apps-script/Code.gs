@@ -3270,11 +3270,10 @@ function artistSignup_(payload) {
   }
 
   var profileFound = findProfileByName_(artistName);
-  var canSignup = artistNameExistsInCatalog_(artistName)
-    || (profileFound && canClaimProfile_(profileFound.profile, email));
-
-  if (!canSignup) {
-    throw new Error('Artist name must match your catalog listing on Radio Now, or use the email your label listed to claim a profile they created.');
+  if (profileFound
+    && String(profileFound.profile.ownership_status).toLowerCase() === 'unclaimed'
+    && !canClaimProfile_(profileFound.profile, email)) {
+    throw new Error('A profile for this artist name is waiting to be claimed. Sign up with the email your label listed, or contact Radio Now for help.');
   }
 
   var sheet = getArtistSheet_();
@@ -3393,10 +3392,6 @@ function labelSignup_(payload) {
   var existingName = findArtistByName_(labelName);
   if (existingName && String(existingName.artist.status).toLowerCase() === 'active') {
     throw new Error('A label account already exists for this name. Contact Radio Now if you need access.');
-  }
-
-  if (!labelNameExistsInCatalog_(labelName)) {
-    throw new Error('Label name must match your catalog listing on Radio Now exactly (e.g. 615 Hideaway Records).');
   }
 
   var sheet = getArtistSheet_();
