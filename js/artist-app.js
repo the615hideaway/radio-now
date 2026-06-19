@@ -26,12 +26,6 @@
   let currentPreviewId = null;
   let expandedDetailId = null;
 
-  AudioPlayer.onPreviewEnd = () => {
-    currentPreviewId = null;
-    renderSongs();
-    refreshDetailPanelIfOpen();
-  };
-
   function getArtistSlug() {
     return new URLSearchParams(window.location.search).get('slug') || '';
   }

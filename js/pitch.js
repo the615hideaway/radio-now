@@ -151,7 +151,7 @@ const TurnkeyPitch = {
       <section class="turnkey-pitch turnkey-pitch--strip" aria-label="DJ catalog preview">
         <div class="turnkey-strip-main">
           <span class="turnkey-strip-badge"><i class="fa-solid fa-tower-broadcast"></i> FREE DJ account</span>
-          <p>Preview the catalog — 20-second clips, browse artists, and try a free one-sheet PDF. Sign up free to download full turn-key folders (<strong>${this.namingExample}</strong>).</p>
+          <p>Preview the catalog, browse artists, and try a free one-sheet PDF. Sign up free to download full turn-key folders (<strong>${this.namingExample}</strong>).</p>
         </div>
       </section>`;
   },

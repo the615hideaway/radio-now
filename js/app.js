@@ -38,12 +38,6 @@
   let currentPreviewId = null;
   const catalogRecentLimit = CONFIG.catalogPageSize || 20;
 
-  AudioPlayer.onPreviewEnd = () => {
-    currentPreviewId = null;
-    renderCatalog();
-    refreshDetailPanelIfOpen();
-  };
-
   function isAuthenticated() {
     return DjAuth.isAuthenticated();
   }
