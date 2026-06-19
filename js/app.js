@@ -205,6 +205,10 @@
 
   function bindPreviewButtons(root) {
     root.querySelectorAll('.preview-trigger-btn').forEach((btn) => {
+      btn.addEventListener('mouseenter', () => {
+        const song = allSongs.find((s) => s.id === btn.dataset.id);
+        if (song) AudioPlayer.prefetch(song);
+      });
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         playSongPreview(btn.dataset.id);
@@ -549,6 +553,12 @@
   function initSpotlightDelegation() {
     if (!spotlightList || spotlightList.dataset.delegationBound) return;
     spotlightList.dataset.delegationBound = '1';
+    spotlightList.addEventListener('mouseover', (event) => {
+      const previewBtn = event.target.closest('.preview-trigger-btn');
+      if (!previewBtn?.dataset.id) return;
+      const song = allSongs.find((s) => s.id === previewBtn.dataset.id);
+      if (song) AudioPlayer.prefetch(song);
+    });
     spotlightList.addEventListener('click', (event) => {
       const previewBtn = event.target.closest('.preview-trigger-btn');
       if (previewBtn?.dataset.id) {
