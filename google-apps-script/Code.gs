@@ -376,7 +376,7 @@ const COLUMN_MAP = {
   recordLabel: ['Record Label', 'Label'],
   contactEmail: ['Contact E-Mail', 'Contact Email', 'Email'],
   releaseType: ['TAG - Album/Single', 'Album/Single', 'Release Type'],
-  albumName: ['Album Name', 'Album'],
+  albumName: ['Album Title', 'Album Name', 'Album'],
   releaseDate: ['Release Date', 'Radio Now Release', 'Added Date'],
   spotlightPriority: ['Spotlight Priority', 'Spotlight'],
   spotlightUntil: ['Spotlight Until', 'Spotlight End'],
@@ -3895,7 +3895,7 @@ function spotlightAdminList_(token) {
   return {
     success: true,
     spotlights: listSpotlightsFromSheet_(),
-    maxSlots: 12,
+    maxSlots: 20,
     defaultDays: 30,
   };
 }
@@ -3912,8 +3912,8 @@ function spotlightAdminSave_(token, payload) {
     return { success: true, spotlights: [], saved: 0 };
   }
 
-  if (items.length > 12) {
-    throw new Error('Too many spotlight picks (max 12).');
+  if (items.length > 20) {
+    throw new Error('Too many spotlight picks (max 20).');
   }
 
   var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/Chicago', "yyyy-MM-dd'T'HH:mm:ss");

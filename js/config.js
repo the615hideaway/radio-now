@@ -39,7 +39,7 @@ const CONFIG = {
   queueKey: 'radio_now_queue',
   downloadQueueKey: 'radio_now_download_queue',
 
-  catalogPageSize: 40,
+  catalogPageSize: 20,
 
   // WAV files stay in the label Drive folder (not DJ downloads). Match MP3 naming.
   wavFolderId: '137edNXYOv3xTVy7q4o1NKcTGMyshzR7MtN1BthqeXydD1Gwq-0V7JsRQR-9tXSYR45rsILzX',
@@ -62,7 +62,7 @@ const CONFIG = {
     labelNewReleaseDays: 30,
     labelNewReleaseScore: 75,
     houseArtistScore: 100,
-    maxSlots: 12,
+    maxSlots: 20,
     defaultDays: 30,
     autoFillCount: 5,
     autoFillScore: 80,

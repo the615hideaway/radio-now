@@ -7,7 +7,7 @@
 
   let catalogSongs = [];
   let picks = [];
-  let maxSlots = CONFIG.spotlight?.maxSlots || 12;
+  let maxSlots = CONFIG.spotlight?.maxSlots || 20;
 
   function pickKey(item) {
     return `${item.artistName}|${item.songTitle}`.toLowerCase();

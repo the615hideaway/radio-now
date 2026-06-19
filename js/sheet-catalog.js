@@ -61,7 +61,7 @@ const SheetCatalog = {
 
     const bandMemberLines = this.buildBandMemberLines(record);
     const releaseType = record['TAG - Album/Single'] || record['Album/Single'] || '';
-    const albumName = record['Album Name'] || record.Album || '';
+    const albumName = record['Album Title'] || record['Album Name'] || record.Album || '';
     const releaseDate = record['Release Date'] || record['Radio Now Release'] || record['Added Date'] || '';
     const spotlightPriority = record['Spotlight Priority'] || record.Spotlight || '';
     const spotlightUntil = record['Spotlight Until'] || record['Spotlight End'] || '';

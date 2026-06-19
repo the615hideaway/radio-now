@@ -16,6 +16,7 @@
   const nowPlayingArtist = document.getElementById('now-playing-artist');
   const playQueueBtn = document.getElementById('play-queue-btn');
   const skipQueueBtn = document.getElementById('skip-queue-btn');
+  const detailPanel = document.getElementById('detail-panel');
 
   let allSongs = [];
   let artist = null;
@@ -23,6 +24,7 @@
   let downloadQueue = [];
   let queuePlayIndex = -1;
   let currentPreviewId = null;
+  let expandedDetailId = null;
 
   function getArtistSlug() {
     return new URLSearchParams(window.location.search).get('slug') || '';
@@ -72,6 +74,218 @@
     downloadZipBtn.disabled = downloadQueue.length === 0;
   }
 
+  function renderContactEmailHtml(raw) {
+    const email = Utils.normalizeContactEmail(raw);
+    if (!email) return '—';
+    return `<a href="mailto:${Utils.escapeHtml(email)}">${Utils.escapeHtml(email)}</a>`;
+  }
+
+  function renderWavRequestHtml(song) {
+    const email = Utils.normalizeContactEmail(song.contactEmail);
+    const contactLine = email
+      ? renderContactEmailHtml(song.contactEmail)
+      : 'the artist or label listed on this track';
+    const canSend = typeof WavRequest !== 'undefined' && WavRequest.canSendForMe();
+    const fromEmail = CONFIG.wavRequest?.fromEmail || 'radio@the615hideaway.com';
+
+    return `
+      <div class="detail-wav-request">
+        <label><i class="fa-solid fa-envelope"></i> Need WAV for airplay?</label>
+        <p>Turn-key folders include <strong>MP3</strong>, cover art, and a one-sheet PDF. For broadcast WAV, Radio Now can email the artist for you.</p>
+        ${email
+    ? `<div class="detail-wav-request-actions">
+            ${canSend
+    ? `<button type="button" class="btn btn-primary detail-wav-send-btn" id="detail-wav-send-btn">
+                  <i class="fa-solid fa-paper-plane"></i> Send WAV request for me
+                </button>
+                <p class="detail-wav-request-note">One click — Radio Now emails ${Utils.escapeHtml(contactLine)} from <strong>${Utils.escapeHtml(fromEmail)}</strong> with your DJ name, station, show, and email so they can reply to you.</p>`
+    : `<p class="detail-wav-request-note"><a href="dj-dashboard.html">Sign in with your DJ account</a> to send a WAV request in one click.</p>`}
+            <p class="detail-wav-request-status hidden" id="detail-wav-request-status" role="status"></p>
+          </div>`
+    : `<p class="detail-wav-request-note">No contact email on file for this track — reach out to ${contactLine}.</p>`}
+      </div>`;
+  }
+
+  function bindWavRequestButton(song) {
+    const sendBtn = document.getElementById('detail-wav-send-btn');
+    const status = document.getElementById('detail-wav-request-status');
+
+    const showStatus = (message) => {
+      if (!status) return;
+      status.classList.remove('hidden');
+      status.textContent = message;
+    };
+
+    sendBtn?.addEventListener('click', async () => {
+      const original = sendBtn.innerHTML;
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending…';
+      try {
+        const result = await WavRequest.sendForMe(song);
+        showStatus(`Sent to ${result.sentTo}. The artist can reply directly to you at ${result.replyTo || 'your DJ email'}.`);
+      } catch (err) {
+        alert(err.message || 'Could not send WAV request.');
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = original;
+      }
+    });
+  }
+
+  function renderPlayButton(song) {
+    if (!AudioPlayer.hasPreview(song)) {
+      return '<span class="muted">No preview available</span>';
+    }
+    const isPlaying = currentPreviewId === song.id;
+    return `
+      <button type="button" class="btn btn-secondary preview-trigger-btn ${isPlaying ? 'is-playing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+        <i class="fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play'}"></i>
+        ${isPlaying ? 'Playing' : 'Play Preview'}
+      </button>`;
+  }
+
+  function hideDetailPanel() {
+    detailPanel.classList.add('hidden');
+    detailPanel.innerHTML = '';
+  }
+
+  function renderDetailPanel(song, shouldScroll = true) {
+    const inQueue = queue.some((q) => q.id === song.id);
+    const inDownload = downloadQueue.some((d) => d.id === song.id);
+    const albumLine = song.albumName
+      ? `<p class="detail-album"><i class="fa-solid fa-compact-disc" aria-hidden="true"></i> ${Utils.escapeHtml(song.albumName)}</p>`
+      : '';
+
+    detailPanel.innerHTML = `
+      <div class="detail-panel-inner">
+        <div class="detail-panel-header">
+          <div class="detail-hero">
+            <div class="detail-cover">${renderCover(song)}</div>
+            <div class="detail-heading">
+              <h2>${Utils.escapeHtml(song.songTitle)}</h2>
+              <p class="detail-artist">${Utils.escapeHtml(song.artistName)}</p>
+              ${albumLine}
+              <div class="song-tags">
+                ${song.year ? `<span>${Utils.escapeHtml(song.year)}</span>` : ''}
+                ${song.songTime ? `<span>${Utils.escapeHtml(song.songTime)}</span>` : ''}
+                ${song.musicStyle ? `<span>${Utils.escapeHtml(song.musicStyle)}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-ghost detail-close-btn" id="detail-close-btn" aria-label="Close details">
+            <i class="fa-solid fa-xmark"></i> Close
+          </button>
+        </div>
+        <div class="detail-preview">
+          ${renderPlayButton(song)}
+        </div>
+        <div class="detail-queue-actions">
+          <button class="btn btn-secondary add-download-detail-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+            <i class="fa-solid fa-download"></i> ${inDownload ? 'In Download Queue' : 'Add to Download Queue'}
+          </button>
+          <button class="btn btn-primary add-queue-detail-btn" data-id="${Utils.escapeHtml(song.id)}">
+            <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'In DJ Queue' : 'Add to DJ Queue'}
+          </button>
+        </div>
+        <div class="detail-description">
+          <label>Description</label>
+          <p>${Utils.escapeHtml(song.description || '—')}</p>
+        </div>
+        <div class="detail-grid">
+          <div><label>Band Members</label>${OneSheet.renderBandMembersHtml(song)}</div>
+          <div><label>Songwriter</label><p>${Utils.escapeHtml(song.songwriter || '—')}</p></div>
+          <div><label>Featured Artist</label><p>${Utils.escapeHtml(song.featuredArtist || '—')}</p></div>
+          <div><label>Record Label</label><p>${Utils.escapeHtml(song.recordLabel || '—')}</p></div>
+          <div><label>Contact E-Mail</label><p>${renderContactEmailHtml(song.contactEmail)}</p></div>
+          <div><label>Website</label><p>${song.website ? `<a href="${Utils.escapeHtml(song.website)}" target="_blank" rel="noopener">${Utils.escapeHtml(song.website)}</a>` : '—'}</p></div>
+        </div>
+        ${renderWavRequestHtml(song)}
+        <div class="detail-downloads">
+          <button class="btn btn-secondary download-onesheet-btn" type="button">
+            <i class="fa-solid fa-file-pdf"></i> Download One-Sheet
+          </button>
+          ${song.mp3 ? `<button type="button" class="btn btn-secondary download-track-btn" data-format="mp3"><i class="fa-solid fa-download"></i> MP3</button>` : ''}
+        </div>
+        <div class="detail-panel-footer">
+          <button class="btn btn-ghost detail-close-btn detail-close-btn--bottom" aria-label="Close details">
+            <i class="fa-solid fa-xmark"></i> Close
+          </button>
+        </div>
+      </div>`;
+
+    detailPanel.querySelectorAll('.detail-close-btn').forEach((btn) => {
+      btn.addEventListener('click', closeDetail);
+    });
+    detailPanel.querySelector('.add-queue-detail-btn').addEventListener('click', () => {
+      toggleQueue(song.id);
+      renderDetailPanel(allSongs.find((s) => s.id === song.id));
+    });
+    detailPanel.querySelector('.add-download-detail-btn').addEventListener('click', () => {
+      toggleDownloadQueue(song.id);
+      renderDetailPanel(allSongs.find((s) => s.id === song.id));
+    });
+
+    detailPanel.querySelectorAll('.download-track-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (!song.mp3) return;
+        RadioDB.triggerFileDownload(song.mp3, Utils.safeFilename(song.artistName, song.songTitle, 'mp3'));
+        DjActivity.log(song, 'download_mp3', 'mp3');
+      });
+    });
+
+    const downloadBtn = detailPanel.querySelector('.download-onesheet-btn');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', async () => {
+        const originalHtml = downloadBtn.innerHTML;
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating PDF…';
+        try {
+          await OneSheet.downloadOneSheet(song);
+          DjActivity.log(song, 'download_onesheet', 'pdf');
+        } catch (err) {
+          alert(err.message || 'Could not download one-sheet PDF.');
+        } finally {
+          downloadBtn.disabled = false;
+          downloadBtn.innerHTML = originalHtml;
+        }
+      });
+    }
+
+    detailPanel.querySelectorAll('.preview-trigger-btn').forEach((btn) => {
+      btn.addEventListener('click', () => playSongPreview(btn.dataset.id));
+    });
+    bindWavRequestButton(song);
+    detailPanel.classList.remove('hidden');
+    if (shouldScroll) detailPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function openDetail(id) {
+    if (expandedDetailId === id) {
+      closeDetail();
+      return;
+    }
+
+    const song = allSongs.find((s) => s.id === id);
+    if (!song) return;
+
+    expandedDetailId = id;
+    renderDetailPanel(song);
+    renderSongs();
+  }
+
+  function closeDetail() {
+    expandedDetailId = null;
+    hideDetailPanel();
+    renderSongs();
+  }
+
+  function refreshDetailPanelIfOpen() {
+    if (!expandedDetailId) return;
+    const song = allSongs.find((s) => s.id === expandedDetailId);
+    if (song) renderDetailPanel(song, false);
+    else closeDetail();
+  }
+
   function renderCover(song) {
     const url = Utils.resolveCoverUrl(song);
     if (url) {
@@ -107,6 +321,7 @@
     }
 
     renderSongs();
+    refreshDetailPanelIfOpen();
   }
 
   function renderProfile() {
@@ -156,13 +371,18 @@
     const inQueue = queue.some((q) => q.id === song.id);
     const inDownload = downloadQueue.some((d) => d.id === song.id);
     const isPlaying = currentPreviewId === song.id;
+    const isOpen = expandedDetailId === song.id;
     const hasPreview = AudioPlayer.hasPreview(song);
+    const albumLine = song.albumName
+      ? `<span class="profile-song-album">${Utils.escapeHtml(song.albumName)}</span>`
+      : '';
 
     return `
-      <div class="profile-song-row ${isPlaying ? 'is-previewing' : ''} ${inQueue ? 'in-queue' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+      <div class="profile-song-row ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''} ${inQueue ? 'in-queue' : ''}" data-id="${Utils.escapeHtml(song.id)}">
         <div class="profile-song-cover">${renderCover(song)}</div>
         <div class="profile-song-meta">
           <strong>${Utils.escapeHtml(song.songTitle)}</strong>
+          ${albumLine}
           <span>
             ${song.year ? Utils.escapeHtml(song.year) : ''}
             ${song.musicStyle ? ` · ${Utils.escapeHtml(song.musicStyle)}` : ''}
@@ -174,6 +394,9 @@
             <button type="button" class="btn btn-secondary btn-sm preview-trigger-btn ${isPlaying ? 'is-playing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
               <i class="fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play'}"></i> Play
             </button>` : ''}
+          <button type="button" class="btn btn-secondary btn-sm details-btn ${isOpen ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+            Song Details
+          </button>
           <button type="button" class="btn btn-primary btn-sm add-queue-btn ${inQueue ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
             <i class="fa-solid ${inQueue ? 'fa-check' : 'fa-plus'}"></i> ${inQueue ? 'Queued' : 'Queue'}
           </button>
@@ -184,31 +407,75 @@
       </div>`;
   }
 
-  function renderSongs() {
-    if (!artist) return;
+  function bindSongRows(root) {
+    if (!root) return;
 
-    artistSongs.innerHTML = `
-      <div class="profile-songs-header">
-        <h2>Songs <span class="profile-songs-count">(${artist.songCount})</span></h2>
-        <p class="profile-songs-note">Newest releases listed first.</p>
-      </div>
-      <div class="profile-song-list">
-        ${artist.songs.map((song) => renderSongRow(song)).join('')}
-      </div>`;
-
-    renderProfile();
-
-    artistSongs.querySelectorAll('.preview-trigger-btn').forEach((btn) => {
+    root.querySelectorAll('.preview-trigger-btn').forEach((btn) => {
       btn.addEventListener('click', () => playSongPreview(btn.dataset.id));
     });
 
-    artistSongs.querySelectorAll('.add-queue-btn').forEach((btn) => {
+    root.querySelectorAll('.details-btn').forEach((btn) => {
+      btn.addEventListener('click', () => openDetail(btn.dataset.id));
+    });
+
+    root.querySelectorAll('.add-queue-btn').forEach((btn) => {
       btn.addEventListener('click', () => toggleQueue(btn.dataset.id));
     });
 
-    artistSongs.querySelectorAll('.download-toggle').forEach((btn) => {
+    root.querySelectorAll('.download-toggle').forEach((btn) => {
       btn.addEventListener('click', () => toggleDownloadQueue(btn.dataset.id));
     });
+  }
+
+  function renderReleaseSection(title, icon, songs, note) {
+    if (!songs.length) return '';
+
+    return `
+      <section class="profile-release-section">
+        <div class="profile-release-header">
+          <h3><i class="fa-solid ${icon}" aria-hidden="true"></i> ${title} <span class="profile-songs-count">(${songs.length})</span></h3>
+          ${note ? `<p class="profile-songs-note">${note}</p>` : ''}
+        </div>
+        <div class="profile-song-list">
+          ${songs.map((song) => renderSongRow(song)).join('')}
+        </div>
+      </section>`;
+  }
+
+  function renderAlbumSection(album) {
+    return `
+      <section class="profile-release-section profile-album-section">
+        <div class="profile-release-header">
+          <h3><i class="fa-solid fa-compact-disc" aria-hidden="true"></i> Album: ${Utils.escapeHtml(album.name)} <span class="profile-songs-count">(${album.songs.length})</span></h3>
+        </div>
+        <div class="profile-song-list">
+          ${album.songs.map((song) => renderSongRow(song)).join('')}
+        </div>
+      </section>`;
+  }
+
+  function renderSongs() {
+    if (!artist) return;
+
+    const catalog = Utils.groupArtistCatalog(artist.songs);
+    const albumSections = catalog.albums.map((album) => renderAlbumSection(album)).join('');
+    const singlesSection = renderReleaseSection(
+      'Singles',
+      'fa-music',
+      catalog.singles,
+      'Standalone singles and tracks released one at a time.',
+    );
+
+    artistSongs.innerHTML = `
+      <div class="profile-songs-header">
+        <h2>Catalog <span class="profile-songs-count">(${artist.songCount})</span></h2>
+        <p class="profile-songs-note">Albums and singles — newest releases listed first.</p>
+      </div>
+      ${albumSections}
+      ${singlesSection}`;
+
+    renderProfile();
+    bindSongRows(artistSongs);
   }
 
   function queueAllSongs() {

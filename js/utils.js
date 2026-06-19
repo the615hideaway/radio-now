@@ -274,12 +274,87 @@ const Utils = {
     return parseInt(String(song.year || ''), 10) || 0;
   },
 
+  parseReleaseDateMs(song) {
+    const raw = String(song?.releaseDate || '').trim();
+    if (raw) {
+      const parsed = Date.parse(raw);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+    const year = this.songYear(song);
+    return year ? Date.parse(`${year}-12-31`) : 0;
+  },
+
+  compareSongsByReleaseDate(a, b) {
+    const dateDiff = this.parseReleaseDateMs(b) - this.parseReleaseDateMs(a);
+    if (dateDiff !== 0) return dateDiff;
+    return this.compareSongsNewestFirst(a, b);
+  },
+
   compareSongsNewestFirst(a, b) {
     const yearDiff = this.songYear(b) - this.songYear(a);
     if (yearDiff !== 0) return yearDiff;
     const indexDiff = (b.catalogIndex ?? -1) - (a.catalogIndex ?? -1);
     if (indexDiff !== 0) return indexDiff;
     return String(a.songTitle || '').localeCompare(String(b.songTitle || ''));
+  },
+
+  normalizeReleaseType(song) {
+    return String(song?.releaseType || '').trim().toLowerCase();
+  },
+
+  isSingleRelease(song) {
+    const type = this.normalizeReleaseType(song);
+    return type === 'single' || type === 'singles';
+  },
+
+  groupArtistCatalog(songs) {
+    const albumCounts = new Map();
+    songs.forEach((song) => {
+      const album = String(song.albumName || '').trim();
+      if (album) albumCounts.set(album, (albumCounts.get(album) || 0) + 1);
+    });
+
+    const albums = new Map();
+    const singles = [];
+
+    songs.forEach((song) => {
+      const album = String(song.albumName || '').trim();
+      const type = this.normalizeReleaseType(song);
+
+      if (this.isSingleRelease(song)) {
+        singles.push(song);
+        return;
+      }
+
+      const isAlbum = album && (
+        type === 'album_track'
+        || type === 'album'
+        || albumCounts.get(album) >= 2
+      );
+
+      if (isAlbum) {
+        if (!albums.has(album)) albums.set(album, []);
+        albums.get(album).push(song);
+      } else {
+        singles.push(song);
+      }
+    });
+
+    const albumSections = Array.from(albums.entries())
+      .map(([name, tracks]) => ({
+        name,
+        songs: [...tracks].sort((a, b) => this.compareSongsByReleaseDate(a, b)),
+      }))
+      .sort((a, b) => {
+        const newestA = this.parseReleaseDateMs(a.songs[0]);
+        const newestB = this.parseReleaseDateMs(b.songs[0]);
+        return newestB - newestA;
+      });
+
+    return {
+      albums: albumSections,
+      singles: [...singles].sort((a, b) => this.compareSongsByReleaseDate(a, b)),
+    };
   },
 
   groupSongsByArtist(songs) {
@@ -309,7 +384,7 @@ const Utils = {
 
     return Array.from(groups.values())
       .map((group) => {
-        const sortedSongs = [...group.songs].sort((a, b) => this.compareSongsNewestFirst(a, b));
+        const sortedSongs = [...group.songs].sort((a, b) => this.compareSongsByReleaseDate(a, b));
         let slug = this.artistSlug(group.name);
         const baseSlug = slug;
         let suffix = 2;

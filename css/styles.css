@@ -4083,6 +4083,106 @@ select { min-width: 130px; width: auto; }
   color: var(--gold-bright);
 }
 
+.profile-song-album {
+  display: block;
+  color: var(--gold);
+  font-size: 0.88rem;
+  margin-bottom: 0.15rem;
+}
+
+.profile-song-row.is-open {
+  background: rgba(244, 196, 48, 0.08);
+}
+
+.profile-release-section {
+  border-top: 1px solid var(--border);
+}
+
+.profile-release-header {
+  padding: 0.9rem 1.25rem 0.65rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.profile-release-header h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.profile-album-section .profile-release-header {
+  background: rgba(201, 162, 39, 0.06);
+}
+
+.detail-album {
+  margin: 0.15rem 0 0.35rem;
+  color: var(--gold);
+  font-size: 0.95rem;
+}
+
+.catalog-list-note {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.catalog-artist-browser {
+  margin-top: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.catalog-artist-browser-inner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.25rem;
+  align-items: end;
+  padding: 1.25rem;
+}
+
+.catalog-artist-browser-copy h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.2rem;
+  color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.catalog-artist-browser-copy p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  max-width: 42rem;
+}
+
+.catalog-artist-browser-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: flex-end;
+}
+
+.catalog-artist-browser-picker label {
+  display: block;
+  width: 100%;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.catalog-artist-browser-picker select {
+  min-width: 220px;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
 /* Empty state */
 
 .empty-state {
@@ -4215,6 +4315,10 @@ select { min-width: 130px; width: auto; }
   }
 
   .form-grid--two {
+    grid-template-columns: 1fr;
+  }
+
+  .catalog-artist-browser-inner {
     grid-template-columns: 1fr;
   }
 

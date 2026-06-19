@@ -166,7 +166,7 @@ const Spotlight = {
     return [...songs].sort((a, b) => {
       const scoreDiff = this.score(b) - this.score(a);
       if (scoreDiff !== 0) return scoreDiff;
-      return Utils.compareSongsNewestFirst(a, b);
+      return Utils.compareSongsByReleaseDate(a, b);
     });
   },
 };

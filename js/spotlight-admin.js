@@ -63,7 +63,7 @@ const SpotlightAdmin = {
     if (exists) {
       next = this.picks.filter((pick) => this.pickKey(pick.artistName, pick.songTitle) !== key);
     } else {
-      const maxSlots = CONFIG.spotlight?.maxSlots || 12;
+      const maxSlots = CONFIG.spotlight?.maxSlots || 20;
       if (this.picks.length >= maxSlots) {
         throw new Error(`Maximum ${maxSlots} spotlight songs. Remove one from Spotlight admin first.`);
       }

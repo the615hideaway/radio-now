@@ -146,7 +146,8 @@ function Build-SongFromRecord {
   $releaseType = if ($Record['TAG - Album/Single']) { $Record['TAG - Album/Single'] }
     elseif ($Record['Album/Single']) { $Record['Album/Single'] }
     else { '' }
-  $albumName = if ($Record['Album Name']) { $Record['Album Name'] }
+  $albumName = if ($Record['Album Title']) { $Record['Album Title'] }
+    elseif ($Record['Album Name']) { $Record['Album Name'] }
     elseif ($Record['Album']) { $Record['Album'] }
     else { '' }
   $releaseDate = $Record['Release Date']

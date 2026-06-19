@@ -21,6 +21,7 @@
   const clearDownloadBtn = document.getElementById('clear-download-btn');
   const downloadZipBtn = document.getElementById('download-zip-btn');
   const detailPanel = document.getElementById('detail-panel');
+  const catalogArtistBrowser = document.getElementById('catalog-artist-browser');
   const nowPlaying = document.getElementById('now-playing');
 
   const nowPlayingTitle = document.getElementById('now-playing-title');
@@ -35,7 +36,7 @@
   let queuePlayIndex = -1;
   let expandedDetailId = null;
   let currentPreviewId = null;
-  let catalogVisibleCount = CONFIG.catalogPageSize || 40;
+  const catalogRecentLimit = CONFIG.catalogPageSize || 20;
 
   function isAuthenticated() {
     return DjAuth.isAuthenticated();
@@ -264,9 +265,49 @@
       hideDetailPanel();
     }
 
-    catalogVisibleCount = CONFIG.catalogPageSize || 40;
     renderCatalog();
+    renderArtistBrowser();
     updateStats();
+  }
+
+  function renderArtistBrowser() {
+    if (!catalogArtistBrowser) return;
+
+    const artists = Utils.groupSongsByArtist(allSongs);
+    if (!artists.length) {
+      catalogArtistBrowser.classList.add('hidden');
+      catalogArtistBrowser.innerHTML = '';
+      return;
+    }
+
+    catalogArtistBrowser.classList.remove('hidden');
+    catalogArtistBrowser.innerHTML = `
+      <div class="catalog-artist-browser-inner">
+        <div class="catalog-artist-browser-copy">
+          <h2><i class="fa-solid fa-users" aria-hidden="true"></i> Browse by Artist</h2>
+          <p>Looking for back catalog or every release from one artist? Open their artist page for full albums, singles, and song details.</p>
+        </div>
+        <div class="catalog-artist-browser-picker">
+          <label for="catalog-artist-select">Jump to artist</label>
+          <select id="catalog-artist-select" aria-label="Select an artist">
+            <option value="">Choose an artist…</option>
+            ${artists.map((entry) => `
+              <option value="${Utils.escapeHtml(entry.slug)}">${Utils.escapeHtml(entry.name)} (${entry.songCount})</option>
+            `).join('')}
+          </select>
+          <a href="artists.html" class="btn btn-secondary">
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            All Artists
+          </a>
+        </div>
+      </div>`;
+
+    const select = catalogArtistBrowser.querySelector('#catalog-artist-select');
+    select?.addEventListener('change', () => {
+      const slug = select.value;
+      if (!slug) return;
+      window.location.href = `artist.html?slug=${encodeURIComponent(slug)}`;
+    });
   }
 
   function hideDetailPanel() {
@@ -511,8 +552,13 @@
       return;
     }
 
-    const spotlightSongs = filteredSongs.filter((song) => Spotlight.score(song) > 0);
-    const catalogSongs = filteredSongs.filter((song) => Spotlight.score(song) === 0);
+    const maxSpotlightSlots = CONFIG.spotlight?.maxSlots || 20;
+    const spotlightSongs = filteredSongs
+      .filter((song) => Spotlight.score(song) > 0)
+      .slice(0, maxSpotlightSlots);
+    const catalogSongs = [...filteredSongs.filter((song) => Spotlight.score(song) === 0)]
+      .sort((a, b) => Utils.compareSongsByReleaseDate(a, b))
+      .slice(0, catalogRecentLimit);
 
     if (spotlightList) {
       if (spotlightSongs.length) {
@@ -532,31 +578,22 @@
     }
 
     if (catalogSongs.length) {
-      const pageSize = CONFIG.catalogPageSize || 40;
-      const visibleSongs = catalogSongs.slice(0, catalogVisibleCount);
-      const hiddenCount = catalogSongs.length - visibleSongs.length;
-      const loadMoreHtml = hiddenCount > 0
-        ? `<div class="catalog-load-more">
-            <button type="button" class="btn btn-secondary" id="catalog-load-more-btn">
-              Show ${Math.min(pageSize, hiddenCount)} more (${hiddenCount} remaining)
-            </button>
-          </div>`
-        : '';
-
       catalogGrid.innerHTML = `
-        ${spotlightSongs.length ? '<div class="catalog-list-header"><h2>All Tracks</h2></div>' : ''}
-        <div class="catalog-list-inner">
-          ${visibleSongs.map((song) => renderCatalogRow(song)).join('')}
+        <div class="catalog-list-header">
+          <h2>Latest Releases</h2>
+          <p class="catalog-list-note">Showing the ${catalogSongs.length} most recent tracks by release date. Browse artist pages for full back catalog.</p>
         </div>
-        ${loadMoreHtml}`;
-
-      const loadMoreBtn = catalogGrid.querySelector('#catalog-load-more-btn');
-      loadMoreBtn?.addEventListener('click', () => {
-        catalogVisibleCount += pageSize;
-        renderCatalog();
-      });
+        <div class="catalog-list-inner">
+          ${catalogSongs.map((song) => renderCatalogRow(song)).join('')}
+        </div>`;
     } else {
-      catalogGrid.innerHTML = '';
+      catalogGrid.innerHTML = spotlightSongs.length
+        ? ''
+        : `
+        <div class="empty-state">
+          <i class="fa-solid fa-music"></i>
+          <p>No songs match your search.</p>
+        </div>`;
     }
 
     bindCatalogRows(catalogGrid);
@@ -701,6 +738,7 @@
       populateFilters();
       syncQueuesWithStorage();
       filterSongs();
+      renderArtistBrowser();
 
     } catch (err) {
       catalogGrid.innerHTML = `
