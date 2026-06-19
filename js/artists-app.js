@@ -5,8 +5,6 @@
   const artistSearch = document.getElementById('artist-search');
   const clearSearchBtn = document.getElementById('clear-search-btn');
   const artistsGrid = document.getElementById('artists-grid');
-  const statArtists = document.getElementById('stat-artists');
-  const statSongs = document.getElementById('stat-songs');
   const connectionBanner = document.getElementById('connection-banner');
 
   let allArtists = [];
@@ -61,9 +59,6 @@
   }
 
   function renderArtists() {
-    statArtists.textContent = filteredArtists.length;
-    statSongs.textContent = filteredArtists.reduce((sum, artist) => sum + artist.songCount, 0);
-
     if (!filteredArtists.length) {
       artistsGrid.innerHTML = `
         <div class="empty-state">

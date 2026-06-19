@@ -278,35 +278,26 @@
       return;
     }
 
-    const songTotal = allSongs.length;
-    const artistTotal = artists.length;
-
     catalogArtistBrowser.classList.remove('hidden');
     catalogArtistBrowser.innerHTML = `
       <div class="catalog-artist-browser-inner">
-        <div class="catalog-artist-hero-stat" aria-label="${songTotal} songs from ${artistTotal} artists">
-          <span class="catalog-total-count" id="catalog-total-count">${songTotal}</span>
-          <span class="catalog-total-label">Songs · ${artistTotal} Artists</span>
+        <div class="catalog-artist-browser-copy">
+          <h2><i class="fa-solid fa-users" aria-hidden="true"></i> Browse by Artist</h2>
+          <p>See what’s new below, then pick an artist to dig into back catalog, albums, and singles for your show.</p>
         </div>
-        <div class="catalog-artist-browser-main">
-          <div class="catalog-artist-browser-copy">
-            <h2><i class="fa-solid fa-users" aria-hidden="true"></i> Browse by Artist</h2>
-            <p>See what’s new below, then pick an artist to dig into back catalog, albums, and singles for your show.</p>
-          </div>
-          <div class="catalog-artist-browser-picker">
-            <label for="catalog-artist-select">Choose an artist</label>
-            <div class="catalog-artist-browser-controls">
-              <select id="catalog-artist-select" class="catalog-artist-select" aria-label="Select an artist">
-                <option value="">Choose an artist…</option>
-                ${artists.map((entry) => `
-                  <option value="${Utils.escapeHtml(entry.slug)}">${Utils.escapeHtml(entry.name)} (${entry.songCount} songs)</option>
-                `).join('')}
-              </select>
-              <a href="artists.html" class="btn btn-secondary btn-lg">
-                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                All Artists
-              </a>
-            </div>
+        <div class="catalog-artist-browser-picker">
+          <label for="catalog-artist-select">Choose an artist</label>
+          <div class="catalog-artist-browser-controls">
+            <select id="catalog-artist-select" class="catalog-artist-select" aria-label="Select an artist">
+              <option value="">Choose an artist…</option>
+              ${artists.map((entry) => `
+                <option value="${Utils.escapeHtml(entry.slug)}">${Utils.escapeHtml(entry.name)}</option>
+              `).join('')}
+            </select>
+            <a href="artists.html" class="btn btn-secondary btn-lg">
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              All Artists
+            </a>
           </div>
         </div>
       </div>`;
