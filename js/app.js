@@ -494,6 +494,7 @@
     const isPlaying = currentPreviewId === song.id;
     const isOpen = expandedDetailId === song.id;
     const inQueue = queue.some((q) => q.id === song.id);
+    const inDownload = downloadQueue.some((d) => d.id === song.id);
     const badge = Spotlight.badge(song);
     const hasPreview = AudioPlayer.hasPreview(song);
     const albumLine = song.albumName
@@ -501,7 +502,7 @@
       : '';
 
     return `
-      <article class="catalog-row ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''} ${inQueue ? 'in-queue' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+      <article class="catalog-row ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''} ${inQueue ? 'in-queue' : ''} ${inDownload ? 'in-download' : ''}" data-id="${Utils.escapeHtml(song.id)}">
         <div class="catalog-row-cover" aria-hidden="true">${renderCover(song)}</div>
         <div class="catalog-row-main">
           <p class="catalog-row-artist">${Utils.escapeHtml(song.artistName || 'Unknown Artist')}</p>
@@ -517,6 +518,14 @@
           >
             <i class="fa-solid ${inQueue ? 'fa-check' : 'fa-plus'}" aria-hidden="true"></i>
             ${inQueue ? 'Queued' : 'Queue'}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary add-download-row-btn ${inDownload ? 'active' : ''}"
+            data-id="${Utils.escapeHtml(song.id)}"
+          >
+            <i class="fa-solid fa-download" aria-hidden="true"></i>
+            ${inDownload ? 'In Downloads' : 'Download'}
           </button>
           ${hasPreview ? `
             <button
@@ -555,6 +564,14 @@
         event.preventDefault();
         event.stopPropagation();
         toggleQueue(btn.dataset.id);
+      });
+    });
+
+    root.querySelectorAll('.add-download-row-btn').forEach((btn) => {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleDownloadQueue(btn.dataset.id);
       });
     });
 

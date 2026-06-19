@@ -378,7 +378,7 @@
       : '';
 
     return `
-      <div class="profile-song-row ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''} ${inQueue ? 'in-queue' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+      <div class="profile-song-row ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''} ${inQueue ? 'in-queue' : ''} ${inDownload ? 'in-download' : ''}" data-id="${Utils.escapeHtml(song.id)}">
         <div class="profile-song-cover">${renderCover(song)}</div>
         <div class="profile-song-meta">
           <strong>${Utils.escapeHtml(song.songTitle)}</strong>
@@ -390,18 +390,18 @@
           </span>
         </div>
         <div class="profile-song-actions">
-          ${hasPreview ? `
-            <button type="button" class="btn btn-secondary btn-sm preview-trigger-btn ${isPlaying ? 'is-playing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
-              <i class="fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play'}"></i> Play
-            </button>` : ''}
-          <button type="button" class="btn btn-secondary btn-sm details-btn ${isOpen ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
-            Song Details
-          </button>
-          <button type="button" class="btn btn-primary btn-sm add-queue-btn ${inQueue ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+          <button type="button" class="btn btn-primary add-queue-btn ${inQueue ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
             <i class="fa-solid ${inQueue ? 'fa-check' : 'fa-plus'}"></i> ${inQueue ? 'Queued' : 'Queue'}
           </button>
-          <button type="button" class="btn btn-secondary btn-sm download-toggle ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
-            <i class="fa-solid fa-download"></i>
+          <button type="button" class="btn btn-secondary add-download-row-btn ${inDownload ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+            <i class="fa-solid fa-download"></i> ${inDownload ? 'In Downloads' : 'Download'}
+          </button>
+          ${hasPreview ? `
+            <button type="button" class="btn btn-secondary preview-trigger-btn ${isPlaying ? 'is-playing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+              <i class="fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play'}"></i> Play
+            </button>` : ''}
+          <button type="button" class="btn btn-secondary details-btn ${isOpen ? 'active' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+            Song Details
           </button>
         </div>
       </div>`;
@@ -422,7 +422,7 @@
       btn.addEventListener('click', () => toggleQueue(btn.dataset.id));
     });
 
-    root.querySelectorAll('.download-toggle').forEach((btn) => {
+    root.querySelectorAll('.add-download-row-btn').forEach((btn) => {
       btn.addEventListener('click', () => toggleDownloadQueue(btn.dataset.id));
     });
   }
