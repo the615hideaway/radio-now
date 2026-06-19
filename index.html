@@ -121,12 +121,9 @@
 
     <div class="layout">
       <main class="catalog-panel">
-        <section class="toolbar">
-          <div class="stats-row">
-            <div class="stat"><span id="stat-total">0</span><label>Songs</label></div>
-            <div class="stat"><span id="stat-queue">0</span><label>DJ Queue</label></div>
-            <div class="stat"><span id="stat-download">0</span><label>Downloads</label></div>
-          </div>
+        <section id="catalog-artist-browser" class="catalog-artist-browser catalog-artist-browser--hero hidden" aria-label="Browse artists"></section>
+
+        <section class="toolbar toolbar--catalog">
           <div class="filter-row">
             <div class="search-wrap">
               <i class="fa-solid fa-magnifying-glass"></i>
@@ -139,12 +136,7 @@
               <option value="">All years</option>
             </select>
             <button class="btn btn-secondary" id="clear-filters-btn">Clear</button>
-            <a href="charts.html" class="btn btn-secondary">
-              <i class="fa-solid fa-chart-simple" aria-hidden="true"></i>
-              View Charts
-            </a>
           </div>
-
         </section>
 
         <div id="turnkey-pitch-catalog" class="turnkey-pitch-catalog-wrap"></div>
@@ -154,8 +146,6 @@
         <section id="spotlight-list" class="catalog-spotlight hidden" aria-label="Spotlight releases"></section>
 
         <section id="catalog-grid" class="catalog-list" aria-live="polite"></section>
-
-        <section id="catalog-artist-browser" class="catalog-artist-browser hidden" aria-label="Browse artists"></section>
       </main>
 
       <aside class="queue-panel">

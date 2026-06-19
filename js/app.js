@@ -9,7 +9,6 @@
   const clearFiltersBtn = document.getElementById('clear-filters-btn');
   const catalogGrid = document.getElementById('catalog-grid');
   const spotlightList = document.getElementById('spotlight-list');
-  const statTotal = document.getElementById('stat-total');
   const statQueue = document.getElementById('stat-queue');
   const statDownload = document.getElementById('stat-download');
   const connectionBanner = document.getElementById('connection-banner');
@@ -218,9 +217,8 @@
   }
 
   function updateStats() {
-    statTotal.textContent = filteredSongs.length;
-    statQueue.textContent = queue.length;
-    statDownload.textContent = downloadQueue.length;
+    if (statQueue) statQueue.textContent = queue.length;
+    if (statDownload) statDownload.textContent = downloadQueue.length;
     downloadZipBtn.disabled = downloadQueue.length === 0;
   }
 
@@ -280,25 +278,36 @@
       return;
     }
 
+    const songTotal = allSongs.length;
+    const artistTotal = artists.length;
+
     catalogArtistBrowser.classList.remove('hidden');
     catalogArtistBrowser.innerHTML = `
       <div class="catalog-artist-browser-inner">
-        <div class="catalog-artist-browser-copy">
-          <h2><i class="fa-solid fa-users" aria-hidden="true"></i> Browse by Artist</h2>
-          <p>Looking for back catalog or every release from one artist? Open their artist page for full albums, singles, and song details.</p>
+        <div class="catalog-artist-hero-stat" aria-label="${songTotal} songs from ${artistTotal} artists">
+          <span class="catalog-total-count" id="catalog-total-count">${songTotal}</span>
+          <span class="catalog-total-label">Songs · ${artistTotal} Artists</span>
         </div>
-        <div class="catalog-artist-browser-picker">
-          <label for="catalog-artist-select">Jump to artist</label>
-          <select id="catalog-artist-select" aria-label="Select an artist">
-            <option value="">Choose an artist…</option>
-            ${artists.map((entry) => `
-              <option value="${Utils.escapeHtml(entry.slug)}">${Utils.escapeHtml(entry.name)} (${entry.songCount})</option>
-            `).join('')}
-          </select>
-          <a href="artists.html" class="btn btn-secondary">
-            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-            All Artists
-          </a>
+        <div class="catalog-artist-browser-main">
+          <div class="catalog-artist-browser-copy">
+            <h2><i class="fa-solid fa-users" aria-hidden="true"></i> Browse by Artist</h2>
+            <p>See what’s new below, then pick an artist to dig into back catalog, albums, and singles for your show.</p>
+          </div>
+          <div class="catalog-artist-browser-picker">
+            <label for="catalog-artist-select">Choose an artist</label>
+            <div class="catalog-artist-browser-controls">
+              <select id="catalog-artist-select" class="catalog-artist-select" aria-label="Select an artist">
+                <option value="">Choose an artist…</option>
+                ${artists.map((entry) => `
+                  <option value="${Utils.escapeHtml(entry.slug)}">${Utils.escapeHtml(entry.name)} (${entry.songCount} songs)</option>
+                `).join('')}
+              </select>
+              <a href="artists.html" class="btn btn-secondary btn-lg">
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                All Artists
+              </a>
+            </div>
+          </div>
         </div>
       </div>`;
 
@@ -359,6 +368,10 @@
     const inQueue = queue.some((q) => q.id === song.id);
     const inDownload = downloadQueue.some((d) => d.id === song.id);
 
+    const albumLine = song.albumName
+      ? `<p class="detail-album"><i class="fa-solid fa-compact-disc" aria-hidden="true"></i> ${Utils.escapeHtml(song.albumName)}</p>`
+      : '';
+
     detailPanel.innerHTML = `
       <div class="detail-panel-inner">
         <div class="detail-panel-header">
@@ -367,6 +380,7 @@
             <div class="detail-heading">
               <h2>${Utils.escapeHtml(song.songTitle)}</h2>
               <p class="detail-artist">${Utils.escapeHtml(song.artistName)}</p>
+              ${albumLine}
               <div class="song-tags">
                 ${song.year ? `<span>${Utils.escapeHtml(song.year)}</span>` : ''}
                 ${song.songTime ? `<span>${Utils.escapeHtml(song.songTime)}</span>` : ''}
@@ -488,35 +502,45 @@
   function renderCatalogRow(song) {
     const isPlaying = currentPreviewId === song.id;
     const isOpen = expandedDetailId === song.id;
+    const inQueue = queue.some((q) => q.id === song.id);
     const badge = Spotlight.badge(song);
     const hasPreview = AudioPlayer.hasPreview(song);
+    const albumLine = song.albumName
+      ? `<p class="catalog-row-album">${Utils.escapeHtml(song.albumName)}</p>`
+      : '';
 
     return `
-      <article class="catalog-row ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+      <article class="catalog-row ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''} ${inQueue ? 'in-queue' : ''}" data-id="${Utils.escapeHtml(song.id)}">
         <div class="catalog-row-cover" aria-hidden="true">${renderCover(song)}</div>
         <div class="catalog-row-main">
-          <p class="catalog-row-line">
-            <span class="catalog-row-artist">${Utils.escapeHtml(song.artistName || 'Unknown Artist')}</span>
-            <span class="catalog-row-sep" aria-hidden="true">—</span>
-            <span class="catalog-row-title">${Utils.escapeHtml(song.songTitle || 'Untitled')}</span>
-          </p>
+          <p class="catalog-row-artist">${Utils.escapeHtml(song.artistName || 'Unknown Artist')}</p>
+          <p class="catalog-row-title">${Utils.escapeHtml(song.songTitle || 'Untitled')}</p>
+          ${albumLine}
           ${badge ? `<span class="catalog-row-badge">${Utils.escapeHtml(badge)}</span>` : ''}
         </div>
         <div class="catalog-row-actions">
+          <button
+            type="button"
+            class="btn btn-primary add-queue-row-btn ${inQueue ? 'active' : ''}"
+            data-id="${Utils.escapeHtml(song.id)}"
+          >
+            <i class="fa-solid ${inQueue ? 'fa-check' : 'fa-plus'}" aria-hidden="true"></i>
+            ${inQueue ? 'Queued' : 'Queue'}
+          </button>
           ${hasPreview ? `
             <button
               type="button"
-              class="btn-icon preview-trigger-btn ${isPlaying ? 'is-playing' : ''}"
+              class="btn btn-secondary preview-trigger-btn ${isPlaying ? 'is-playing' : ''}"
               data-id="${Utils.escapeHtml(song.id)}"
               title="${isPlaying ? 'Playing preview' : 'Play preview'}"
               aria-label="${isPlaying ? 'Playing preview' : 'Play preview'}"
             >
               <i class="fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play'}" aria-hidden="true"></i>
-            </button>` : `
-            <span class="catalog-row-no-preview" title="No preview available">—</span>`}
+              ${isPlaying ? 'Playing' : 'Play'}
+            </button>` : ''}
           <button
             type="button"
-            class="btn btn-secondary btn-sm details-btn ${isOpen ? 'active' : ''}"
+            class="btn btn-secondary details-btn ${isOpen ? 'active' : ''}"
             data-id="${Utils.escapeHtml(song.id)}"
           >
             Song Details
@@ -532,6 +556,14 @@
       btn.addEventListener('click', (event) => {
         event.preventDefault();
         openDetail(btn.dataset.id);
+      });
+    });
+
+    root.querySelectorAll('.add-queue-row-btn').forEach((btn) => {
+      btn.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleQueue(btn.dataset.id);
       });
     });
 
