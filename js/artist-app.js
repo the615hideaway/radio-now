@@ -206,6 +206,12 @@
           </button>
           ${song.mp3 ? `<button type="button" class="btn btn-secondary download-track-btn" data-format="mp3"><i class="fa-solid fa-download"></i> MP3</button>` : ''}
         </div>
+        <p class="detail-report-wrap">
+          <a href="dj-help.html?${new URLSearchParams({ type: 'song', artist: song.artistName || '', song: song.songTitle || '' }).toString()}" class="detail-report-link">
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            Report wrong info for this song
+          </a>
+        </p>
         <div class="detail-panel-footer">
           <button class="btn btn-ghost detail-close-btn detail-close-btn--bottom" aria-label="Close details">
             <i class="fa-solid fa-xmark"></i> Close

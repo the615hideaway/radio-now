@@ -12,8 +12,27 @@
  *   artist_dashboard, song_submit, artist_profile_create, label_access_revoke
  */
 
-var RADIO_NOW_SCRIPT_VERSION = '2026-06-16-wav-request-v14';
+var RADIO_NOW_SCRIPT_VERSION = '2026-06-19-dj-feedback-v15';
 var SPOTLIGHT_SHEET_NAME = 'Spotlights';
+var DJ_REPORTS_SHEET_NAME = 'DJ Reports';
+var DJ_REPORT_HEADERS = [
+  'report_id',
+  'timestamp',
+  'report_type',
+  'status',
+  'dj_id',
+  'dj_name',
+  'dj_email',
+  'station',
+  'program',
+  'artist_name',
+  'song_title',
+  'issue_type',
+  'correction',
+  'notes',
+  'page',
+  'what_happened',
+];
 var SPOTLIGHT_ADMIN_DJS = ['Sammy Passamano'];
 var SPOTLIGHT_ADMIN_EMAILS = ['the615hideaway@gmail.com'];
 var SUBMISSION_CHUNK_FOLDER_ID = '1uSIu4QKuy1CkvaoksiA8eBJpFNHeZSdD';
@@ -1344,6 +1363,142 @@ function getActivitySheet_() {
 
   ensureSheetHeaders_(sheet, ACTIVITY_HEADERS);
   return sheet;
+}
+
+function getDjReportsSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(DJ_REPORTS_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(DJ_REPORTS_SHEET_NAME);
+    sheet.getRange(1, 1, 1, DJ_REPORT_HEADERS.length).setValues([DJ_REPORT_HEADERS]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  ensureSheetHeaders_(sheet, DJ_REPORT_HEADERS);
+  return sheet;
+}
+
+function djFeedbackIssueLabel_(issueType) {
+  var map = {
+    typo: 'Typo in title or artist name',
+    wrong_credit: 'Wrong songwriter / band / label',
+    missing_wav: 'Need WAV / missing audio file',
+    wrong_year: 'Wrong year or release date',
+    missing_song: 'Song should be on Radio Now but is not',
+    other: 'Something else',
+  };
+  return map[String(issueType || '').trim()] || String(issueType || '').trim() || '—';
+}
+
+function djFeedbackPageLabel_(page) {
+  var map = {
+    catalog: 'Catalog (home)',
+    artists: 'Artists list',
+    artist_profile: 'Artist profile / songs',
+    download_zip: 'Download ZIP',
+    preview: 'Song preview / play',
+    login: 'Sign in / account',
+    other: 'Other',
+  };
+  return map[String(page || '').trim()] || String(page || '').trim() || '—';
+}
+
+function djFeedbackSubmit_(token, payload) {
+  var found = requireDjSession_(token);
+  var dj = found.dj;
+  var reportType = String(payload.reportType || '').trim().toLowerCase();
+
+  if (reportType !== 'song_info' && reportType !== 'site_bug') {
+    throw new Error('Invalid report type.');
+  }
+
+  var reportId = 'rpt-' + Utilities.getUuid().slice(0, 10);
+  var timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss");
+  var djEmail = djContactEmail_(dj) || normalizeEmail_(dj.email);
+
+  var row = {
+    report_id: reportId,
+    timestamp: timestamp,
+    report_type: reportType,
+    status: 'open',
+    dj_id: dj.dj_id,
+    dj_name: dj.name || '',
+    dj_email: djEmail,
+    station: dj.station_call_letters || dj.station || '',
+    program: dj.program_name || dj.show_name || '',
+    artist_name: '',
+    song_title: '',
+    issue_type: '',
+    correction: '',
+    notes: '',
+    page: '',
+    what_happened: '',
+  };
+
+  var emailLines = [
+    '<strong>Report ID:</strong> ' + escapeEmailHtml_(reportId),
+    '<strong>DJ:</strong> ' + escapeEmailHtml_(row.dj_name || '—'),
+    '<strong>Email:</strong> ' + escapeEmailHtml_(row.dj_email || '—'),
+    '<strong>Station:</strong> ' + escapeEmailHtml_(row.station || '—'),
+    '<strong>Program:</strong> ' + escapeEmailHtml_(row.program || '—'),
+  ];
+  var subject = '';
+
+  if (reportType === 'song_info') {
+    row.artist_name = String(payload.artistName || '').trim();
+    row.song_title = String(payload.songTitle || '').trim();
+    row.issue_type = String(payload.issueType || '').trim();
+    row.correction = String(payload.correction || '').trim();
+    row.notes = String(payload.notes || '').trim();
+
+    if (!row.artist_name || !row.song_title) {
+      throw new Error('Artist name and song title are required.');
+    }
+    if (!row.issue_type) {
+      throw new Error('Please choose what is wrong.');
+    }
+
+    subject = 'DJ catalog fix — ' + row.artist_name + ' — ' + row.song_title;
+    emailLines.push(
+      '<strong>Artist:</strong> ' + escapeEmailHtml_(row.artist_name),
+      '<strong>Song:</strong> ' + escapeEmailHtml_(row.song_title),
+      '<strong>Issue:</strong> ' + escapeEmailHtml_(djFeedbackIssueLabel_(row.issue_type)),
+      '<strong>Correction:</strong> ' + escapeEmailHtml_(row.correction || '—'),
+      '<strong>Notes:</strong> ' + escapeEmailHtml_(row.notes || '—')
+    );
+  } else {
+    row.page = String(payload.page || '').trim();
+    row.what_happened = String(payload.whatHappened || '').trim();
+    row.notes = String(payload.notes || '').trim();
+
+    if (!row.what_happened) {
+      throw new Error('Please describe what happened.');
+    }
+
+    subject = 'DJ site bug — ' + djFeedbackPageLabel_(row.page);
+    emailLines.push(
+      '<strong>Page:</strong> ' + escapeEmailHtml_(djFeedbackPageLabel_(row.page)),
+      '<strong>What happened:</strong> ' + escapeEmailHtml_(row.what_happened),
+      '<strong>Notes:</strong> ' + escapeEmailHtml_(row.notes || '—')
+    );
+  }
+
+  appendRowByHeaders_(getDjReportsSheet_(), row);
+
+  sendRadioNowEmailSafe_(
+    RADIO_NOW_ADMIN_EMAIL,
+    subject,
+    radioNowEmailShell_('DJ help report — ' + (reportType === 'song_info' ? 'catalog fix' : 'site bug'), emailLines, {
+      href: RADIO_NOW_SITE_URL + '/dj-help.html',
+      label: 'Open DJ help page',
+    })
+  );
+
+  return {
+    success: true,
+    reportId: reportId,
+  };
 }
 
 function ensureSheetHeaders_(sheet, headers) {
@@ -4001,6 +4156,7 @@ function doGet(e) {
           'submission_email',
           'spotlight_admin',
           'wav_request',
+          'dj_feedback',
         ],
       });
     }
@@ -4124,6 +4280,10 @@ function doPost(e) {
 
     if (action === 'wav_request_send') {
       return jsonResponse_(wavRequestSend_(body.token, body));
+    }
+
+    if (action === 'dj_feedback_submit') {
+      return jsonResponse_(djFeedbackSubmit_(body.token, body));
     }
 
     return jsonResponse_({ success: false, error: 'Unknown action' });

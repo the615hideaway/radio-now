@@ -4517,6 +4517,161 @@ select { min-width: 130px; width: auto; }
   white-space: nowrap;
 }
 
+/* DJ help / feedback */
+
+.dj-help-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 3rem;
+}
+
+.dj-help-header h1 {
+  margin: 0 0 0.55rem;
+  font-size: 2rem;
+  color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dj-help-intro {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.dj-help-reporter {
+  margin: 0.85rem 0 0;
+  font-size: 1.05rem;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.dj-help-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 1.35rem 0 1rem;
+}
+
+.dj-help-tab {
+  flex: 1 1 220px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dj-help-tab:hover {
+  border-color: rgba(244, 196, 48, 0.45);
+}
+
+.dj-help-tab.active {
+  border-color: var(--gold);
+  background: rgba(244, 196, 48, 0.1);
+  color: var(--gold-bright);
+}
+
+.dj-help-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.35rem 1.5rem;
+}
+
+.dj-help-form label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.dj-help-form .label-hint {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.dj-help-form input,
+.dj-help-form select,
+.dj-help-form textarea {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  font-size: 1.1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.dj-help-form textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.dj-help-form > div {
+  margin-bottom: 1rem;
+}
+
+.dj-help-status {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  line-height: 1.45;
+}
+
+.dj-help-status.is-success {
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  color: #86efac;
+}
+
+.dj-help-status.is-error {
+  background: rgba(230, 57, 57, 0.12);
+  border: 1px solid rgba(230, 57, 57, 0.35);
+  color: #fca5a5;
+}
+
+.dj-help-footer-note {
+  margin: 1.25rem 0 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.detail-report-wrap {
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.detail-report-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--gold-bright);
+  text-decoration: none;
+}
+
+.detail-report-link:hover {
+  text-decoration: underline;
+}
+
 /* Empty state */
 
 .empty-state {

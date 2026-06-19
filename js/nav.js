@@ -6,6 +6,7 @@ const SiteNav = {
     { key: 'charts', href: 'charts.html', label: 'Charts', roles: ['dj', 'artist', 'guest'] },
     { key: 'djs', href: 'djs.html', label: 'DJs', roles: ['dj', 'artist'] },
     { key: 'djDashboard', href: 'dj-dashboard.html', label: 'DJ Dashboard', roles: ['dj'] },
+    { key: 'djHelp', href: 'dj-help.html', label: 'Help Catalog', roles: ['dj'] },
     { key: 'djSpotlight', href: 'dj-spotlight.html', label: 'Spotlight', roles: ['dj'], spotlightAdmin: true },
     { key: 'artistDashboard', href: 'artist-dashboard.html', label: 'Spins', roles: ['artist'] },
   ],

@@ -356,6 +356,22 @@
     });
   }
 
+  function renderDetailReportLink(song) {
+    if (isDemoMode || !isAuthenticated()) return '';
+    const params = new URLSearchParams({
+      type: 'song',
+      artist: song.artistName || '',
+      song: song.songTitle || '',
+    });
+    return `
+        <p class="detail-report-wrap">
+          <a href="dj-help.html?${params.toString()}" class="detail-report-link">
+            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+            Report wrong info for this song
+          </a>
+        </p>`;
+  }
+
   function renderDetailPanel(song, shouldScroll = true) {
     const inQueue = queue.some((q) => q.id === song.id);
     const inDownload = downloadQueue.some((d) => d.id === song.id);
@@ -416,6 +432,7 @@
           </button>
           ${song.mp3 ? `<button type="button" class="btn btn-secondary download-track-btn" data-format="mp3"><i class="fa-solid fa-download"></i> MP3</button>` : ''}
         </div>
+        ${renderDetailReportLink(song)}
         <div class="detail-panel-footer">
           <button class="btn btn-ghost detail-close-btn detail-close-btn--bottom" aria-label="Close details">
             <i class="fa-solid fa-xmark"></i> Close
