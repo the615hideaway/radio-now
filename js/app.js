@@ -38,6 +38,12 @@
   let currentPreviewId = null;
   const catalogRecentLimit = CONFIG.catalogPageSize || 20;
 
+  AudioPlayer.onPreviewEnd = () => {
+    currentPreviewId = null;
+    renderCatalog();
+    refreshDetailPanelIfOpen();
+  };
+
   function isAuthenticated() {
     return DjAuth.isAuthenticated();
   }
@@ -49,6 +55,7 @@
       Demo.applyMode();
       Demo.bindExit(logoutBtn);
       SiteNav.init('catalog');
+      TurnkeyPitch.mountCatalogPromo();
     } else {
       DjAuthUI.updateWelcome();
       SiteNav.init('catalog');

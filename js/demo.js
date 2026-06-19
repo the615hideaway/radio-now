@@ -27,6 +27,6 @@ const Demo = {
   },
 
   salesNoteHtml() {
-    return TurnkeyPitch.detailNoteHtml(true);
+    return TurnkeyPitch.djDemoDetailNoteHtml();
   },
 };

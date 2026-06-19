@@ -146,15 +146,29 @@ const TurnkeyPitch = {
       </p>`;
   },
 
+  catalogStripDemoHtml() {
+    return `
+      <section class="turnkey-pitch turnkey-pitch--strip" aria-label="DJ catalog preview">
+        <div class="turnkey-strip-main">
+          <span class="turnkey-strip-badge"><i class="fa-solid fa-tower-broadcast"></i> FREE DJ account</span>
+          <p>Preview the catalog — 20-second clips, browse artists, and try a free one-sheet PDF. Sign up free to download full turn-key folders (<strong>${this.namingExample}</strong>).</p>
+        </div>
+      </section>`;
+  },
+
+  djDemoDetailNoteHtml() {
+    return `
+      <div class="turnkey-detail-note turnkey-detail-note--demo">
+        <p class="turnkey-detail-kicker"><i class="fa-solid fa-tower-broadcast"></i> Free for DJs</p>
+        <p class="turnkey-detail-title">FREE DJ account</p>
+        <p class="turnkey-detail-copy">Browse the catalog, preview tracks, and download turn-key folders — MP3, cover art &amp; one-sheet PDF. Create a <strong>free DJ account</strong> to unlock full ZIP downloads.</p>
+        <p class="turnkey-detail-copy">Try the sample one-sheet PDF below — the same pro sheet DJs get in every folder (<strong>${this.namingExample} OneSheet.pdf</strong>).</p>
+      </div>`;
+  },
+
   detailNoteHtml(isDemo = false) {
     if (isDemo) {
-      return `
-        <div class="turnkey-detail-note turnkey-detail-note--demo">
-          <p class="turnkey-detail-kicker"><i class="fa-solid fa-wand-magic-sparkles"></i> Try it free</p>
-          <p class="turnkey-detail-title">We build your radio one-sheet for you</p>
-          <p class="turnkey-detail-copy">Artists who hate tech: skip the layout struggle. Download a sample PDF below — the same pro sheet DJs get in every turn-key folder (<strong>${this.namingExample} OneSheet.pdf</strong>).</p>
-          <p class="turnkey-detail-price">Full turn-key promo — audio, cover &amp; one-sheet, all named right — from <strong class="turnkey-price">$5</strong>.</p>
-        </div>`;
+      return this.djDemoDetailNoteHtml();
     }
 
     return `
@@ -189,7 +203,8 @@ const TurnkeyPitch = {
     const catalogSlot = document.getElementById('turnkey-pitch-catalog');
     if (catalogSlot) {
       catalogSlot.classList.remove('hidden');
-      catalogSlot.innerHTML = this.catalogStripHtml();
+      const inDemo = typeof Demo !== 'undefined' && Demo.isActive();
+      catalogSlot.innerHTML = inDemo ? this.catalogStripDemoHtml() : this.catalogStripHtml();
     }
 
     const queueSlot = document.getElementById('turnkey-pitch-queue');
