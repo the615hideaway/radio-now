@@ -21,6 +21,7 @@
   const downloadZipBtn = document.getElementById('download-zip-btn');
   const detailPanel = document.getElementById('detail-panel');
   const catalogArtistBrowser = document.getElementById('catalog-artist-browser');
+  const catalogNextSteps = document.getElementById('catalog-next-steps');
   const nowPlaying = document.getElementById('now-playing');
 
   const nowPlayingTitle = document.getElementById('now-playing-title');
@@ -578,12 +579,27 @@
     bindPreviewButtons(root);
   }
 
+  function updateCatalogNextSteps(show) {
+    if (!catalogNextSteps) return;
+    catalogNextSteps.classList.toggle('hidden', !show);
+  }
+
+  function bindCatalogNextSteps() {
+    const scrollBtn = document.getElementById('catalog-scroll-to-artists-btn');
+    scrollBtn?.addEventListener('click', () => {
+      catalogArtistBrowser?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const select = document.getElementById('catalog-artist-select');
+      select?.focus();
+    });
+  }
+
   function renderCatalog() {
     if (!filteredSongs.length) {
       if (spotlightList) {
         spotlightList.classList.add('hidden');
         spotlightList.innerHTML = '';
       }
+      updateCatalogNextSteps(false);
       catalogGrid.innerHTML = `
         <div class="empty-state">
           <i class="fa-solid fa-music"></i>
@@ -591,6 +607,8 @@
         </div>`;
       return;
     }
+
+    updateCatalogNextSteps(true);
 
     const maxSpotlightSlots = CONFIG.spotlight?.maxSlots || 20;
     const spotlightSongs = filteredSongs
@@ -798,6 +816,8 @@
     downloadQueue = storedDownloadIds.map((id) => allSongs.find((s) => s.id === id)).filter(Boolean);
     renderDownloadQueue();
   }
+
+  bindCatalogNextSteps();
 
   if (isDemoMode) {
     showApp();

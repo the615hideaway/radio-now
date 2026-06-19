@@ -4228,6 +4228,58 @@ select { min-width: 130px; width: auto; }
   line-height: 1.45;
 }
 
+.catalog-next-steps {
+  margin-top: 1.25rem;
+  margin-bottom: 2rem;
+  background: var(--bg-card);
+  border: 1px solid rgba(244, 196, 48, 0.35);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(244, 196, 48, 0.07), rgba(255, 255, 255, 0.02));
+}
+
+.catalog-next-steps-inner {
+  padding: 1.5rem 1.65rem;
+}
+
+.catalog-next-steps h2 {
+  margin: 0 0 0.65rem;
+  font-size: 1.75rem;
+  color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.catalog-next-steps-lead {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  max-width: 44rem;
+}
+
+.catalog-next-steps-list {
+  margin: 0 0 1.25rem;
+  padding-left: 1.35rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.catalog-next-steps-list li {
+  margin-bottom: 0.45rem;
+}
+
+.catalog-next-steps-list li:last-child {
+  margin-bottom: 0;
+}
+
+.catalog-next-steps-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
 .catalog-artist-browser {
   margin-bottom: 1rem;
   background: var(--bg-card);
@@ -4448,6 +4500,23 @@ select { min-width: 130px; width: auto; }
   }
 
   .catalog-artist-browser-controls .btn-lg {
+    width: 100%;
+  }
+
+  .catalog-next-steps h2 {
+    font-size: 1.45rem;
+  }
+
+  .catalog-next-steps-lead,
+  .catalog-next-steps-list {
+    font-size: 1.05rem;
+  }
+
+  .catalog-next-steps-actions {
+    flex-direction: column;
+  }
+
+  .catalog-next-steps-actions .btn {
     width: 100%;
   }
 
