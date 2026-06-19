@@ -491,6 +491,61 @@
     else closeDetail();
   }
 
+  function renderSpotlightCard(song) {
+    const isPlaying = currentPreviewId === song.id;
+    const isOpen = expandedDetailId === song.id;
+    const badge = Spotlight.badge(song);
+    const hasPreview = AudioPlayer.hasPreview(song);
+
+    return `
+      <article class="spotlight-card ${isOpen ? 'is-open' : ''} ${isPlaying ? 'is-previewing' : ''}" data-id="${Utils.escapeHtml(song.id)}">
+        <div class="spotlight-card-cover" aria-hidden="true">${renderCover(song)}</div>
+        <div class="spotlight-card-body">
+          ${badge ? `<span class="spotlight-card-badge">${Utils.escapeHtml(badge)}</span>` : ''}
+          <p class="spotlight-card-artist">${Utils.escapeHtml(song.artistName || 'Unknown Artist')}</p>
+          <p class="spotlight-card-title">${Utils.escapeHtml(song.songTitle || 'Untitled')}</p>
+        </div>
+        <div class="spotlight-card-actions">
+          ${hasPreview ? `
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm preview-trigger-btn ${isPlaying ? 'is-playing' : ''}"
+              data-id="${Utils.escapeHtml(song.id)}"
+              aria-label="${isPlaying ? 'Playing preview' : 'Play preview'}"
+            >
+              <i class="fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play'}" aria-hidden="true"></i>
+              ${isPlaying ? 'Playing' : 'Play'}
+            </button>` : `
+            <span class="spotlight-card-no-preview">No preview</span>`}
+          <button
+            type="button"
+            class="btn btn-secondary btn-sm details-btn ${isOpen ? 'active' : ''}"
+            data-id="${Utils.escapeHtml(song.id)}"
+          >
+            Details
+          </button>
+        </div>
+      </article>`;
+  }
+
+  function initSpotlightDelegation() {
+    if (!spotlightList || spotlightList.dataset.delegationBound) return;
+    spotlightList.dataset.delegationBound = '1';
+    spotlightList.addEventListener('click', (event) => {
+      const previewBtn = event.target.closest('.preview-trigger-btn');
+      if (previewBtn?.dataset.id) {
+        event.preventDefault();
+        playSongPreview(previewBtn.dataset.id);
+        return;
+      }
+      const detailsBtn = event.target.closest('.details-btn');
+      if (detailsBtn?.dataset.id) {
+        event.preventDefault();
+        openDetail(detailsBtn.dataset.id);
+      }
+    });
+  }
+
   function renderCatalogRow(song) {
     const isPlaying = currentPreviewId === song.id;
     const isOpen = expandedDetailId === song.id;
@@ -623,12 +678,12 @@
         spotlightList.classList.remove('hidden');
         spotlightList.innerHTML = `
           <div class="catalog-spotlight-header">
-            <h2>Spotlight</h2>
+            <h2><i class="fa-solid fa-star" aria-hidden="true"></i> Spotlight</h2>
+            <p class="catalog-spotlight-note">Featured on Radio Now — ${spotlightSongs.length} hand-picked release${spotlightSongs.length === 1 ? '' : 's'} for DJs</p>
           </div>
-          <div class="catalog-list-inner">
-            ${spotlightSongs.map((song) => renderCatalogRow(song)).join('')}
+          <div class="spotlight-grid" role="list">
+            ${spotlightSongs.map((song) => renderSpotlightCard(song)).join('')}
           </div>`;
-        bindCatalogRows(spotlightList);
       } else {
         spotlightList.classList.add('hidden');
         spotlightList.innerHTML = '';
@@ -818,6 +873,7 @@
   }
 
   bindCatalogNextSteps();
+  initSpotlightDelegation();
 
   if (isDemoMode) {
     showApp();

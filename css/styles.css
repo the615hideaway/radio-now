@@ -2960,20 +2960,187 @@ select { min-width: 130px; width: auto; }
 }
 
 .catalog-spotlight {
-  background: rgba(244, 196, 48, 0.04);
-  border: 1px solid rgba(244, 196, 48, 0.28);
+  background: linear-gradient(165deg, rgba(244, 196, 48, 0.12), rgba(244, 196, 48, 0.03) 55%, rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(244, 196, 48, 0.45);
   border-radius: var(--radius-lg);
-  padding: 0.75rem 0.85rem 0.85rem;
+  padding: 1.1rem 1.15rem 1.2rem;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+}
+
+.catalog-spotlight-header {
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(244, 196, 48, 0.28);
 }
 
 .catalog-spotlight-header h2,
 .catalog-list-header h2 {
-  margin: 0 0 0.55rem;
+  margin: 0 0 0.35rem;
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--gold-bright);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.catalog-spotlight-note {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.spotlight-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.spotlight-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(244, 196, 48, 0.4);
+  background: rgba(10, 15, 28, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.spotlight-card:hover {
+  border-color: rgba(244, 196, 48, 0.65);
+  transform: translateY(-1px);
+}
+
+.spotlight-card.is-open {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px rgba(244, 196, 48, 0.35);
+}
+
+.spotlight-card.is-previewing {
+  border-color: rgba(74, 222, 128, 0.55);
+}
+
+.spotlight-card-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(244, 196, 48, 0.25);
+  background: #0a0f1c;
+  margin-bottom: 0.65rem;
+}
+
+.spotlight-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.spotlight-card-cover img.broken {
+  display: none;
+}
+
+.spotlight-card-cover .cover-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  color: var(--gold);
+}
+
+.spotlight-card-body {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0.65rem;
+}
+
+.spotlight-card-badge {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #1a1408;
+  background: linear-gradient(135deg, var(--gold-bright), #d4a82a);
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+}
+
+.spotlight-card-artist {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spotlight-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.spotlight-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: auto;
+}
+
+.spotlight-card-actions .btn {
+  flex: 1 1 auto;
+  min-height: 2.5rem;
+  font-size: 0.95rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.spotlight-card-actions .details-btn.active {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
+.spotlight-card-no-preview {
+  flex: 1 1 100%;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0.35rem 0;
+}
+
+@media (max-width: 1200px) {
+  .spotlight-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .spotlight-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .spotlight-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .catalog-list-inner {
@@ -4518,6 +4685,15 @@ select { min-width: 130px; width: auto; }
 
   .catalog-next-steps-actions .btn {
     width: 100%;
+  }
+
+  .spotlight-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+  }
+
+  .spotlight-card-title {
+    font-size: 1rem;
   }
 
   .catalog-row {
