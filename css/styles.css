@@ -3885,7 +3885,17 @@ select { min-width: 130px; width: auto; }
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.detail-artist-actions {
+  margin-bottom: 1.25rem;
+}
+
+.detail-artist-page-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .detail-spotlight-admin {

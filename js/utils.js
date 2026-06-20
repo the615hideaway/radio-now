@@ -420,6 +420,33 @@ const Utils = {
     return slug || 'artist';
   },
 
+  _artistSlugCache: null,
+  _artistSlugCacheSongs: null,
+
+  resolveArtistSlug(artistName, songs) {
+    const name = String(artistName || '').trim();
+    if (!name) return '';
+
+    if (Array.isArray(songs) && songs.length) {
+      if (this._artistSlugCacheSongs !== songs) {
+        this._artistSlugCache = new Map(
+          this.groupSongsByArtist(songs).map((entry) => [entry.name, entry.slug]),
+        );
+        this._artistSlugCacheSongs = songs;
+      }
+      return this._artistSlugCache.get(name) || this.artistSlug(name);
+    }
+
+    return this.artistSlug(name);
+  },
+
+  artistPageHref(artistName, songs) {
+    const name = String(artistName || '').trim();
+    if (!name) return '';
+    const slug = this.resolveArtistSlug(name, songs);
+    return `artist.html?slug=${encodeURIComponent(slug)}`;
+  },
+
   normalizeContactEmail(raw) {
     const value = String(raw || '').trim();
     if (!value) return '';

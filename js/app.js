@@ -356,6 +356,19 @@
     });
   }
 
+  function renderArtistCatalogLink(song) {
+    const artistName = String(song.artistName || '').trim();
+    if (!artistName) return '';
+    const href = Utils.artistPageHref(artistName, allSongs);
+    return `
+        <div class="detail-artist-actions">
+          <a href="${Utils.escapeHtml(href)}" class="btn btn-secondary detail-artist-page-btn">
+            <i class="fa-solid fa-user-music" aria-hidden="true"></i>
+            Browse ${Utils.escapeHtml(artistName)} catalog
+          </a>
+        </div>`;
+  }
+
   function renderDetailReportLink(song) {
     if (isDemoMode || !isAuthenticated()) return '';
     const params = new URLSearchParams({
@@ -411,6 +424,7 @@
             <i class="fa-solid fa-list-ul"></i> ${inQueue ? 'In DJ Queue' : 'Add to DJ Queue'}
           </button>
         </div>
+        ${renderArtistCatalogLink(song)}
         ${renderSpotlightAdminHtml(song)}
         <div class="detail-description">
           <label>Description</label>
