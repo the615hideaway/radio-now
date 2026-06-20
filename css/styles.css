@@ -2965,6 +2965,7 @@ select { min-width: 130px; width: auto; }
   border-radius: var(--radius-lg);
   padding: 1.1rem 1.15rem 1.2rem;
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.22);
+  scroll-margin-top: 5.5rem;
 }
 
 .catalog-spotlight-header {

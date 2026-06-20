@@ -142,6 +142,11 @@ const RadioDB = {
       .filter((song) => song.artistName || song.songTitle);
 
     if (!songs.length) throw new Error('Catalog contains no songs.');
+
+    if (typeof Spotlight !== 'undefined') {
+      Spotlight.syncManualPickCount(songs);
+    }
+
     return songs;
   },
 

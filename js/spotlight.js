@@ -120,6 +120,15 @@ const Spotlight = {
     });
   },
 
+  syncManualPickCount(songs) {
+    const today = this.startOfDay(new Date());
+    this.manualPickCount = (songs || []).filter((song) => {
+      const priority = parseInt(song?.spotlightPriority, 10) || 0;
+      const until = this.parseDateOnly(song?.spotlightUntil);
+      return priority > 0 && (!until || until >= today);
+    }).length;
+  },
+
   score(song) {
     const cfg = this.config();
     const today = this.startOfDay(new Date());
@@ -131,6 +140,7 @@ const Spotlight = {
     if (manualActive) score = manualPriority;
 
     if (this.manualPickCount === 0) {
+      if (score > 0) return score;
       return song?.spotlightAutoFilled ? (cfg.autoFillScore ?? 80) : 0;
     }
 

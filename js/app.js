@@ -505,7 +505,7 @@
     if (!song) return;
 
     expandedDetailId = id;
-    renderDetailPanel(song);
+    renderDetailPanel(song, false);
     renderCatalog();
   }
 
@@ -679,12 +679,39 @@
     });
   }
 
+  function getSpotlightSongs() {
+    const maxSpotlightSlots = CONFIG.spotlight?.maxSlots || 20;
+    return allSongs
+      .filter((song) => Spotlight.score(song) > 0)
+      .sort((a, b) => Spotlight.score(b) - Spotlight.score(a))
+      .slice(0, maxSpotlightSlots);
+  }
+
+  function renderSpotlightSection(spotlightSongs) {
+    if (!spotlightList) return;
+
+    if (spotlightSongs.length) {
+      spotlightList.classList.remove('hidden');
+      spotlightList.innerHTML = `
+        <div class="catalog-spotlight-header">
+          <h2><i class="fa-solid fa-star" aria-hidden="true"></i> Spotlight</h2>
+          <p class="catalog-spotlight-note">Featured on Radio Now — ${spotlightSongs.length} hand-picked release${spotlightSongs.length === 1 ? '' : 's'} for DJs</p>
+        </div>
+        <div class="spotlight-grid" role="list">
+          ${spotlightSongs.map((song) => renderSpotlightCard(song)).join('')}
+        </div>`;
+      return;
+    }
+
+    spotlightList.classList.add('hidden');
+    spotlightList.innerHTML = '';
+  }
+
   function renderCatalog() {
+    const spotlightSongs = getSpotlightSongs();
+    renderSpotlightSection(spotlightSongs);
+
     if (!filteredSongs.length) {
-      if (spotlightList) {
-        spotlightList.classList.add('hidden');
-        spotlightList.innerHTML = '';
-      }
       updateCatalogNextSteps(false);
       catalogGrid.innerHTML = `
         <div class="empty-state">
@@ -696,30 +723,9 @@
 
     updateCatalogNextSteps(true);
 
-    const maxSpotlightSlots = CONFIG.spotlight?.maxSlots || 20;
-    const spotlightSongs = filteredSongs
-      .filter((song) => Spotlight.score(song) > 0)
-      .slice(0, maxSpotlightSlots);
     const catalogSongs = [...filteredSongs.filter((song) => Spotlight.score(song) === 0)]
       .sort((a, b) => Utils.compareSongsByReleaseDate(a, b))
       .slice(0, catalogRecentLimit);
-
-    if (spotlightList) {
-      if (spotlightSongs.length) {
-        spotlightList.classList.remove('hidden');
-        spotlightList.innerHTML = `
-          <div class="catalog-spotlight-header">
-            <h2><i class="fa-solid fa-star" aria-hidden="true"></i> Spotlight</h2>
-            <p class="catalog-spotlight-note">Featured on Radio Now — ${spotlightSongs.length} hand-picked release${spotlightSongs.length === 1 ? '' : 's'} for DJs</p>
-          </div>
-          <div class="spotlight-grid" role="list">
-            ${spotlightSongs.map((song) => renderSpotlightCard(song)).join('')}
-          </div>`;
-      } else {
-        spotlightList.classList.add('hidden');
-        spotlightList.innerHTML = '';
-      }
-    }
 
     if (catalogSongs.length) {
       catalogGrid.innerHTML = `
