@@ -1,5 +1,9 @@
 const RadioDB = {
   catalogMeta: null,
+  catalogPayload: null,
+  catalogFetchPromise: null,
+  catalogSessionKey: 'radio_now_catalog_cache',
+  catalogSessionTtlMs: 2 * 60 * 1000,
 
   isScriptConfigured() {
     return !!(CONFIG.googleScriptUrl && CONFIG.googleScriptUrl.includes('script.google.com'));
@@ -49,7 +53,43 @@ const RadioDB = {
     };
   },
 
-  async fetchCatalogData() {
+  readSessionCatalog() {
+    try {
+      const raw = sessionStorage.getItem(this.catalogSessionKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed?.data?.songs?.length || !parsed.fetchedAt) return null;
+      if (Date.now() - parsed.fetchedAt > this.catalogSessionTtlMs) return null;
+      return parsed.data;
+    } catch (err) {
+      return null;
+    }
+  },
+
+  writeSessionCatalog(data) {
+    if (!data?.songs?.length) return;
+    try {
+      sessionStorage.setItem(this.catalogSessionKey, JSON.stringify({
+        fetchedAt: Date.now(),
+        data,
+      }));
+    } catch (err) {
+      // sessionStorage full or unavailable
+    }
+  },
+
+  invalidateCatalogCache() {
+    this.catalogPayload = null;
+    this.catalogMeta = null;
+    this.catalogFetchPromise = null;
+    try {
+      sessionStorage.removeItem(this.catalogSessionKey);
+    } catch (err) {
+      // ignore
+    }
+  },
+
+  async loadCatalogPayload() {
     if (CONFIG.catalogLiveFromSheet && typeof SheetCatalog !== 'undefined') {
       try {
         const live = await SheetCatalog.fetchCatalogPayload();
@@ -64,6 +104,30 @@ const RadioDB = {
       throw new Error(`Could not load catalog from Google Sheet or ${CONFIG.songsDataUrl}.`);
     }
     return response.json();
+  },
+
+  async fetchCatalogData() {
+    if (this.catalogPayload) return this.catalogPayload;
+
+    const sessionData = this.readSessionCatalog();
+    if (sessionData) {
+      this.catalogPayload = sessionData;
+      return sessionData;
+    }
+
+    if (this.catalogFetchPromise) return this.catalogFetchPromise;
+
+    this.catalogFetchPromise = this.loadCatalogPayload()
+      .then((data) => {
+        this.catalogPayload = data;
+        this.writeSessionCatalog(data);
+        return data;
+      })
+      .finally(() => {
+        this.catalogFetchPromise = null;
+      });
+
+    return this.catalogFetchPromise;
   },
 
   songsFromPayload(data) {

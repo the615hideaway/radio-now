@@ -57,7 +57,6 @@
     }
     updateDownloadSetupNotice();
     loadQueuesFromStorage();
-    checkConnection();
     if (typeof SpotlightAdmin !== 'undefined' && SpotlightAdmin.canManage()) {
       SpotlightAdmin.ensureLoaded().catch(() => {});
     }
@@ -843,20 +842,6 @@
     await playSongPreview(queue[queuePlayIndex].id, queuePlayIndex);
   }
 
-  async function checkConnection() {
-    try {
-      await RadioDB.getCatalogMeta();
-      connectionBanner.classList.add('hidden');
-      connectionBanner.innerHTML = '';
-    } catch (err) {
-      connectionBanner.className = 'connection-banner error';
-      connectionBanner.innerHTML = `
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <div><strong>Catalog unavailable.</strong> ${Utils.escapeHtml(err.message)}</div>`;
-      connectionBanner.classList.remove('hidden');
-    }
-  }
-
   async function loadSongs() {
     catalogGrid.innerHTML = `
       <div class="empty-state">
@@ -866,12 +851,19 @@
 
     try {
       allSongs = await RadioDB.getAllSongs();
+      connectionBanner.classList.add('hidden');
+      connectionBanner.innerHTML = '';
       populateFilters();
       syncQueuesWithStorage();
       filterSongs();
       renderArtistBrowser();
 
     } catch (err) {
+      connectionBanner.className = 'connection-banner error';
+      connectionBanner.innerHTML = `
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div><strong>Catalog unavailable.</strong> ${Utils.escapeHtml(err.message)}</div>`;
+      connectionBanner.classList.remove('hidden');
       catalogGrid.innerHTML = `
         <div class="empty-state">
           <i class="fa-solid fa-triangle-exclamation"></i>

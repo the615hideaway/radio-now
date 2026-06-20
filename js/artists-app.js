@@ -81,20 +81,6 @@
     renderArtists();
   }
 
-  async function checkConnection() {
-    try {
-      await RadioDB.getCatalogMeta();
-      connectionBanner.classList.add('hidden');
-      connectionBanner.innerHTML = '';
-    } catch (err) {
-      connectionBanner.className = 'connection-banner error';
-      connectionBanner.innerHTML = `
-        <i class="fa-solid fa-triangle-exclamation"></i>
-        <div><strong>Catalog unavailable.</strong> ${Utils.escapeHtml(err.message)}</div>`;
-      connectionBanner.classList.remove('hidden');
-    }
-  }
-
   async function loadArtists() {
     artistsGrid.innerHTML = `
       <div class="empty-state">
@@ -104,11 +90,17 @@
 
     try {
       const songs = await RadioDB.getAllSongs();
+      connectionBanner.classList.add('hidden');
+      connectionBanner.innerHTML = '';
       allArtists = Utils.groupSongsByArtist(songs);
       filteredArtists = [...allArtists];
       renderArtists();
-      checkConnection();
     } catch (err) {
+      connectionBanner.className = 'connection-banner error';
+      connectionBanner.innerHTML = `
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div><strong>Catalog unavailable.</strong> ${Utils.escapeHtml(err.message)}</div>`;
+      connectionBanner.classList.remove('hidden');
       artistsGrid.innerHTML = `
         <div class="empty-state">
           <i class="fa-solid fa-triangle-exclamation"></i>

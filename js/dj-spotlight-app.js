@@ -181,6 +181,7 @@
         })),
       });
       syncPicksFromServer(data.spotlights);
+      if (typeof RadioDB !== 'undefined') RadioDB.invalidateCatalogCache();
       if (status) {
         status.classList.remove('hidden');
         status.textContent = `Saved ${data.saved || picks.length} spotlight pick${(data.saved || picks.length) === 1 ? '' : 's'}. Refresh the DJ catalog to see changes.`;

@@ -122,23 +122,72 @@ const SheetCatalog = {
     });
   },
 
+  applySpotlightRecords(records, songs) {
+    if (!Array.isArray(records)) return;
+
+    const map = new Map();
+    records.forEach((record) => {
+      const artist = record['Artist Name'];
+      const title = record['Song Title'];
+      if (!artist && !title) return;
+      const priority = parseInt(record.Priority || record['Spotlight Priority'] || '', 10) || 0;
+      if (priority <= 0) return;
+      const key = `${artist}|${title}`.toLowerCase();
+      map.set(key, {
+        spotlightPriority: priority,
+        spotlightUntil: record.Until || record['Spotlight Until'] || '',
+        spotlightBadge: record.Badge || record['Spotlight Badge'] || 'Featured',
+      });
+    });
+
+    if (typeof Spotlight !== 'undefined') {
+      Spotlight.manualPickCount = map.size;
+    }
+
+    songs.forEach((song) => {
+      const key = `${song.artistName}|${song.songTitle}`.toLowerCase();
+      const spot = map.get(key);
+      if (!spot) return;
+      song.spotlightPriority = spot.spotlightPriority;
+      song.spotlightUntil = spot.spotlightUntil;
+      song.spotlightBadge = spot.spotlightBadge;
+    });
+
+    if (map.size === 0 && typeof Spotlight !== 'undefined') {
+      Spotlight.applyAutoFill(songs);
+    }
+  },
+
   async fetchCatalogPayload() {
     const sheetId = CONFIG.googleSheetId;
     const sheetNames = CONFIG.catalogSheetNames || ['Form Responses 1', 'Sheet1'];
+    const spotlightSheetName = CONFIG.spotlight?.spotlightSheetName || 'Spotlights';
     if (!sheetId) throw new Error('googleSheetId is not configured');
+
+    const sheetFetches = sheetNames.map((sheetName) =>
+      this.fetchSheetRecords(sheetId, sheetName)
+        .then((records) => ({ sheetName, records }))
+        .catch((err) => {
+          console.warn(`SheetCatalog: skipping "${sheetName}"`, err);
+          return { sheetName, records: null };
+        })
+    );
+
+    const spotlightFetch = this.fetchSheetRecords(sheetId, spotlightSheetName).catch((err) => {
+      console.warn('SheetCatalog: no spotlight overrides loaded', err);
+      return null;
+    });
+
+    const [sheetResults, spotlightRecords] = await Promise.all([
+      Promise.all(sheetFetches),
+      spotlightFetch,
+    ]);
 
     const catalog = new Map();
     let index = 0;
 
-    for (const sheetName of sheetNames) {
-      let records;
-      try {
-        records = await this.fetchSheetRecords(sheetId, sheetName);
-      } catch (err) {
-        console.warn(`SheetCatalog: skipping "${sheetName}"`, err);
-        continue;
-      }
-
+    sheetResults.forEach(({ records }) => {
+      if (!records) return;
       records.forEach((record) => {
         const artist = record['Artist Name'];
         const title = record['Song Title'];
@@ -151,7 +200,7 @@ const SheetCatalog = {
         const key = `${artist}|${title}`.toLowerCase();
         catalog.set(key, song);
       });
-    }
+    });
 
     const songs = Array.from(catalog.values()).sort((a, b) => {
       const artistCmp = String(a.artistName).localeCompare(String(b.artistName));
@@ -163,7 +212,7 @@ const SheetCatalog = {
       song.id = `song-${i + 1}`;
     });
 
-    await this.mergeSpotlights(sheetId, songs);
+    this.applySpotlightRecords(spotlightRecords, songs);
 
     return {
       success: true,
@@ -180,37 +229,7 @@ const SheetCatalog = {
     const sheetName = CONFIG.spotlight?.spotlightSheetName || 'Spotlights';
     try {
       const records = await this.fetchSheetRecords(sheetId, sheetName);
-      const map = new Map();
-      records.forEach((record) => {
-        const artist = record['Artist Name'];
-        const title = record['Song Title'];
-        if (!artist && !title) return;
-        const priority = parseInt(record.Priority || record['Spotlight Priority'] || '', 10) || 0;
-        if (priority <= 0) return;
-        const key = `${artist}|${title}`.toLowerCase();
-        map.set(key, {
-          spotlightPriority: priority,
-          spotlightUntil: record.Until || record['Spotlight Until'] || '',
-          spotlightBadge: record.Badge || record['Spotlight Badge'] || 'Featured',
-        });
-      });
-
-      if (typeof Spotlight !== 'undefined') {
-        Spotlight.manualPickCount = map.size;
-      }
-
-      songs.forEach((song) => {
-        const key = `${song.artistName}|${song.songTitle}`.toLowerCase();
-        const spot = map.get(key);
-        if (!spot) return;
-        song.spotlightPriority = spot.spotlightPriority;
-        song.spotlightUntil = spot.spotlightUntil;
-        song.spotlightBadge = spot.spotlightBadge;
-      });
-
-      if (map.size === 0 && typeof Spotlight !== 'undefined') {
-        Spotlight.applyAutoFill(songs);
-      }
+      this.applySpotlightRecords(records, songs);
     } catch (err) {
       console.warn('SheetCatalog: no spotlight overrides loaded', err);
     }

@@ -82,6 +82,7 @@ const SpotlightAdmin = {
     const data = await DjAuth.authRequest('spotlight_admin_save', { spotlights: next });
     this.picks = data.spotlights || [];
     this.loaded = true;
+    if (typeof RadioDB !== 'undefined') RadioDB.invalidateCatalogCache();
     return { added: !exists, spotlights: this.picks };
   },
 };
